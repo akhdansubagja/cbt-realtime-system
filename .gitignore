@@ -1,0 +1,23 @@
+# File konfigurasi lokal
+.env
+.env.local
+
+# Dependensi
+node_modules/
+
+# Log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Folder hasil build
+dist/
+.next/
+out/
+
+# Cache
+.DS_Store
+.cache
+
+# Lain-lain dari Next.js
+next-env.d.ts
