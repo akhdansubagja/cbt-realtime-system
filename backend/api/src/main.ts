@@ -8,6 +8,8 @@ import { Transport } from '@nestjs/microservices'; // <-- 1. IMPORT TRANSPORT
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors();
+
   // 2. KONFIGURASI KAFKA CONSUMER
   app.connectMicroservice({
     transport: Transport.KAFKA,

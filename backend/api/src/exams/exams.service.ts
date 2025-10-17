@@ -19,26 +19,26 @@ export class ExamsService {
   ) {}
 
   async create(createExamDto: CreateExamDto) {
-    // 1. Buat dan simpan data ujian utama
+    // 1. Buat dan simpan data ujian utama, termasuk jadwal
     const newExam = this.examRepository.create({
       title: createExamDto.title,
       code: createExamDto.code,
       duration_minutes: createExamDto.duration_minutes,
+      start_time: createExamDto.start_time, // <-- Sertakan start_time
+      end_time: createExamDto.end_time,     // <-- Sertakan end_time
     });
     const savedExam = await this.examRepository.save(newExam);
-
-    // 2. Siapkan data soal untuk ujian ini
+  
+    // 2. Siapkan dan simpan data soal (logika ini tetap sama)
     const examQuestions = createExamDto.questions.map((q) => {
       return this.examQuestionRepository.create({
-        exam: savedExam, // Hubungkan dengan ujian yang baru disimpan
-        question: { id: q.question_id }, // Hubungkan dengan soal yang sudah ada
+        exam: savedExam,
+        question: { id: q.question_id },
         point: q.point,
       });
     });
-
-    // 3. Simpan semua data soal-ujian ke tabel pivot
     await this.examQuestionRepository.save(examQuestions);
-
+  
     return savedExam;
   }
  

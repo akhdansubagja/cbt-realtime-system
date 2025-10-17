@@ -24,12 +24,11 @@ export class Exam {
   @Column()
   duration_minutes: number;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   start_time: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   end_time: Date;
-
   // Relasi ke tabel pivot ExamQuestion
   @OneToMany(() => ExamQuestion, (examQuestion) => examQuestion.exam)
   exam_questions: ExamQuestion[];

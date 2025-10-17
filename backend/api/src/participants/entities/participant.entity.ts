@@ -9,7 +9,13 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Column,
 } from 'typeorm';
+
+export enum ParticipantStatus {
+  STARTED = 'started',
+  FINISHED = 'finished',
+}
 
 @Entity({ name: 'participants' })
 export class Participant {
@@ -26,7 +32,18 @@ export class Participant {
   @JoinColumn({ name: 'exam_id' })
   exam: Exam;
 
-  @CreateDateColumn()
+  @Column({
+    type: 'enum',
+    enum: ParticipantStatus,
+    default: ParticipantStatus.STARTED,
+  })
+  status: ParticipantStatus;
+
+  // --- TAMBAHKAN KOLOM INI ---
+  @Column({ type: 'int', nullable: true }) // 'int' untuk integer, nullable karena awalnya kosong
+  final_score: number;
+
+  @Column({ type: 'timestamptz', nullable: true })
   start_time: Date;
 
   @UpdateDateColumn()

@@ -19,6 +19,10 @@ export class ExamineesService {
   }
 
   findAll() {
-    return this.examineeRepository.find();
+    return this.examineeRepository.find({
+      order: {
+        name: 'ASC', // ASC = Ascending (A ke Z)
+      },
+    });
   }
 }
