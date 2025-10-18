@@ -9,12 +9,15 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Exam } from 'src/exams/entities/exam.entity';
 import { Examinee } from 'src/examinees/entities/examinee.entity';
-import { Repository } from 'typeorm';
+import { Repository, Not, In } from 'typeorm';
 import { JoinExamDto } from './dto/join-exam.dto';
 import { Participant, ParticipantStatus } from './entities/participant.entity';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { ParticipantAnswer } from './entities/participant-answer.entity';
 import { ExamQuestion } from 'src/exams/entities/exam-question.entity';
+import { ParticipantExamQuestion } from './entities/participant-exam-question.entity';
+import { ExamRule } from 'src/exams/entities/exam-rule.entity';
+import { Question } from 'src/questions/entities/question.entity';
 // Define or import SubmitAnswerPayload type
 interface SubmitAnswerPayload {
   participantId: number;
@@ -35,6 +38,12 @@ export class ParticipantsService {
     private readonly answerRepository: Repository<ParticipantAnswer>,
     @InjectRepository(ExamQuestion)
     private readonly examQuestionRepository: Repository<ExamQuestion>,
+    @InjectRepository(ParticipantExamQuestion)
+    private readonly peqRepository: Repository<ParticipantExamQuestion>,
+    @InjectRepository(ExamRule)
+    private readonly examRuleRepository: Repository<ExamRule>,
+    @InjectRepository(Question)
+    private readonly questionRepository: Repository<Question>,
   ) {}
 
   async joinExam(joinExamDto: JoinExamDto) {
@@ -93,106 +102,55 @@ export class ParticipantsService {
   }
 
   async saveAnswer(data: SubmitAnswerPayload) {
-    console.log('Service dipanggil untuk menyimpan jawaban:', data);
+    const participantExamQuestion = await this.peqRepository.findOneBy({ id: data.examQuestionId });
+    if (!participantExamQuestion) return;
 
-    // 1. Ambil data soal ujian, termasuk kunci jawabannya
-    const examQuestion = await this.examQuestionRepository.findOne({
-      where: { id: data.examQuestionId },
-      relations: ['question'], // Ambil relasi ke tabel 'questions' yang berisi kunci jawaban
-    });
-
-    if (!examQuestion) {
-      console.error(
-        `ExamQuestion dengan ID ${data.examQuestionId} tidak ditemukan.`,
-      );
-      return;
-    }
-
-    // 2. Bandingkan jawaban
-    const isCorrect = examQuestion.question.correct_answer === data.answer;
-    console.log(
-      `Jawaban peserta: ${data.answer}, Kunci Jawaban: ${examQuestion.question.correct_answer}. Hasil: ${isCorrect}`,
-    );
-
-    // 3. Cari apakah jawaban sebelumnya sudah ada
-    const existingAnswer = await this.answerRepository.findOneBy({
+    const isCorrect = participantExamQuestion.question.correct_answer === data.answer;
+    
+    await this.answerRepository.upsert({
       participant: { id: data.participantId },
-      exam_question: { id: data.examQuestionId },
-    });
+      participant_exam_question: { id: data.examQuestionId },
+      answer: data.answer,
+      is_correct: isCorrect,
+    }, ['participant', 'participant_exam_question']);
 
-    if (existingAnswer) {
-      // Jika ada, update jawaban dan status kebenarannya
-      existingAnswer.answer = data.answer;
-      existingAnswer.is_correct = isCorrect; // <-- Update status
-      await this.answerRepository.save(existingAnswer);
-      console.log(
-        `Jawaban untuk soal ${data.examQuestionId} telah di-update. Status: ${isCorrect}`,
-      );
-    } else {
-      // Jika tidak ada, buat jawaban baru
-      const newAnswer = this.answerRepository.create({
-        participant: { id: data.participantId },
-        exam_question: { id: data.examQuestionId },
-        answer: data.answer,
-        is_correct: isCorrect, // <-- Simpan status
-      });
-      await this.answerRepository.save(newAnswer);
-      console.log(
-        `Jawaban baru untuk soal ${data.examQuestionId} telah disimpan. Status: ${isCorrect}`,
-      );
-    }
+    console.log(`Jawaban untuk PEQ ID ${data.examQuestionId} disimpan. Status: ${isCorrect}`);
   }
 
   async finishExam(participantId: number) {
-    // 1. Ambil semua jawaban yang benar dari peserta ini
     const correctAnswers = await this.answerRepository.find({
       where: {
         participant: { id: participantId },
-        is_correct: true, // Hanya ambil jawaban yang benar
+        is_correct: true,
       },
-      relations: ['exam_question'], // Kita butuh relasi ini untuk mendapatkan poin
+      relations: ['participant_exam_question'],
     });
 
-    // 2. Hitung total skor
     const totalScore = correctAnswers.reduce((sum, answer) => {
-      // Pastikan exam_question tidak null sebelum mengakses point
-      return sum + (answer.exam_question?.point || 0);
+      return sum + (answer.participant_exam_question?.point || 0);
     }, 0);
 
-    // 3. Ambil data peserta untuk di-update
-    const participant = await this.participantRepository.findOneBy({
-      id: participantId,
-    });
-    if (!participant) {
-      throw new NotFoundException('Sesi pengerjaan tidak ditemukan');
-    }
+    const participant = await this.participantRepository.findOneBy({ id: participantId });
+    if (!participant) throw new NotFoundException('Sesi pengerjaan tidak ditemukan');
 
-    // 4. Update status dan skor akhir, lalu simpan
     participant.status = ParticipantStatus.FINISHED;
     participant.final_score = totalScore;
-
     await this.participantRepository.save(participant);
 
-    console.log(
-      `Ujian untuk peserta ID ${participantId} selesai. Skor akhir: ${totalScore}`,
-    );
-
-    // 5. Kembalikan data yang sudah di-update
+    console.log(`Ujian untuk peserta ID ${participantId} selesai. Skor akhir: ${totalScore}`);
     return participant;
   }
 
   async getParticipantAnswers(participantId: number) {
     const answers = await this.answerRepository.find({
       where: { participant: { id: participantId } },
-      select: ['exam_question', 'answer'], // Hanya pilih kolom yang dibutuhkan
-      relations: ['exam_question'],
+      relations: ['participant_exam_question'],
     });
   
-    // Ubah format agar mudah digunakan di frontend
     const formattedAnswers: Record<number, string> = {};
     answers.forEach(ans => {
-      if (ans.exam_question) {
-        formattedAnswers[ans.exam_question.id] = ans.answer;
+      if (ans.participant_exam_question) {
+        formattedAnswers[ans.participant_exam_question.id] = ans.answer;
       }
     });
     return formattedAnswers;
@@ -201,19 +159,69 @@ export class ParticipantsService {
   async getExamQuestions(participantId: number) {
     const participant = await this.participantRepository.findOne({
       where: { id: participantId },
-      relations: ['examinee', 'exam', 'exam.exam_questions', 'exam.exam_questions.question'],
+      relations: ['examinee', 'exam', 'generated_questions'],
     });
 
     if (!participant) throw new NotFoundException('Sesi pengerjaan tidak ditemukan');
     if (participant.status === ParticipantStatus.FINISHED) throw new ForbiddenException('Ujian ini telah selesai.');
 
-    let timeLeftSeconds: number;
+    if (!participant.generated_questions || participant.generated_questions.length === 0) {
+      console.log(`Membuat set soal baru untuk peserta ID ${participantId}`);
+      const finalQuestionSet: { question: Question; point: number }[] = [];
+      const usedQuestionIds: number[] = [];
 
-    if (participant.start_time === null) {
-      // Jika ujian belum dimulai (masih di lobi), kembalikan durasi penuh
+      const manualQuestions = await this.examQuestionRepository.find({
+        where: { exam: { id: participant.exam.id } },
+        relations: ['question'],
+      });
+      manualQuestions.forEach(mq => {
+        if (mq.question) {
+          finalQuestionSet.push({ question: mq.question, point: mq.point });
+          usedQuestionIds.push(mq.question.id);
+        }
+      });
+
+      const randomRules = await this.examRuleRepository.find({
+        where: { exam: { id: participant.exam.id } },
+        relations: ['question_bank'],
+      });
+
+      for (const rule of randomRules) {
+        const randomQuestions = await this.questionRepository.find({
+          where: {
+            bank: { id: rule.question_bank.id },
+            id: Not(In(usedQuestionIds.length > 0 ? usedQuestionIds : [0])),
+          },
+          order: { id: 'ASC' },
+          take: rule.number_of_questions,
+        });
+        
+        randomQuestions.forEach(rq => {
+          finalQuestionSet.push({ question: rq, point: rule.point_per_question });
+          usedQuestionIds.push(rq.id);
+        });
+      }
+      
+      finalQuestionSet.sort(() => Math.random() - 0.5);
+
+      const participantExamQuestionsToSave = finalQuestionSet.map(item => 
+        this.peqRepository.create({
+          participant: { id: participant.id },
+          question: { id: item.question.id },
+          point: item.point,
+        })
+      );
+      await this.peqRepository.save(participantExamQuestionsToSave);
+      
+      return this.getExamQuestions(participantId);
+    }
+
+    console.log(`Mengambil set soal yang sudah ada untuk peserta ID ${participantId}`);
+    
+    let timeLeftSeconds: number; // Deklarasi dipindahkan ke sini
+    if (!participant.start_time) {
       timeLeftSeconds = participant.exam.duration_minutes * 60;
     } else {
-      // Jika ujian sudah berjalan, hitung sisa waktunya
       const now = Date.now();
       const sessionStartTime = new Date(participant.start_time).getTime();
       const sessionDurationInMs = participant.exam.duration_minutes * 60 * 1000;
@@ -223,12 +231,23 @@ export class ParticipantsService {
       timeLeftSeconds = Math.max(0, Math.floor((actualEndTime - now) / 1000));
     }
 
-    // Sanitasi kunci jawaban
-    participant.exam.exam_questions.forEach((eq) => {
-      const { correct_answer, ...questionDetails } = eq.question;
-      eq.question = questionDetails as any;
+    participant.generated_questions.forEach((peq) => {
+      if (peq.question) {
+        const { correct_answer, ...questionDetails } = peq.question;
+        peq.question = questionDetails as any;
+      }
     });
 
-    return { ...participant, time_left_seconds: timeLeftSeconds };
+    const response = {
+      ...participant,
+      exam: {
+        ...participant.exam,
+        exam_questions: participant.generated_questions,
+      },
+      time_left_seconds: timeLeftSeconds,
+    };
+    delete (response as any).generated_questions;
+
+    return response;
   }
 }

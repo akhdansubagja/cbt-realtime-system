@@ -1,16 +1,15 @@
-// src/participants/entities/participant.entity.ts
-
 import { Exam } from '../../exams/entities/exam.entity';
 import { Examinee } from '../../examinees/entities/examinee.entity';
 import {
-  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   Column,
+  OneToMany, // <-- Import OneToMany
 } from 'typeorm';
+import { ParticipantExamQuestion } from './participant-exam-question.entity'; // <-- Import entity baru
 
 export enum ParticipantStatus {
   STARTED = 'started',
@@ -22,15 +21,18 @@ export class Participant {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // Relasi ke Examinee (Siapa yang mengerjakan)
   @ManyToOne(() => Examinee, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'examinee_id' })
   examinee: Examinee;
 
-  // Relasi ke Exam (Ujian apa yang dikerjakan)
   @ManyToOne(() => Exam, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'exam_id' })
   exam: Exam;
+  
+  // --- TAMBAHKAN RELASI BARU INI ---
+  @OneToMany(() => ParticipantExamQuestion, (peq) => peq.participant)
+  generated_questions: ParticipantExamQuestion[];
+  // --- AKHIR RELASI BARU ---
 
   @Column({
     type: 'enum',
@@ -39,8 +41,7 @@ export class Participant {
   })
   status: ParticipantStatus;
 
-  // --- TAMBAHKAN KOLOM INI ---
-  @Column({ type: 'int', nullable: true }) // 'int' untuk integer, nullable karena awalnya kosong
+  @Column({ type: 'int', nullable: true })
   final_score: number;
 
   @Column({ type: 'timestamptz', nullable: true })

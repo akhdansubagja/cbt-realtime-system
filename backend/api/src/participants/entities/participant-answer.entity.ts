@@ -6,10 +6,14 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  CreateDateColumn, // <-- Sebaiknya tambahkan ini juga
+  CreateDateColumn,
+  Unique, // <-- Sebaiknya tambahkan ini juga
 } from 'typeorm';
 import { Participant } from './participant.entity';
+import { ParticipantExamQuestion } from './participant-exam-question.entity';
 
+
+@Unique(['participant', 'participant_exam_question'])
 @Entity({ name: 'participant_answers' })
 export class ParticipantAnswer {
   @PrimaryGeneratedColumn()
@@ -19,9 +23,9 @@ export class ParticipantAnswer {
   @JoinColumn({ name: 'participant_id' })
   participant: Participant;
 
-  @ManyToOne(() => ExamQuestion, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'exam_question_id' })
-  exam_question: ExamQuestion;
+  @ManyToOne(() => ParticipantExamQuestion, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'participant_exam_question_id' })
+  participant_exam_question: ParticipantExamQuestion;
 
   @Column({ type: 'text', nullable: true }) // Izinkan null jika belum dijawab
   answer: string;

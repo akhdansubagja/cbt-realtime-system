@@ -14,7 +14,8 @@ import { Exam } from './exams/entities/exam.entity';
 import { ExamQuestion } from './exams/entities/exam-question.entity';
 import { Examinee } from './examinees/entities/examinee.entity';
 import { Participant } from './participants/entities/participant.entity';
-import { ParticipantAnswer } from './participants/entities/participant-answer.entity'; // <-- Import yang hilang
+import { ParticipantAnswer } from './participants/entities/participant-answer.entity';
+import { ExamRule } from './exams/entities/exam-rule.entity';
 
 // Import semua Module
 import { UsersModule } from './users/users.module';
@@ -25,6 +26,7 @@ import { ExamineesModule } from './examinees/examinees.module';
 import { ParticipantsModule } from './participants/participants.module';
 import { LiveExamModule } from './live-exam/live-exam.module';
 import { KafkaModule } from './kafka/kafka.module';
+import { ParticipantExamQuestion } from './participants/entities/participant-exam-question.entity';
 
 @Module({
   imports: [
@@ -48,7 +50,9 @@ import { KafkaModule } from './kafka/kafka.module';
         ExamQuestion,
         Examinee,
         Participant,
-        ParticipantAnswer, // <-- Ditambahkan di sini
+        ParticipantAnswer,
+        ExamRule,
+        ParticipantExamQuestion, // <-- Ditambahkan di sini
       ],
       // ^ ^ ^ SEKARANG SUDAH LENGKAP DAN BENAR ^ ^ ^
       synchronize: true,
