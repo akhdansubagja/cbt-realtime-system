@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -13,10 +14,21 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    // Di sini kita akan menambahkan hashing password, tapi untuk sekarang kita buat simpel dulu
-    const newUser = this.userRepository.create(createUserDto);
+  async create(createUserDto: CreateUserDto) {
+    // 2. Hash password sebelum disimpan
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
+  
+    const newUser = this.userRepository.create({
+      ...createUserDto,
+      password: hashedPassword, // <-- 3. Simpan password yang sudah di-hash
+    });
+    
     return this.userRepository.save(newUser);
+  }
+
+  async findOneByUsername(username: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ username });
   }
 
   // Metode lain (findAll, findOne, etc.) sudah dibuatkan oleh NestJS,

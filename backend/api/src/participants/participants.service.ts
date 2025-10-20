@@ -18,6 +18,8 @@ import { ExamQuestion } from 'src/exams/entities/exam-question.entity';
 import { ParticipantExamQuestion } from './entities/participant-exam-question.entity';
 import { ExamRule } from 'src/exams/entities/exam-rule.entity';
 import { Question } from 'src/questions/entities/question.entity';
+import { LiveExamGateway } from 'src/live-exam/live-exam.gateway';
+
 // Define or import SubmitAnswerPayload type
 interface SubmitAnswerPayload {
   participantId: number;
@@ -44,6 +46,7 @@ export class ParticipantsService {
     private readonly examRuleRepository: Repository<ExamRule>,
     @InjectRepository(Question)
     private readonly questionRepository: Repository<Question>,
+    private readonly liveExamGateway: LiveExamGateway,
   ) {}
 
   async joinExam(joinExamDto: JoinExamDto) {
@@ -62,7 +65,7 @@ export class ParticipantsService {
     // Cari sesi yang ada
     const existingParticipant = await this.participantRepository.findOne({
       where: { examinee: { id: examinee.id }, exam: { id: exam.id } },
-      relations: ['examinee', 'exam'],
+      relations: ['examinee', 'exam'], 
     });
 
     if (existingParticipant) {
@@ -110,11 +113,13 @@ export class ParticipantsService {
     await this.answerRepository.upsert({
       participant: { id: data.participantId },
       participant_exam_question: { id: data.examQuestionId },
-      answer: data.answer,
+        answer: data.answer,
       is_correct: isCorrect,
     }, ['participant', 'participant_exam_question']);
 
     console.log(`Jawaban untuk PEQ ID ${data.examQuestionId} disimpan. Status: ${isCorrect}`);
+
+    await this.recalculateAndBroadcastScore(data.participantId);
   }
 
   async finishExam(participantId: number) {
@@ -249,5 +254,31 @@ export class ParticipantsService {
     delete (response as any).generated_questions;
 
     return response;
+  }
+
+  private async recalculateAndBroadcastScore(participantId: number) {
+    const correctAnswers = await this.answerRepository.find({
+      where: {
+        participant: { id: participantId },
+        is_correct: true,
+      },
+      relations: ['participant_exam_question'],
+    });
+  
+    const currentScore = correctAnswers.reduce((sum, answer) => {
+      return sum + (answer.participant_exam_question?.point || 0);
+    }, 0);
+  
+    // --- INILAH PERBAIKAN UTAMANYA ---
+    // Ambil ID ujian dengan memuat relasi 'exam'
+    const participant = await this.participantRepository.findOne({
+        where: { id: participantId },
+        relations: ['exam'], // <-- PASTIKAN RELASI INI DIAMBIL
+    });
+  
+    if (participant && participant.exam) {
+      const examId = participant.exam.id;
+      this.liveExamGateway.broadcastScoreUpdate(examId, participantId, currentScore);
+    }
   }
 }

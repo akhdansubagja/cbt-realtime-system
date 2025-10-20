@@ -1,29 +1,28 @@
 // src/app/layout.tsx
-import '@mantine/core/styles.css'; // Import Mantine styles
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css'; // <-- 1. Import CSS Notifikasi
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications'; // <-- 2. Import Komponen Notifikasi
+import '@mantine/dates/styles.css';
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "CBT Realtime System",
-  description: "Computer Based Test",
-};
+export const metadata = { /* ... */ };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <ColorSchemeScript />
       </head>
       <body className={inter.className}>
-        <MantineProvider>{children}</MantineProvider>
+        <MantineProvider>
+          <Notifications /> {/* <-- 3. Tambahkan Komponen di sini */}
+          {children}
+        </MantineProvider>
       </body>
     </html>
   );

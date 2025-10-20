@@ -1,14 +1,8 @@
-// src/exams/entities/exam.entity.ts
-
-import { ExamQuestion } from './exam-question.entity'; // Akan kita buat setelah ini
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn,
 } from 'typeorm';
+import { ExamQuestion } from './exam-question.entity';
+import { ExamRule } from './exam-rule.entity'; // <-- 1. IMPORT ExamRule
 
 @Entity({ name: 'exams' })
 export class Exam {
@@ -29,9 +23,14 @@ export class Exam {
 
   @Column({ type: 'timestamptz', nullable: true })
   end_time: Date;
-  // Relasi ke tabel pivot ExamQuestion
+
   @OneToMany(() => ExamQuestion, (examQuestion) => examQuestion.exam)
   exam_questions: ExamQuestion[];
+
+  // --- 2. TAMBAHKAN RELASI YANG HILANG INI ---
+  @OneToMany(() => ExamRule, (rule) => rule.exam)
+  exam_rules: ExamRule[];
+  // -----------------------------------------
 
   @CreateDateColumn()
   created_at: Date;

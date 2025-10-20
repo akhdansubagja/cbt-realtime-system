@@ -7,5 +7,6 @@ import { KafkaModule } from 'src/kafka/kafka.module';
 @Module({
     imports: [KafkaModule], // Impor modul Kafka di sini
     providers: [LiveExamGateway], // Daftarkan gateway di sini
+    exports: [LiveExamGateway],
 })
 export class LiveExamModule {}

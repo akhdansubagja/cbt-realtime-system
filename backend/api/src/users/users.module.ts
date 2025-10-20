@@ -10,5 +10,6 @@ import { User } from './entities/user.entity';    // <-- 2. IMPORT
   imports: [TypeOrmModule.forFeature([User])], // <-- 3. TAMBAHKAN INI
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}

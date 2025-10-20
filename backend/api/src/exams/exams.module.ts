@@ -7,9 +7,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Exam } from './entities/exam.entity';
 import { ExamQuestion } from './entities/exam-question.entity';
 import { ExamRule } from './entities/exam-rule.entity';
+import { Participant } from 'src/participants/entities/participant.entity';
+import { ParticipantAnswer } from 'src/participants/entities/participant-answer.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Exam, ExamQuestion, ExamRule])], // <-- Daftarkan keduanya
+  imports: [
+    TypeOrmModule.forFeature([Exam, ExamQuestion, ExamRule, Participant, ParticipantAnswer]),
+  ],
   controllers: [ExamsController],
   providers: [ExamsService],
 })

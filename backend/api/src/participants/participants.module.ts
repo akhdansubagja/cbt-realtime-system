@@ -11,6 +11,7 @@ import { ExamQuestion } from 'src/exams/entities/exam-question.entity';
 import { ParticipantExamQuestion } from './entities/participant-exam-question.entity'; // <-- Import entity baru
 import { ExamRule } from 'src/exams/entities/exam-rule.entity'; // <-- Import entity aturan
 import { Question } from 'src/questions/entities/question.entity'; // <-- Import entity soal
+import { LiveExamModule } from 'src/live-exam/live-exam.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { Question } from 'src/questions/entities/question.entity'; // <-- Import
       ExamRule,                // Daftarkan repo aturan
       Question,                // Daftarkan repo soal
     ]),
+    LiveExamModule,
   ],
   controllers: [ParticipantsController, KafkaController],
   providers: [ParticipantsService],

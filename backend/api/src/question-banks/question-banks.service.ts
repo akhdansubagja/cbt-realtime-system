@@ -1,11 +1,9 @@
-// src/question-banks/question-banks.service.ts
-
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
+import { InjectRepository } from '@nestjs/typeorm';
 import { QuestionBank } from './entities/question-bank.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class QuestionBanksService {
@@ -20,18 +18,28 @@ export class QuestionBanksService {
   }
 
   findAll() {
-    return this.questionBankRepository.find(); // Mengambil semua bank soal
+    return this.questionBankRepository.find({ order: { name: 'ASC' } });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} questionBank`;
+    // Tambahkan 'relations' untuk mengambil semua soal yang terhubung
+    return this.questionBankRepository.findOne({
+      where: { id },
+      relations: ['questions'],
+    });
   }
 
-  update(id: number, updateQuestionBankDto: UpdateQuestionBankDto) {
-    return `This action updates a #${id} questionBank`;
+  // --- TAMBAHKAN LOGIKA UPDATE DI SINI ---
+  async update(id: number, updateQuestionBankDto: UpdateQuestionBankDto) {
+    // Perbarui data di database
+    await this.questionBankRepository.update(id, updateQuestionBankDto);
+    // Ambil dan kembalikan data yang sudah diperbarui
+    return this.questionBankRepository.findOneBy({ id });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} questionBank`;
+  // --- TAMBAHKAN LOGIKA DELETE DI SINI ---
+  async remove(id: number) {
+    // Hapus data dari database
+    return this.questionBankRepository.delete(id);
   }
 }

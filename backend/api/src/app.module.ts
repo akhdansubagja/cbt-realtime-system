@@ -27,6 +27,7 @@ import { ParticipantsModule } from './participants/participants.module';
 import { LiveExamModule } from './live-exam/live-exam.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { ParticipantExamQuestion } from './participants/entities/participant-exam-question.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { ParticipantExamQuestion } from './participants/entities/participant-exa
     ParticipantsModule,
     LiveExamModule,
     KafkaModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

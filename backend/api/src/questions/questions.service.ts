@@ -1,5 +1,3 @@
-// src/questions/questions.service.ts
-
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,32 +13,36 @@ export class QuestionsService {
   ) {}
 
   create(createQuestionDto: CreateQuestionDto) {
-    // ---- PERBAIKAN DI SINI ----
-    const { bank_id, ...questionData } = createQuestionDto;
-
     const newQuestion = this.questionRepository.create({
-      ...questionData,
-      bank: { id: bank_id },
+      ...createQuestionDto,
+      bank: { id: createQuestionDto.bank_id },
     });
-    // -------------------------
-
     return this.questionRepository.save(newQuestion);
   }
 
   findAll() {
-    return this.questionRepository.find({ relations: ['bank'] }); // Ambil data soal beserta bank soalnya
+    return this.questionRepository.find({ relations: ['bank'] });
   }
-
 
   findOne(id: number) {
-    return `This action returns a #${id} question`;
+    return this.questionRepository.findOneBy({ id });
   }
 
-  update(id: number, updateQuestionDto: UpdateQuestionDto) {
-    return `This action updates a #${id} question`;
+  // --- LOGIKA UPDATE BARU ---
+  async update(id: number, updateQuestionDto: UpdateQuestionDto) {
+    // Kita perlu menangani properti 'bank_id' secara terpisah jika ada
+    const { bank_id, ...rest } = updateQuestionDto;
+    const payload: Partial<Question> = { ...rest };
+    if (bank_id) {
+      payload.bank = { id: bank_id } as any;
+    }
+    
+    await this.questionRepository.update(id, payload as any);
+    return this.questionRepository.findOneBy({ id });
   }
 
+  // --- LOGIKA DELETE BARU ---
   remove(id: number) {
-    return `This action removes a #${id} question`;
+    return this.questionRepository.delete(id);
   }
 }

@@ -44,12 +44,42 @@ export class LiveExamGateway implements OnModuleInit {
   ) {
     // --- PERBAIKAN DI SINI: HAPUS JSON.stringify() ---
     this.kafkaClient.emit('answer-submissions', data); // Kirim objeknya langsung
-    
+
     console.log(`Jawaban dari ${client.id} dikirim ke Kafka:`, data);
 
     client.emit('answerReceived', {
       message: 'Jawaban Anda telah kami terima dan sedang diproses.',
       data: data, // Kirim objeknya juga ke klien
     });
+  }
+
+  broadcastScoreUpdate(
+    examId: number,
+    participantId: number,
+    newScore: number,
+  ) {
+    const roomName = `exam-${examId}-monitoring`; // Buat nama ruangan yang unik
+
+    // Kirim event 'score-update' HANYA ke admin yang ada di ruangan ini
+    this.server.to(roomName).emit('score-update', {
+      participantId,
+      newScore,
+    });
+
+    console.log(
+      `Menyiarkan update skor ke ruangan ${roomName}: Peserta ${participantId} skor baru ${newScore}`,
+    );
+  }
+
+  @SubscribeMessage('join-monitoring-room')
+  handleJoinMonitoringRoom(
+    @MessageBody() data: { examId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const roomName = `exam-${data.examId}-monitoring`;
+    client.join(roomName); // Masukkan koneksi klien ini ke dalam ruangan
+    console.log(
+      `Klien ${client.id} bergabung ke ruangan monitoring: ${roomName}`,
+    );
   }
 }
