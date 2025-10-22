@@ -21,6 +21,9 @@ import {
   Select,
   Paper,
   Stack,
+  ScrollArea,
+  Checkbox,
+  Textarea,
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
 import "dayjs/locale/id"; // Import locale untuk bahasa Indonesia
@@ -45,8 +48,8 @@ interface QuestionBank {
   label: string;
 }
 interface Question {
-  value: string;
-  label: string;
+  id: number;
+  question_text: string;
 }
 
 export default function ExamsPage() {
@@ -56,6 +59,14 @@ export default function ExamsPage() {
   const [error, setError] = useState("");
   const [opened, { open, close }] = useDisclosure(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]); // State baru untuk menyimpan semua soal
+  const [
+    questionPickerModalOpened,
+    { open: openQuestionPickerModal, close: closeQuestionPickerModal },
+  ] = useDisclosure(false); // Modal baru untuk katalog soal
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<number[]>([]); // State untuk checkbox
+  const [pickerBankId, setPickerBankId] = useState<string | null>(null); // Untuk dropdown di modal
+  const [questionsInPicker, setQuestionsInPicker] = useState<Question[]>([]); // Untuk daftar soal di modal
 
   const form = useForm({
     initialValues: {
@@ -76,8 +87,12 @@ export default function ExamsPage() {
 
   // Fetch data awal (ujian dan bank soal)
   useEffect(() => {
-    Promise.all([api.get("/exams"), api.get("/question-banks")])
-      .then(([examsRes, banksRes]) => {
+    Promise.all([
+      api.get("/exams"),
+      api.get("/question-banks"),
+      api.get("/questions"), // <-- Tambahkan request baru ini
+    ])
+      .then(([examsRes, banksRes, questionsRes]) => {
         setExams(examsRes.data);
         setQuestionBanks(
           banksRes.data.map((b: any) => ({
@@ -85,6 +100,7 @@ export default function ExamsPage() {
             label: b.name,
           }))
         );
+        setAllQuestions(questionsRes.data); // <-- Simpan semua soal ke state baru
       })
       .catch(() => {
         setError("Gagal mengambil data awal.");
@@ -93,6 +109,29 @@ export default function ExamsPage() {
         setLoading(false);
       });
   }, []);
+
+  // Efek ini berjalan setiap kali bank soal di modal picker berubah
+  useEffect(() => {
+    // Jika tidak ada bank soal yang dipilih, kosongkan daftar soal
+    if (!pickerBankId) {
+      setQuestionsInPicker([]);
+      return;
+    }
+
+    // Ambil detail bank soal, yang di dalamnya sudah termasuk daftar soalnya
+    api
+      .get(`/question-banks/${pickerBankId}`)
+      .then((response) => {
+        setQuestionsInPicker(response.data.questions);
+      })
+      .catch(() => {
+        notifications.show({
+          title: "Gagal",
+          message: "Tidak dapat memuat soal dari bank soal yang dipilih.",
+          color: "red",
+        });
+      });
+  }, [pickerBankId]); // <-- 'Dengarkan' perubahan pada pickerBankId
 
   const handleDeleteExam = async (examId: number) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus ujian ini?")) {
@@ -117,8 +156,12 @@ export default function ExamsPage() {
   const handleSubmit = async (values: typeof form.values) => {
     const payload = {
       ...values,
-      start_time: values.start_time ? new Date(values.start_time).toISOString() : null,
-      end_time: values.end_time ? new Date(values.end_time).toISOString() : null,
+      start_time: values.start_time
+        ? new Date(values.start_time).toISOString()
+        : null,
+      end_time: values.end_time
+        ? new Date(values.end_time).toISOString()
+        : null,
     };
 
     try {
@@ -153,11 +196,48 @@ export default function ExamsPage() {
     }
   };
 
+  // Fungsi untuk membuka katalog soal
+  const handleSelectQuestions = () => {
+    // Ambil ID soal yang sudah ada di 'keranjang' (form)
+    const currentlySelectedIds = form.values.manual_questions.map(
+      (q) => q.question_id
+    );
+    // Set state checkbox agar sesuai dengan yang sudah ada di keranjang
+    setSelectedQuestionIds(currentlySelectedIds);
+    // Buka modal katalog
+    openQuestionPickerModal();
+  };
+
+  // Fungsi untuk mengkonfirmasi pilihan dari katalog
+  const handleConfirmQuestionSelection = () => {
+    // Buat daftar soal baru berdasarkan ID yang dicentang
+    const selectedQuestions = selectedQuestionIds.map((id) => {
+      // Cari apakah soal ini sudah ada di form sebelumnya untuk mempertahankan poinnya
+      const existing = form.values.manual_questions.find(
+        (q) => q.question_id === id
+      );
+      return existing || { question_id: id, point: 10 }; // Beri poin default 10 untuk soal baru
+    });
+    // Update nilai form dengan 'keranjang' yang baru
+    form.setFieldValue("manual_questions", selectedQuestions);
+    // Tutup modal katalog
+    closeQuestionPickerModal();
+  };
+
   const openEditModal = async (exam: Exam) => {
-    // Ambil detail lengkap dari exam (termasuk soal manual dan aturan)
+    // Ambil detail lengkap dari exam
     const response = await api.get(`/exams/${exam.id}`);
     const examDetails = response.data;
     setEditingExam(examDetails);
+
+    // --- LAKUKAN TRANSFORMASI DATA DI SINI ---
+    const transformedRules = examDetails.exam_rules.map((rule: any) => ({
+      ...rule,
+      // Ambil ID dari objek 'question_bank' dan ubah menjadi string
+      question_bank_id: rule.question_bank.id.toString(),
+    }));
+    // --- AKHIR TRANSFORMASI ---
+
     form.setValues({
       ...examDetails,
       start_time: examDetails.start_time
@@ -168,7 +248,7 @@ export default function ExamsPage() {
         question_id: q.question.id,
         point: q.point,
       })),
-      random_rules: examDetails.exam_rules,
+      random_rules: transformedRules, // <-- GUNAKAN DATA YANG SUDAH DITRANSFORMASI
     });
     open();
   };
@@ -239,6 +319,8 @@ export default function ExamsPage() {
           close();
           setEditingExam(null);
           form.reset();
+          setPickerBankId(null);
+          setQuestionsInPicker([]);
         }}
         title={editingExam ? "Edit Ujian" : "Buat Ujian Baru"}
         size="xl"
@@ -287,42 +369,53 @@ export default function ExamsPage() {
             <Paper withBorder p="md" radius="md">
               <Group justify="space-between">
                 <Title order={4}>Soal Manual</Title>
+                {/* Tombol ini sekarang memanggil fungsi untuk membuka katalog */}
                 <Button
                   variant="light"
                   size="xs"
-                  onClick={() =>
-                    form.insertListItem("manual_questions", {
-                      question_id: 0,
-                      point: 0,
-                    })
-                  }
+                  onClick={handleSelectQuestions}
                 >
-                  <IconPlus size={14} /> Tambah
+                  <IconPlus size={14} /> Pilih Soal
                 </Button>
               </Group>
-              {form.values.manual_questions.map((item, index) => (
-                <Group key={index} mt="xs" grow>
-                  <NumberInput
-                    placeholder="ID Soal"
-                    {...form.getInputProps(
-                      `manual_questions.${index}.question_id`
-                    )}
-                  />
-                  <NumberInput
-                    placeholder="Poin"
-                    {...form.getInputProps(`manual_questions.${index}.point`)}
-                  />
-                  <ActionIcon
-                    color="red"
-                    variant="subtle"
-                    onClick={() =>
-                      form.removeListItem("manual_questions", index)
-                    }
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              ))}
+
+              {/* Tampilkan daftar soal yang sudah dipilih */}
+              {form.values.manual_questions.length > 0 ? (
+                form.values.manual_questions.map((item, index) => {
+                  // Cari detail soal berdasarkan ID untuk ditampilkan
+                  const questionDetail = allQuestions.find(
+                    (q) => q.id === item.question_id
+                  );
+                  return (
+                    <Group key={index} mt="xs" grow>
+                      <Text size="sm" style={{ flex: 3 }} truncate>
+                        {questionDetail
+                          ? `${questionDetail.id}: ${questionDetail.question_text}`
+                          : `Soal ID: ${item.question_id}`}
+                      </Text>
+                      <NumberInput
+                        placeholder="Poin"
+                        {...form.getInputProps(
+                          `manual_questions.${index}.point`
+                        )}
+                      />
+                      <ActionIcon
+                        color="red"
+                        variant="subtle"
+                        onClick={() =>
+                          form.removeListItem("manual_questions", index)
+                        }
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  );
+                })
+              ) : (
+                <Text c="dimmed" size="sm" ta="center" mt="sm">
+                  Belum ada soal manual yang dipilih.
+                </Text>
+              )}
             </Paper>
 
             <Paper withBorder p="md" radius="md">
@@ -334,8 +427,8 @@ export default function ExamsPage() {
                   onClick={() =>
                     form.insertListItem("random_rules", {
                       question_bank_id: "",
-                      number_of_questions: 10,
-                      point_per_question: 5,
+                      number_of_questions: "",
+                      point_per_question: "",
                     })
                   }
                 >
@@ -378,6 +471,62 @@ export default function ExamsPage() {
             <Button type="submit">Simpan Ujian</Button>
           </Group>
         </form>
+      </Modal>
+
+      <Modal
+        opened={questionPickerModalOpened}
+        onClose={closeQuestionPickerModal}
+        title="Pilih Soal Manual"
+        size="lg"
+        centered
+      >
+        {/* --- DROPDOWN FILTER BARU --- */}
+        <Select
+          label="Filter berdasarkan Bank Soal"
+          placeholder="Pilih bank soal untuk menampilkan soal"
+          data={questionBanks}
+          value={pickerBankId}
+          onChange={(value) => {
+            setPickerBankId(value);
+            // Kosongkan centang saat bank soal diganti
+            setSelectedQuestionIds(
+              form.values.manual_questions
+                .map((q) => q.question_id)
+                .filter((id) => questionsInPicker.some((qip) => qip.id === id))
+            );
+          }}
+          clearable
+          searchable
+          mb="md"
+        />
+
+        <ScrollArea h={350}>
+          {questionsInPicker.length > 0 ? (
+            <Checkbox.Group
+              value={selectedQuestionIds.map(String)}
+              onChange={(values) => setSelectedQuestionIds(values.map(Number))}
+            >
+              <Stack>
+                {questionsInPicker.map((question) => (
+                  <Checkbox
+                    key={question.id}
+                    value={question.id.toString()}
+                    label={`${question.id}: ${question.question_text}`}
+                  />
+                ))}
+              </Stack>
+            </Checkbox.Group>
+          ) : (
+            <Text c="dimmed" ta="center">
+              Pilih bank soal untuk melihat daftar soal.
+            </Text>
+          )}
+        </ScrollArea>
+        <Group justify="flex-end" mt="md">
+          <Button onClick={handleConfirmQuestionSelection}>
+            Tambahkan Soal Terpilih
+          </Button>
+        </Group>
       </Modal>
 
       <Group justify="space-between">

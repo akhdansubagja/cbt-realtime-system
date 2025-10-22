@@ -10,6 +10,8 @@ import { ExamQuestion } from './entities/exam-question.entity';
 import { ExamRule } from './entities/exam-rule.entity';
 import { Participant } from 'src/participants/entities/participant.entity';
 import { ParticipantAnswer } from 'src/participants/entities/participant-answer.entity';
+import { ParticipantStatus } from 'src/participants/entities/participant.entity';
+import { ParticipantsService } from 'src/participants/participants.service';
 
 @Injectable()
 export class ExamsService {
@@ -142,34 +144,72 @@ export class ExamsService {
   }
 
   async getParticipantsForExam(examId: number) {
-    // 1. Ambil semua peserta untuk ujian ini
+    // 1. Ambil semua peserta, termasuk 'start_time' dan 'exam' untuk kalkulasi
     const participants = await this.participantRepository.find({
       where: { exam: { id: examId } },
-      relations: ['examinee'],
+      relations: ['examinee', 'exam'], // <-- Ambil relasi 'exam'
+      select: ['id', 'examinee', 'final_score', 'status', 'start_time', 'exam'], // <-- Ambil 'exam'
     });
 
-    // 2. Untuk setiap peserta, hitung skor sementaranya
-    const participantsWithScores = await Promise.all(
+    // 2. Untuk setiap peserta, hitung skor dan tentukan status aktualnya
+    const participantsWithDetails = await Promise.all(
       participants.map(async (p) => {
-        // Jika sudah selesai, gunakan skor final
-        if (p.final_score !== null) {
-          return { ...p, current_score: p.final_score };
+        let currentScore: number | null = null;
+        let actualStatus = p.status; // Ambil status dari DB sebagai default
+
+        // Hanya proses lebih lanjut jika peserta pernah memulai
+        if (p.start_time) {
+          // --- LOGIKA BARU UNTUK CEK WAKTU HABIS ---
+          if (p.status === ParticipantStatus.STARTED) {
+            // Hanya cek jika statusnya masih started
+            const now = Date.now();
+            const sessionStartTime = new Date(p.start_time).getTime();
+            const sessionDurationInMs = p.exam.duration_minutes * 60 * 1000;
+            const sessionEndTime = sessionStartTime + sessionDurationInMs;
+            const scheduledEndTime = p.exam.end_time
+              ? new Date(p.exam.end_time).getTime()
+              : Infinity;
+            const actualEndTime = Math.min(sessionEndTime, scheduledEndTime);
+
+            if (now > actualEndTime) {
+              actualStatus = ParticipantStatus.FINISHED; // Tandai sebagai selesai jika waktu habis
+              // Opsional: Jika ingin auto-submit saat admin membuka monitor
+              // this.participantsService.finishExam(p.id); // Perlu inject ParticipantsService
+            }
+          }
+          // --- AKHIR LOGIKA BARU ---
+
+          // Hitung skor hanya jika belum selesai ATAU baru saja ditandai selesai karena waktu habis
+          if (
+            actualStatus === ParticipantStatus.STARTED ||
+            (p.status === ParticipantStatus.STARTED &&
+              actualStatus === ParticipantStatus.FINISHED)
+          ) {
+            const correctAnswers = await this.answerRepository.find({
+              where: { participant: { id: p.id }, is_correct: true },
+              relations: ['participant_exam_question'],
+            });
+            currentScore = correctAnswers.reduce(
+              (sum, answer) =>
+                sum + (answer.participant_exam_question?.point || 0),
+              0,
+            );
+          } else if (p.final_score !== null) {
+            // Jika memang sudah selesai dari DB, gunakan skor final
+            currentScore = p.final_score;
+          }
         }
-        
-        // Jika belum, hitung dari awal
-        const correctAnswers = await this.answerRepository.find({
-          where: { participant: { id: p.id }, is_correct: true },
-          relations: ['participant_exam_question'],
-        });
-        
-        const currentScore = correctAnswers.reduce((sum, answer) => {
-          return sum + (answer.participant_exam_question?.point || 0);
-        }, 0);
-        
-        return { ...p, current_score: currentScore };
+
+        // Kembalikan objek dengan skor terhitung dan status AKTUAL
+        return { ...p, current_score: currentScore, status: actualStatus }; // Gunakan status aktual
       }),
     );
-    
-    return participantsWithScores;
+
+    // Urutkan berdasarkan skor
+    participantsWithDetails.sort(
+      (a, b) => (b.current_score ?? -Infinity) - (a.current_score ?? -Infinity),
+    );
+
+    return participantsWithDetails;
   }
 }

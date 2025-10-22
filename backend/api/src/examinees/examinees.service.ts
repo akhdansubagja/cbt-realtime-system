@@ -22,7 +22,14 @@ export class ExamineesService {
   }
 
   findOne(id: number) {
-    return this.examineeRepository.findOneBy({ id });
+    // Ganti dari findOneBy menjadi findOne dengan opsi 'relations'
+    return this.examineeRepository.findOne({
+      where: { id },
+      relations: [
+        'participants', // Ambil semua sesi ujian peserta ini
+        'participants.exam', // Untuk setiap sesi, ambil detail ujiannya (seperti judul)
+      ],
+    });
   }
 
   // --- LOGIKA UPDATE BARU ---

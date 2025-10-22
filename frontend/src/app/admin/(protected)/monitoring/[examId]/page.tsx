@@ -11,14 +11,17 @@ import {
   Center,
   Text,
   Paper,
+  Badge,
 } from "@mantine/core";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ParticipantScore {
   id: number;
   name: string;
   score: number | null;
+  status: "started" | "finished" | "pending"; // Tambah status
 }
 
 export default function MonitoringPage() {
@@ -38,7 +41,8 @@ export default function MonitoringPage() {
         const initialScores = response.data.map((p: any) => ({
           id: p.id,
           name: p.examinee.name,
-          score: p.current_score, // Skor awal (jika ada)
+          score: p.current_score,
+          status: p.status, // Ambil status dari backend
         }));
         setParticipants(initialScores);
       })
@@ -69,10 +73,58 @@ export default function MonitoringPage() {
         console.log("Menerima update skor dari server:", data);
 
         // Perbarui state untuk memicu re-render
-        setParticipants((currentParticipants) =>
-          currentParticipants.map((p) =>
+        setParticipants((currentParticipants) => {
+          // 1. Update skor peserta yang bersangkutan
+          const updatedParticipants = currentParticipants.map((p) =>
             p.id === data.participantId ? { ...p, score: data.newScore } : p
-          )
+          );
+
+          // 2. Urutkan ulang array berdasarkan skor (tertinggi di atas)
+          //    Peserta dengan skor null akan ditaruh di bawah
+          updatedParticipants.sort((a, b) => {
+            const scoreA = a.score ?? -Infinity; // Anggap null sebagai skor terendah
+            const scoreB = b.score ?? -Infinity;
+            return scoreB - scoreA; // Urutkan descending
+          });
+
+          // 3. Kembalikan array yang sudah terurut
+          return updatedParticipants;
+        });
+      }
+    );
+
+    socket.on("new-participant", (newParticipantData: any) => {
+      console.log("Peserta baru bergabung:", newParticipantData);
+      // --- PERBAIKAN #3: Pastikan 'status' ada untuk peserta baru ---
+      const newParticipant: ParticipantScore = {
+        id: newParticipantData.id,
+        name: newParticipantData.name,
+        score: newParticipantData.score ?? null,
+        status: "started", // Asumsikan baru bergabung = started
+      };
+
+      setParticipants((currentParticipants) => {
+        if (currentParticipants.some((p) => p.id === newParticipant.id)) {
+          return currentParticipants;
+        }
+        const newList = [...currentParticipants, newParticipant];
+        newList.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+        return newList;
+      });
+    });
+
+    socket.on(
+      "status-update",
+      (data: { participantId: number; newStatus: "started" | "finished" }) => {
+        console.log("Menerima update status:", data);
+
+        // Perbarui state untuk mengubah status peserta yang bersangkutan
+        setParticipants(
+          (currentParticipants) =>
+            currentParticipants.map((p) =>
+              p.id === data.participantId ? { ...p, status: data.newStatus } : p
+            )
+          // Tidak perlu sort ulang karena status tidak mempengaruhi urutan
         );
       }
     );
@@ -109,7 +161,9 @@ export default function MonitoringPage() {
   return (
     <>
       <Title order={2}>Monitoring Ujian Real-Time</Title>
-      <Text c="dimmed">Skor akan diperbarui secara otomatis.</Text>
+      <Text c="dimmed">
+        Skor akan diperbarui dan diurutkan secara otomatis.
+      </Text>
 
       <Paper withBorder p="md" mt="md">
         <Table withTableBorder>
@@ -117,11 +171,42 @@ export default function MonitoringPage() {
             <Table.Tr>
               <Table.Th>ID Peserta</Table.Th>
               <Table.Th>Nama</Table.Th>
-              <Table.Th>Skor Sementara</Table.Th>
+              <Table.Th>Skor</Table.Th>
+              <Table.Th>Status</Table.Th>
             </Table.Tr>
           </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
+          {/* Gunakan motion.tbody untuk mengaktifkan layout animation */}
+          <motion.tbody layout>
+            <AnimatePresence>
+              {participants.map((p) => (
+                <motion.tr
+                  key={p.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Table.Td>{p.id}</Table.Td>
+                  <Table.Td>{p.name}</Table.Td>
+                  <Table.Td fw={700}>{p.score ?? "-"}</Table.Td>
+                  <Table.Td>
+                    <Badge
+                      color={p.status === "finished" ? "gray" : "green"}
+                      variant="light"
+                    >
+                      {p.status === "finished" ? "Selesai" : "Mengerjakan"}
+                    </Badge>
+                  </Table.Td>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
+          </motion.tbody>
         </Table>
+        {participants.length === 0 && (
+          <Text mt="md" ta="center">
+            Belum ada peserta yang bergabung.
+          </Text>
+        )}
       </Paper>
     </>
   );

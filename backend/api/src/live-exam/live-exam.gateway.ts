@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { ClientKafka } from '@nestjs/microservices';
 import { Server, Socket } from 'socket.io';
+import { ParticipantStatus } from 'src/participants/entities/participant.entity';
 
 @WebSocketGateway({
   cors: {
@@ -82,4 +83,36 @@ export class LiveExamGateway implements OnModuleInit {
       `Klien ${client.id} bergabung ke ruangan monitoring: ${roomName}`,
     );
   }
+
+  // Metode baru untuk menyiarkan peserta yang baru bergabung/memulai
+  broadcastNewParticipant(
+    examId: number,
+    participantId: number,
+    participantName: string,
+  ) {
+    const roomName = `exam-${examId}-monitoring`;
+
+    // Siarkan event 'new-participant' ke ruangan monitoring
+    this.server.to(roomName).emit('new-participant', {
+      id: participantId,
+      name: participantName,
+      score: null, // Peserta baru belum punya skor
+    });
+
+    console.log(
+      `Menyiarkan peserta baru ke ruangan ${roomName}: ${participantName} (ID: ${participantId})`,
+    );
+  }
+
+  broadcastStatusUpdate(examId: number, participantId: number, newStatus: ParticipantStatus) {
+  const roomName = `exam-${examId}-monitoring`;
+  
+  // Siarkan event 'status-update' ke ruangan monitoring
+  this.server.to(roomName).emit('status-update', {
+    participantId,
+    newStatus,
+  });
+
+  console.log(`Menyiarkan update status ke ruangan ${roomName}: Peserta ${participantId} status baru ${newStatus}`);
+}
 }
