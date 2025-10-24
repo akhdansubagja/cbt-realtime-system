@@ -58,15 +58,18 @@ import { AuthModule } from './auth/auth.module';
       // ^ ^ ^ SEKARANG SUDAH LENGKAP DAN BENAR ^ ^ ^
       synchronize: true,
     }),
+    // Daftarkan modul yang menyediakan 'service' terlebih dahulu
     UsersModule,
+    LiveExamModule,
+    KafkaModule,
+    AuthModule, 
+
+    // Baru daftarkan modul yang membutuhkan 'service' tersebut
     QuestionBanksModule,
     QuestionsModule,
     ExamsModule,
     ExamineesModule,
     ParticipantsModule,
-    LiveExamModule,
-    KafkaModule,
-    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

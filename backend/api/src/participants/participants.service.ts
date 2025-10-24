@@ -19,6 +19,7 @@ import { ParticipantExamQuestion } from './entities/participant-exam-question.en
 import { ExamRule } from 'src/exams/entities/exam-rule.entity';
 import { Question } from 'src/questions/entities/question.entity';
 import { LiveExamGateway } from 'src/live-exam/live-exam.gateway';
+import { AuthService } from 'src/auth/auth.service';
 
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
@@ -55,21 +56,23 @@ export class ParticipantsService {
     @InjectRepository(Question)
     private readonly questionRepository: Repository<Question>,
     private readonly liveExamGateway: LiveExamGateway,
+    private readonly authService: AuthService,
   ) {}
 
   async joinExam(joinExamDto: JoinExamDto) {
-    // Validasi examinee dan exam (tetap sama)
+    // Validasi (tidak berubah)
     const examinee = await this.examineeRepository.findOneBy({
       id: joinExamDto.examinee_id,
     });
-    if (!examinee) throw new NotFoundException('Peserta tidak ditemukan');
+    if (!examinee)
+      throw new NotFoundException('Peserta dengan ID tersebut tidak ditemukan');
 
     const exam = await this.examRepository.findOneBy({
       code: joinExamDto.code,
     });
-    if (!exam) throw new NotFoundException('Ujian tidak ditemukan');
+    if (!exam)
+      throw new NotFoundException('Ujian dengan kode tersebut tidak ditemukan');
 
-    // Validasi jadwal (tetap sama)
     const now = new Date();
     if (exam.start_time && now < exam.start_time)
       throw new ForbiddenException('Ujian ini belum dimulai.');
@@ -84,6 +87,8 @@ export class ParticipantsService {
       relations: ['examinee', 'exam'],
     });
 
+    let participantForToken: Participant;
+
     if (existingParticipant) {
       if (existingParticipant.status === ParticipantStatus.FINISHED) {
         throw new ForbiddenException(
@@ -91,18 +96,41 @@ export class ParticipantsService {
         );
       }
       console.log(`Peserta ${examinee.name} kembali ke lobi.`);
-      return existingParticipant; // Langsung kembalikan, jangan reset timer
+      participantForToken = existingParticipant; // Gunakan sesi yang ada, sudah lengkap dengan relasi
+    } else {
+      console.log(`Membuat sesi lobi baru untuk ${examinee.name}.`);
+      const newParticipant = this.participantRepository.create({
+        examinee: examinee,
+        exam: exam,
+      });
+      const savedParticipant =
+        await this.participantRepository.save(newParticipant);
+
+      // --- PERBAIKAN DI SINI ---
+      // Ambil ulang data dan simpan ke variabel sementara
+      const reloadedParticipant = await this.participantRepository.findOne({
+        where: { id: savedParticipant.id },
+        relations: ['examinee', 'exam'],
+      });
+
+      // Tambahkan pengecekan untuk memastikan data ditemukan
+      if (!reloadedParticipant) {
+        throw new NotFoundException(
+          'Gagal membuat atau mengambil sesi peserta baru setelah menyimpan.',
+        );
+      }
+
+      // Jika berhasil, baru assign ke variabel utama
+      participantForToken = reloadedParticipant;
+      // --- AKHIR PERBAIKAN ---
     }
 
-    // Jika tidak ada sesi, buat yang baru TANPA start_time
-    console.log(`Membuat sesi lobi baru untuk ${examinee.name}.`);
-    const newParticipant = this.participantRepository.create({
-      examinee: examinee,
-      exam: exam,
-      // start_time sengaja dibiarkan null
-    });
+    const token = await this.authService.loginParticipant(participantForToken);
 
-    return this.participantRepository.save(newParticipant);
+    return {
+      participant: participantForToken,
+      ...token,
+    };
   }
 
   async beginExam(participantId: number) {

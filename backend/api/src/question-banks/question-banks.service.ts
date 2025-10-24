@@ -4,12 +4,21 @@ import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QuestionBank } from './entities/question-bank.entity';
 import { Repository } from 'typeorm';
+import { Question } from 'src/questions/entities/question.entity';
+
+
+interface PaginationOptions {
+  page: number;
+  limit: number;
+}
 
 @Injectable()
 export class QuestionBanksService {
   constructor(
     @InjectRepository(QuestionBank)
     private readonly questionBankRepository: Repository<QuestionBank>,
+    @InjectRepository(Question)
+    private readonly questionRepository: Repository<Question>,
   ) {}
 
   create(createQuestionBankDto: CreateQuestionBankDto) {
@@ -27,6 +36,25 @@ export class QuestionBanksService {
       where: { id },
       relations: ['questions'],
     });
+  }
+
+  async findQuestionsForBank(bankId: number, options: PaginationOptions) {
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.questionRepository.findAndCount({
+      where: { bank: { id: bankId } },
+      order: { id: 'DESC' },
+      take: limit,
+      skip: skip,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      last_page: Math.ceil(total / limit),
+    };
   }
 
   // --- TAMBAHKAN LOGIKA UPDATE DI SINI ---

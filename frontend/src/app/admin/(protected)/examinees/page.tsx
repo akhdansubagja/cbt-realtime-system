@@ -12,6 +12,7 @@ import {
   Text,
   Modal,
   TextInput,
+  Pagination,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
@@ -31,6 +32,9 @@ export default function ExamineesPage() {
   const [error, setError] = useState("");
   const [opened, { open, close }] = useDisclosure(false);
   const [editingExaminee, setEditingExaminee] = useState<Examinee | null>(null);
+  const [activePage, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10; // 10 data per halaman
 
   const form = useForm({
     initialValues: { name: "" },
@@ -41,12 +45,15 @@ export default function ExamineesPage() {
   });
 
   useEffect(() => {
-    api
-      .get("/examinees")
-      .then((response) => setExaminees(response.data))
-      .catch(() => setError("Gagal mengambil data peserta."))
+    setLoading(true);
+    api.get(`/examinees?page=${activePage}&limit=${limit}`)
+      .then((response) => {
+        setExaminees(response.data.data);
+        setTotalPages(response.data.last_page);
+      })
+      .catch(() => setError('Gagal mengambil data peserta.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [activePage]); // <-- Dijalankan setiap kali 'activePage' berubah
 
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
@@ -210,6 +217,12 @@ export default function ExamineesPage() {
         <Text mt="md" ta="center">
           Belum ada peserta yang didaftarkan.
         </Text>
+      )}
+
+      {totalPages > 1 && (
+        <Center mt="md">
+          <Pagination total={totalPages} value={activePage} onChange={setPage} />
+        </Center>
       )}
     </>
   );

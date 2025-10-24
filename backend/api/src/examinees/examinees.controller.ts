@@ -1,6 +1,6 @@
 // src/examinees/examinees.controller.ts
 
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query} from '@nestjs/common';
 import { ExamineesService } from './examinees.service';
 import { CreateExamineeDto } from './dto/create-examinee.dto';
 import { UpdateExamineeDto } from './dto/update-examinee.dto';
@@ -15,8 +15,16 @@ export class ExamineesController {
   }
 
   @Get()
-  findAll() {
-    return this.examineesService.findAll();
+  findAll(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
+    return this.examineesService.findAll({
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+    });
+  }
+
+  @Get('all/simple')
+  findAllSimple() {
+    return this.examineesService.findAllSimple();
   }
 
   @Get(':id')

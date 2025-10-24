@@ -5,6 +5,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Examinee } from './entities/examinee.entity';
 import { Repository } from 'typeorm';
 
+interface PaginationOptions {
+  page: number;
+  limit: number;
+}
+
 @Injectable()
 export class ExamineesService {
   constructor(
@@ -17,8 +22,22 @@ export class ExamineesService {
     return this.examineeRepository.save(newExaminee);
   }
 
-  findAll() {
-    return this.examineeRepository.find({ order: { name: 'ASC' } });
+  async findAll(options: PaginationOptions) {
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.examineeRepository.findAndCount({
+      order: { name: 'ASC' },
+      take: limit,
+      skip: skip,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      last_page: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {
@@ -41,5 +60,16 @@ export class ExamineesService {
   // --- LOGIKA DELETE BARU ---
   remove(id: number) {
     return this.examineeRepository.delete(id);
+  }
+
+  /**
+   * Mengambil daftar sederhana semua peserta (hanya id dan nama).
+   * Didesain untuk dropdown dan data selection, bukan tabel paginated.
+   */
+  async findAllSimple() {
+    return this.examineeRepository.find({
+      select: ['id', 'name'], // <-- Kunci efisiensi: hanya ambil kolom yang dibutuhkan
+      order: { name: 'ASC' },
+    });
   }
 }

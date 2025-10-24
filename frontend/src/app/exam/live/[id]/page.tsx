@@ -22,6 +22,7 @@ import {
 } from "@mantine/core";
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
+import api from "@/lib/axios";
 
 // Definisikan tipe data yang lebih detail
 interface QuestionDetail {
@@ -81,7 +82,7 @@ export default function LiveExamPage() {
     setError("");
 
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/finish`
       );
 
@@ -108,31 +109,49 @@ export default function LiveExamPage() {
     const fetchExamDataAndAnswers = async () => {
       try {
         const [examRes, answersRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/start`),
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/answers`),
+          api.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/start`
+          ),
+          api.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/answers`
+          ),
         ]);
-      
+
         const examDataPayload: ExamData = examRes.data;
         const savedAnswers: Record<number, string> = answersRes.data;
-      
+
         // Periksa sisa waktu sebelum set state
         if (examDataPayload.time_left_seconds <= 0) {
           // Jika waktu sudah habis dari server, langsung redirect tanpa render
-          router.replace(`/exam/result?participantId=${participantId}&finished=true`);
+          router.replace(
+            `/exam/result?participantId=${participantId}&finished=true`
+          );
           return; // Hentikan eksekusi
         }
-      
+
         setExamData(examDataPayload);
         setTimeLeft(examDataPayload.time_left_seconds);
         setAnswers(savedAnswers);
-      
       } catch (err: any) {
-        // Tangani error jika ujian sudah selesai (403 Forbidden)
         if (err.response && err.response.status === 403) {
-          // Redirect ke halaman hasil dengan penanda 'finished'
-          router.replace(`/exam/result?participantId=${participantId}&finished=true`);
+          const message = err.response.data.message || "";
+          if (message.includes("telah selesai")) {
+            // Jika errornya karena ujian selesai, baru redirect
+            router.replace(
+              `/exam/result?participantId=${participantId}&finished=true`
+            );
+          } else {
+            // Jika error 403 lain (seperti token salah), tampilkan pesan
+            setError(message);
+          }
+        } else if (err.response && err.response.status === 401) {
+          // Jika tidak ada token sama sekali, tampilkan pesan
+          setError(
+            err.response.data.message ||
+              "Akses ditolak. Silakan bergabung melalui halaman utama."
+          );
         } else {
-          setError(err.response?.data?.message || 'Gagal memuat data ujian.');
+          setError("Gagal memuat data ujian. Server bermasalah.");
         }
       } finally {
         setLoading(false);
@@ -179,15 +198,16 @@ export default function LiveExamPage() {
   useEffect(() => {
     // Jangan jalankan timer jika data belum siap
     if (!examData) return;
-  
+
     // Jika waktu sudah habis saat halaman dimuat, panggil 'finish' HANYA JIKA belum dalam proses
     if (timeLeft <= 0) {
-      if (!isFinishing) { // <-- PENJAGA #1
+      if (!isFinishing) {
+        // <-- PENJAGA #1
         handleFinishExam(true);
       }
       return; // Hentikan eksekusi lebih lanjut
     }
-  
+
     // Jalankan countdown
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
@@ -195,7 +215,8 @@ export default function LiveExamPage() {
         if (prevTime <= 1) {
           clearInterval(timer);
           // Panggil 'finish' HANYA JIKA belum dalam proses
-          if (!isFinishing) { // <-- PENJAGA #2
+          if (!isFinishing) {
+            // <-- PENJAGA #2
             handleFinishExam(true);
           }
           return 0;
@@ -203,7 +224,7 @@ export default function LiveExamPage() {
         return prevTime - 1;
       });
     }, 1000);
-  
+
     // Cleanup function untuk memberhentikan interval saat komponen di-unmount
     return () => clearInterval(timer);
   }, [examData, timeLeft, isFinishing]);

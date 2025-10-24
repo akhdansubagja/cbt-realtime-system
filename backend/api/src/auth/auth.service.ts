@@ -29,4 +29,20 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+  /**
+   * Membuat token JWT khusus untuk sesi pengerjaan peserta.
+   * @param participant Objek participant yang berisi id, examinee, dan exam.
+   * @returns Objek yang berisi access_token untuk sesi tersebut.
+   */
+  async loginParticipant(participant: any) {
+    const payload = { 
+      participantId: participant.id,
+      examineeId: participant.examinee.id,
+      examId: participant.exam.id,
+    };
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn: `${participant.exam.duration_minutes + 15}m` }),
+    };
+  }
 }

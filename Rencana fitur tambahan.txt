@@ -4,7 +4,7 @@ PRIORITAS
 DONE1. Buat fitur untuk memilih soal secara manual dengan cara diceklis dan bisa dipilih beberapa
 jadi tidak perlu memasukkan soal secara manual dengan cara menginputkan id atau primary key pada setiap soal.
 
-2. Buat fitur untuk filter pada halaman monitoring, filternya adalah untuk memilih tanggal pengisian ujian dari kapan hingga kapan, lalu
+DONE2. Buat fitur untuk filter pada halaman monitoring, filternya adalah untuk memilih tanggal pengisian ujian dari kapan hingga kapan, lalu dari hasil filter tersebut, dapat diexport ke dalam file excel
 
 DONE3. buat fitur agar memudahkan dalam membuat soal baru, maksudnya adalah seperti buat dalam format tertentu, lalu dimasukkan sekaligus, misalkan langsung 20 soal secara langsung. (DIbatalkan karena lebih mudah untuk menginput langsung setiap bank soal ke database)
 
@@ -14,9 +14,12 @@ diikuti oleh user tersebut, lalu tanggal pelaksanaanya, skornya dan lain lain
 
 OPSIONAL
 1. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur checklist)
-
+2. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
 
 SECURITY
-1. di halaman live exam untuk saat ini bisa terbobol hanya dengan modal mengganti URL
+DONE1. di halaman live exam untuk saat ini bisa terbobol hanya dengan modal mengganti URL
+
+
+Oke, ada sedikit masalah, ternyata pada saat user waktu ujiannya sudah habis, sistem tidak menyimpan data ke tabel participants
 
 

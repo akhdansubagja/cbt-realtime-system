@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   Container,
   Paper,
@@ -13,9 +13,10 @@ import {
   Alert,
   List,
   ThemeIcon,
-} from '@mantine/core';
-import { IconCircleCheck, IconInfoCircle } from '@tabler/icons-react';
-import axios from 'axios';
+} from "@mantine/core";
+import { IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
+import axios from "axios";
+import api from "@/lib/axios";
 
 // --- PERBAIKAN TIPE DATA DI SINI ---
 interface ExamData {
@@ -39,19 +40,26 @@ export default function ExamSessionPage() {
 
   const [examData, setExamData] = useState<ExamData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!participantId) return;
 
     const fetchExamData = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/start`
-        );
+        const response = await api.get(`/participants/${participantId}/start`);
         setExamData(response.data);
-      } catch (err) {
-        setError('Gagal memuat data ujian. Sesi tidak valid atau server bermasalah.');
+      } catch (err: any) {
+        if (
+          err.response &&
+          (err.response.status === 401 || err.response.status === 403)
+        ) {
+          // Jika ditolak (401 atau 403), tampilkan pesan error dari backend
+          setError(err.response.data.message || "Akses ditolak.");
+        } else {
+          // Untuk error lain (seperti 500), tampilkan pesan umum
+          setError("Gagal memuat data ujian. Server bermasalah.");
+        }
       } finally {
         setLoading(false);
       }
@@ -63,17 +71,19 @@ export default function ExamSessionPage() {
   const handleStartExam = async () => {
     try {
       // Panggil endpoint baru untuk memulai timer di backend
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/begin`);
+      await api.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/participants/${participantId}/begin`
+      );
       // Setelah berhasil, baru arahkan ke halaman pengerjaan soal
       router.push(`/exam/live/${participantId}`);
     } catch (err) {
-      setError('Gagal memulai ujian. Coba kembali ke halaman utama.');
+      setError("Gagal memulai ujian. Coba kembali ke halaman utama.");
     }
   };
 
   if (loading) {
     return (
-      <Center style={{ height: '100vh' }}>
+      <Center style={{ height: "100vh" }}>
         <Loader />
         <Text ml="md">Memuat detail ujian...</Text>
       </Center>
@@ -110,7 +120,7 @@ export default function ExamSessionPage() {
               mt="md"
               icon={
                 <ThemeIcon color="teal" size={24} radius="xl">
-                  <IconCircleCheck style={{ width: '70%', height: '70%' }} />
+                  <IconCircleCheck style={{ width: "70%", height: "70%" }} />
                 </ThemeIcon>
               }
             >

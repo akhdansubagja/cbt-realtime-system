@@ -12,16 +12,23 @@ import {
   Text,
   Paper,
   Badge,
+  Group,
+  Button,
+  SegmentedControl,
 } from "@mantine/core";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { DatePickerInput } from "@mantine/dates";
+import * as XLSX from "xlsx";
+import dayjs from "dayjs";
 
 interface ParticipantScore {
   id: number;
   name: string;
   score: number | null;
-  status: "started" | "finished" | "pending"; // Tambah status
+  status: "started" | "finished" | "pending";
+  start_time?: string; // <-- TAMBAHKAN BARIS INI
 }
 
 export default function MonitoringPage() {
@@ -31,6 +38,17 @@ export default function MonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const socketRef = useRef<Socket | null>(null);
+  const [allParticipants, setAllParticipants] = useState<ParticipantScore[]>(
+    []
+  ); // Data master
+  const [filteredParticipants, setFilteredParticipants] = useState<
+    ParticipantScore[]
+  >([]); // Data yang ditampilkan
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    null,
+    null,
+  ]);
+  const [quickFilter, setQuickFilter] = useState<string | null>(null);
 
   // 1. Ambil data awal peserta
   useEffect(() => {
@@ -42,9 +60,10 @@ export default function MonitoringPage() {
           id: p.id,
           name: p.examinee.name,
           score: p.current_score,
-          status: p.status, // Ambil status dari backend
+          status: p.status,
+          start_time: p.start_time, // <-- TAMBAHKAN BARIS INI
         }));
-        setParticipants(initialScores);
+        setAllParticipants(initialScores);
       })
       .catch(() => setError("Gagal mengambil data peserta."))
       .finally(() => setLoading(false));
@@ -73,7 +92,7 @@ export default function MonitoringPage() {
         console.log("Menerima update skor dari server:", data);
 
         // Perbarui state untuk memicu re-render
-        setParticipants((currentParticipants) => {
+        setAllParticipants((currentParticipants) => {
           // 1. Update skor peserta yang bersangkutan
           const updatedParticipants = currentParticipants.map((p) =>
             p.id === data.participantId ? { ...p, score: data.newScore } : p
@@ -103,7 +122,7 @@ export default function MonitoringPage() {
         status: "started", // Asumsikan baru bergabung = started
       };
 
-      setParticipants((currentParticipants) => {
+      setAllParticipants((currentParticipants) => {
         if (currentParticipants.some((p) => p.id === newParticipant.id)) {
           return currentParticipants;
         }
@@ -118,13 +137,11 @@ export default function MonitoringPage() {
       (data: { participantId: number; newStatus: "started" | "finished" }) => {
         console.log("Menerima update status:", data);
 
-        // Perbarui state untuk mengubah status peserta yang bersangkutan
-        setParticipants(
-          (currentParticipants) =>
-            currentParticipants.map((p) =>
-              p.id === data.participantId ? { ...p, status: data.newStatus } : p
-            )
-          // Tidak perlu sort ulang karena status tidak mempengaruhi urutan
+        // Perbarui state 'master' (allParticipants)
+        setAllParticipants((currentParticipants) =>
+          currentParticipants.map((p) =>
+            p.id === data.participantId ? { ...p, status: data.newStatus } : p
+          )
         );
       }
     );
@@ -136,6 +153,102 @@ export default function MonitoringPage() {
       socket.disconnect();
     };
   }, [examId]);
+
+  // Efek ini berjalan setiap kali data master atau filter tanggal berubah
+  useEffect(() => {
+    let filtered = [...allParticipants]; // Salin data master
+
+    const [startDate, endDate] = dateRange;
+
+    // Terapkan filter hanya jika kedua tanggal sudah dipilih
+    if (startDate && endDate) {
+      filtered = filtered.filter((p) => {
+        // Asumsi kita memfilter berdasarkan waktu mulai peserta
+        // Kita butuh 'start_time' dari backend untuk ini
+        const startTime = (p as any).start_time;
+        if (!startTime) return false;
+
+        // Cek apakah waktu mulai berada di antara rentang yang dipilih
+        return (
+          dayjs(startTime).isAfter(dayjs(startDate).startOf("day")) &&
+          dayjs(startTime).isBefore(dayjs(endDate).endOf("day"))
+        );
+      });
+    }
+
+    // Urutkan ulang hasil filter (ini juga menangani pengurutan awal!)
+    filtered.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+
+    // Simpan hasil filter ke state yang akan ditampilkan
+    setFilteredParticipants(filtered);
+  }, [allParticipants, dateRange]);
+
+  const handleExport = () => {
+    // --- 1. MEMBUAT NAMA FILE DINAMIS ---
+    const [startDate, endDate] = dateRange;
+    let dateString = dayjs().format("YYYY-MM-DD"); // Default jika tidak ada rentang
+
+    if (startDate && endDate) {
+      // Jika rentang dipilih, format menjadi "YYYY-MM-DD_s-d_YYYY-MM-DD"
+      dateString = `${dayjs(startDate).format("YYYY-MM-DD")}_s-d_${dayjs(
+        endDate
+      ).format("YYYY-MM-DD")}`;
+    }
+    const filename = `Laporan Ujian_${examId}_${dateString}.xlsx`;
+
+    // --- 2. MEMBUAT DATA UNTUK TABEL ---
+    const dataToExport = filteredParticipants.map((p) => ({
+      "ID Peserta": p.id,
+      "Nama Peserta": p.name,
+      Skor: p.score ?? "N/A",
+      Status: p.status === "finished" ? "Selesai" : "Mengerjakan",
+    }));
+
+    // --- 3. MEMBUAT JUDUL/HEADER UNTUK EXCEL ---
+    // Kita akan membuat header kustom sebagai array dari array
+    const headerData = [
+      ["Laporan Ujian Peserta"], // Judul Utama
+      [], // Baris kosong
+    ];
+
+    // Tambahkan baris rentang tanggal secara dinamis
+    if (startDate && endDate) {
+      headerData.push([
+        "Rentang Tanggal:",
+        `${dayjs(startDate).format("DD MMM YYYY")} s/d ${dayjs(endDate).format(
+          "DD MMM YYYY"
+        )}`,
+      ]);
+    } else {
+      headerData.push(["Tanggal Ekspor:", dayjs().format("DD MMM YYYY")]);
+    }
+    headerData.push([]); // Baris kosong sebelum tabel
+
+    // --- 4. MEMBUAT WORKSHEET ---
+    const workbook = XLSX.utils.book_new();
+
+    // 4a. Buat sheet dari header kustom kita (array of arrays)
+    const worksheet = XLSX.utils.aoa_to_sheet(headerData);
+
+    // 4b. Tambahkan data JSON (tabel) kita ke sheet yang sama, DI BAWAH header
+    XLSX.utils.sheet_add_json(worksheet, dataToExport, {
+      origin: -1, // '-1' berarti "tambahkan setelah baris terakhir yang ada"
+      skipHeader: false, // 'false' berarti kita ingin menyertakan header tabel (ID Peserta, Nama, Skor, dll)
+    });
+
+    // (Opsional tapi bagus) Atur lebar kolom
+    worksheet["!cols"] = [
+      { wch: 10 }, // ID Peserta
+      { wch: 30 }, // Nama Peserta
+      { wch: 10 }, // Skor
+      { wch: 15 }, // Status
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Peserta");
+
+    // --- 5. MENULIS FILE DENGAN NAMA BARU ---
+    XLSX.writeFile(workbook, filename); // Gunakan nama file dinamis
+  };
 
   if (loading)
     return (
@@ -165,6 +278,35 @@ export default function MonitoringPage() {
         Skor akan diperbarui dan diurutkan secara otomatis.
       </Text>
 
+      {/* --- UI BARU UNTUK FILTER DAN EKSPOR --- */}
+      <Paper withBorder p="md" mt="md">
+        <Group>
+          <DatePickerInput
+            type="range"
+            label="Filter Berdasarkan Tanggal Mulai"
+            placeholder="Pilih rentang tanggal"
+            value={dateRange}
+            onChange={(value) => {
+              // 'value' di sini adalah array berisi [string | null, string | null]
+              const [start, end] = value;
+              // Ubah string menjadi objek Date sebelum disimpan ke state
+              setDateRange([
+                start ? new Date(start) : null,
+                end ? new Date(end) : null,
+              ]);
+            }}
+            clearable
+          />
+          <Button
+            onClick={handleExport}
+            disabled={filteredParticipants.length === 0}
+            style={{ alignSelf: "flex-end" }}
+          >
+            Ekspor ke Excel
+          </Button>
+        </Group>
+      </Paper>
+
       <Paper withBorder p="md" mt="md">
         <Table withTableBorder>
           <Table.Thead>
@@ -178,7 +320,7 @@ export default function MonitoringPage() {
           {/* Gunakan motion.tbody untuk mengaktifkan layout animation */}
           <motion.tbody layout>
             <AnimatePresence>
-              {participants.map((p) => (
+              {filteredParticipants.map((p) => (
                 <motion.tr
                   key={p.id}
                   layout
@@ -202,9 +344,9 @@ export default function MonitoringPage() {
             </AnimatePresence>
           </motion.tbody>
         </Table>
-        {participants.length === 0 && (
+        {filteredParticipants.length === 0 && (
           <Text mt="md" ta="center">
-            Belum ada peserta yang bergabung.
+            Belum ada peserta yang sesuai dengan filter.
           </Text>
         )}
       </Paper>

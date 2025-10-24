@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { QuestionBanksService } from './question-banks.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
@@ -30,5 +30,18 @@ export class QuestionBanksController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.questionBanksService.remove(+id);
+  }
+
+
+  @Get(':id/questions')
+  findQuestions(
+    @Param('id') id: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.questionBanksService.findQuestionsForBank(+id, {
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+    });
   }
 }

@@ -18,12 +18,14 @@ import {
   Select,
   SimpleGrid,
   ActionIcon,
+  Pagination,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconTrash } from "@tabler/icons-react";
 import api from "@/lib/axios";
+
 
 // Definisikan tipe data
 interface Question {
@@ -52,6 +54,10 @@ export default function SingleQuestionBankPage() {
   const [error, setError] = useState("");
   const [opened, { open, close }] = useDisclosure(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [activePage, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10;
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   // --- 1. SETUP FORM YANG LEBIH KOMPLEKS ---
   const form = useForm({
@@ -85,20 +91,26 @@ export default function SingleQuestionBankPage() {
     },
   });
 
+  const fetchQuestionsForPage = (page: number) => {
+    setLoading(true);
+    api.get(`/question-banks/${bankId}/questions?page=${page}&limit=${limit}`)
+      .then((questionsRes) => {
+        setQuestions(questionsRes.data.data);
+        setTotalPages(questionsRes.data.last_page);
+      })
+      .catch(() => setError('Gagal memuat data soal.'))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
-    if (!bankId) return;
-    const fetchBankData = async () => {
-      try {
-        const response = await api.get(`/question-banks/${bankId}`);
-        setBankData(response.data);
-      } catch (err) {
-        setError("Gagal mengambil data bank soal.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBankData();
-  }, [bankId]);
+    // Efek ini hanya mengambil info bank soal dan soal halaman pertama
+    api.get(`/question-banks/${bankId}`)
+      .then((bankRes) => setBankData(bankRes.data))
+      .catch(() => setError('Gagal memuat info bank soal.'));
+    
+    // Panggil fungsi terpusat untuk mengambil soal
+    fetchQuestionsForPage(activePage);
+  }, [bankId, activePage]);
 
   // --- FUNGSI UNTUK MEMBUKA MODAL EDIT ---
   const openEditModal = (question: Question) => {
@@ -203,10 +215,9 @@ export default function SingleQuestionBankPage() {
       )}
     </Group>
   ));
-
   
 
-  const rows = bankData?.questions.map((question) => (
+  const rows = questions.map((question) => (
     <Table.Tr key={question.id}>
       <Table.Td>{question.id}</Table.Td>
       <Table.Td>{question.question_text.substring(0, 100)}...</Table.Td>
@@ -319,6 +330,12 @@ export default function SingleQuestionBankPage() {
         <Text mt="md" ta="center">
           Belum ada soal di bank soal ini.
         </Text>
+      )}
+
+      {totalPages > 1 && (
+        <Center mt="md">
+          <Pagination total={totalPages} value={activePage} onChange={setPage} />
+        </Center>
       )}
     </>
   );
