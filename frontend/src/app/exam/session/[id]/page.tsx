@@ -17,6 +17,8 @@ import {
 import { IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
 import axios from "axios";
 import api from "@/lib/axios";
+import { Stack, Grid, Box, Group } from "@mantine/core";
+import { IconClock, IconListNumbers } from "@tabler/icons-react";
 
 // --- PERBAIKAN TIPE DATA DI SINI ---
 interface ExamData {
@@ -101,47 +103,74 @@ export default function ExamSessionPage() {
   }
 
   return (
-    <Container size="md" my={40}>
-      <Paper withBorder shadow="md" p={30} radius="md">
-        <Title order={2} ta="center">
-          Konfirmasi Ujian
-        </Title>
-        <Text c="dimmed" size="sm" ta="center" mt={5} mb={30}>
-          Anda akan memulai ujian berikut:
-        </Text>
-
+    <Container
+      fluid
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        background: "var(--mantine-color-gray-0)",
+      }}
+    >
+      <Stack w={600}>
         {examData && (
-          <>
-            <Title order={3}>{examData.exam.title}</Title>
-            <List
-              spacing="xs"
-              size="sm"
-              center
-              mt="md"
-              icon={
-                <ThemeIcon color="teal" size={24} radius="xl">
-                  <IconCircleCheck style={{ width: "70%", height: "70%" }} />
-                </ThemeIcon>
-              }
-            >
-              <List.Item>
-                <b>Durasi:</b> {examData.exam.duration_minutes} Menit
-              </List.Item>
-              <List.Item>
-                <b>Jumlah Soal:</b> {examData.exam.exam_questions.length} Soal
-              </List.Item>
-              {/* --- PERBAIKAN TAMPILAN DI SINI --- */}
-              <List.Item>
-                <b>Peserta:</b> {examData.examinee.name}
-              </List.Item>
-            </List>
+          <Paper withBorder shadow="md" p={30} radius="md">
+            <Stack align="center">
+              <Text c="dimmed">Selamat datang,</Text>
+              <Title order={3}>{examData.examinee.name}</Title>
 
-            <Button fullWidth mt="xl" size="lg" onClick={handleStartExam}>
-              Mulai Kerjakan
-            </Button>
-          </>
+              <Text mt="md" mb="xs">
+                Anda akan memulai ujian:
+              </Text>
+              <Title order={2} ta="center">
+                {examData.exam.title}
+              </Title>
+
+              <Grid mt="xl" w="100%">
+                <Grid.Col span={6}>
+                  <Paper withBorder p="md" radius="sm">
+                    <Group>
+                      <ThemeIcon variant="light" size="lg">
+                        <IconClock size={20} />
+                      </ThemeIcon>
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          Durasi
+                        </Text>
+                        <Text fw={500}>
+                          {examData.exam.duration_minutes} Menit
+                        </Text>
+                      </Box>
+                    </Group>
+                  </Paper>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Paper withBorder p="md" radius="sm">
+                    <Group>
+                      <ThemeIcon variant="light" size="lg">
+                        <IconListNumbers size={20} />
+                      </ThemeIcon>
+                      <Box>
+                        <Text size="xs" c="dimmed">
+                          Jumlah Soal
+                        </Text>
+                        <Text fw={500}>
+                          {examData.exam.exam_questions.length} Soal
+                        </Text>
+                      </Box>
+                    </Group>
+                  </Paper>
+                </Grid.Col>
+              </Grid>
+
+              <Button fullWidth mt="xl" size="lg" onClick={handleStartExam}>
+                Saya Siap, Mulai Kerjakan
+              </Button>
+            </Stack>
+          </Paper>
         )}
-      </Paper>
+      </Stack>
     </Container>
   );
 }

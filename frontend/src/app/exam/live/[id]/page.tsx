@@ -23,6 +23,21 @@ import {
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
+import {
+  AppShell,
+  Progress,
+  Drawer,
+  rem,
+  ActionIcon,
+  Flex,
+} from "@mantine/core";
+import {
+  IconGripVertical,
+  IconClock,
+  IconArrowLeft,
+  IconArrowRight,
+} from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
 
 // Definisikan tipe data yang lebih detail
 interface QuestionDetail {
@@ -66,6 +81,8 @@ export default function LiveExamPage() {
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [navOpened, { open: openNav, close: closeNav }] = useDisclosure(false);
 
   // State untuk WebSocket
   const socketRef = useRef<Socket | null>(null);
@@ -264,19 +281,136 @@ export default function LiveExamPage() {
     examData.exam.exam_questions[currentQuestionIndex];
 
   return (
-    <Container fluid p="md">
-      <Title order={3}>{examData.exam.title}</Title>
+    <AppShell header={{ height: 70 }} padding="md">
+      {/* --- HEADER UJIAN BARU --- */}
+      <AppShell.Header>
+        <Flex h="100%" px="md" align="center" justify="space-between">
+          <Box>
+            <Title order={5}>{examData.exam.title}</Title>
+            <Text size="sm" c="dimmed">
+              Peserta: {examData.examinee.name}
+            </Text>
+          </Box>
+          <Group>
+            <Box w={120}>
+              <Group>
+                <IconClock size={18} />
+                <Text fw={700} fz="lg" c={timeLeft < 60 ? "red" : "inherit"}>
+                  {Math.floor(timeLeft / 60)}:
+                  {("0" + (timeLeft % 60)).slice(-2)}
+                </Text>
+              </Group>
+              <Progress
+                value={(timeLeft / (examData.exam.duration_minutes * 60)) * 100}
+                color={timeLeft < 60 ? "red" : "blue"}
+                size="xs"
+              />
+            </Box>
+            <Button color="red" onClick={() => setIsModalOpen(true)}>
+              Selesai
+            </Button>
+          </Group>
+        </Flex>
+      </AppShell.Header>
 
+      {/* --- KONTEN UTAMA (SOAL) --- */}
+      <AppShell.Main>
+        <Container>
+          <Paper withBorder p="xl" radius="md" shadow="sm">
+            <Text fw={500}>Soal No. {currentQuestionIndex + 1}</Text>
+            <Text mt="lg" mb="xl" size="lg">
+              {currentExamQuestion.question.question_text}
+            </Text>
+
+            <Radio.Group
+              value={answers[currentExamQuestion.id] || null}
+              onChange={(value) =>
+                handleAnswerChange(currentExamQuestion.id, value)
+              }
+            >
+              <Stack>
+                {currentExamQuestion.question.options.map((option) => (
+                  <Paper key={option.key} withBorder p="md" radius="sm">
+                    <Radio
+                      value={option.key}
+                      label={`${option.key}. ${option.text}`}
+                    />
+                  </Paper>
+                ))}
+              </Stack>
+            </Radio.Group>
+          </Paper>
+
+          {/* --- TOMBOL NAVIGASI & DAFTAR SOAL --- */}
+          <Flex justify="space-between" mt="xl">
+            <Button
+              variant="default"
+              leftSection={<IconArrowLeft size={16} />}
+              onClick={() => setCurrentQuestionIndex((p) => p - 1)}
+              disabled={currentQuestionIndex === 0}
+            >
+              Sebelumnya
+            </Button>
+            <Button
+              variant="outline"
+              leftSection={<IconGripVertical size={16} />}
+              onClick={openNav}
+            >
+              Daftar Soal
+            </Button>
+            <Button
+              rightSection={<IconArrowRight size={16} />}
+              onClick={() => setCurrentQuestionIndex((p) => p + 1)}
+              disabled={
+                currentQuestionIndex === examData.exam.exam_questions.length - 1
+              }
+            >
+              Selanjutnya
+            </Button>
+          </Flex>
+        </Container>
+      </AppShell.Main>
+
+      {/* --- DRAWER UNTUK NAVIGASI SOAL --- */}
+      <Drawer
+        opened={navOpened}
+        onClose={closeNav}
+        title="Navigasi Soal"
+        position="right"
+      >
+        <SimpleGrid cols={5} spacing="sm">
+          {examData.exam.exam_questions.map((q, index) => {
+            // Deklarasi variabel yang hilang ada di sini
+            const isCurrent = index === currentQuestionIndex;
+            const isAnswered = !!answers[q.id];
+
+            return (
+              <Button
+                key={q.id}
+                variant={
+                  isCurrent ? "filled" : isAnswered ? "light" : "outline"
+                }
+                color={isAnswered || isCurrent ? "blue" : "gray"}
+                onClick={() => {
+                  setCurrentQuestionIndex(index);
+                  closeNav();
+                }}
+              >
+                {index + 1}
+              </Button>
+            );
+          })}
+        </SimpleGrid>
+      </Drawer>
+
+      {/* --- MODAL KONFIRMASI (Tidak ada perubahan) --- */}
       <Modal
         opened={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Konfirmasi Selesai Ujian"
         centered
       >
-        <Text>
-          Apakah Anda yakin ingin menyelesaikan dan mengakhiri sesi ujian ini?
-          Jawaban tidak dapat diubah kembali.
-        </Text>
+        <Text>Apakah Anda yakin ingin menyelesaikan sesi ujian ini?</Text>
         <Group justify="flex-end" mt="md">
           <Button variant="default" onClick={() => setIsModalOpen(false)}>
             Batal
@@ -290,96 +424,6 @@ export default function LiveExamPage() {
           </Button>
         </Group>
       </Modal>
-
-      <Grid mt="md">
-        {/* Panel Kiri: Info dan Navigasi */}
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Paper withBorder p="md">
-            <Text>
-              Peserta: <b>{examData.examinee.name}</b>
-            </Text>
-            <Text>
-              Sisa Waktu:{" "}
-              <b>
-                {Math.floor(timeLeft / 60)}:
-                {(timeLeft % 60).toString().padStart(2, "0")}
-              </b>
-            </Text>
-            <hr />
-            <Text>Navigasi Soal:</Text>
-            <SimpleGrid cols={5} mt="sm">
-              {examData.exam.exam_questions.map((q, index) => (
-                <Button
-                  key={q.id}
-                  variant={
-                    index === currentQuestionIndex ? "filled" : "outline"
-                  }
-                  color={answers[q.id] ? "blue" : "gray"}
-                  onClick={() => setCurrentQuestionIndex(index)}
-                  size="xs"
-                >
-                  {index + 1}
-                </Button>
-              ))}
-            </SimpleGrid>
-            <Button
-              color="red"
-              fullWidth
-              mt="xl"
-              onClick={() => setIsModalOpen(true)} // <-- Tombol ini sekarang HANYA membuka modal
-            >
-              Selesai Ujian
-            </Button>
-          </Paper>
-        </Grid.Col>
-
-        {/* Panel Kanan: Soal */}
-        <Grid.Col span={{ base: 12, md: 8 }}>
-          <Paper withBorder p="md">
-            <Text>Soal No. {currentQuestionIndex + 1}</Text>
-            <Text mt="md" size="lg">
-              {currentExamQuestion.question.question_text}
-            </Text>
-
-            <Radio.Group
-              mt="md"
-              value={answers[currentExamQuestion.id] || null}
-              onChange={(value) =>
-                handleAnswerChange(currentExamQuestion.id, value)
-              }
-            >
-              <Stack>
-                {currentExamQuestion.question.options.map((option) => (
-                  <Radio
-                    key={option.key}
-                    value={option.key}
-                    label={`${option.key}. ${option.text}`}
-                  />
-                ))}
-              </Stack>
-            </Radio.Group>
-
-            <Group justify="space-between" mt="xl">
-              <Button
-                variant="default"
-                onClick={() => setCurrentQuestionIndex((p) => p - 1)}
-                disabled={currentQuestionIndex === 0}
-              >
-                Sebelumnya
-              </Button>
-              <Button
-                onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-                disabled={
-                  currentQuestionIndex ===
-                  examData.exam.exam_questions.length - 1
-                }
-              >
-                Selanjutnya
-              </Button>
-            </Group>
-          </Paper>
-        </Grid.Col>
-      </Grid>
-    </Container>
+    </AppShell>
   );
 }

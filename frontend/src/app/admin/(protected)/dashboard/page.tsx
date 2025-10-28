@@ -1,221 +1,109 @@
-"use client";
+// frontend/src/app/admin/(protected)/dashboard/page.tsx
+'use client';
 
-import { useEffect, useState } from "react";
-import {
-  Title,
-  Table,
-  Loader,
-  Alert,
-  Center,
-  Button,
-  Modal,
-  TextInput,
-  Textarea,
-  Group,
-} from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { useForm } from "@mantine/form";
-import { notifications } from "@mantine/notifications";
-import api from "@/lib/axios";
-import Link from "next/link";
+import { Grid, Paper, Text, Title, Group, ThemeIcon, Skeleton } from '@mantine/core';
+import { IconBox, IconUsers, IconFileText } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+// PERBAIKAN: Import instance axios secara langsung
+import axios from '@/lib/axios'; 
 
-interface QuestionBank {
-  id: number;
-  name: string;
-  description: string;
-  created_at: string;
+// Tipe data untuk statistik
+interface StatsData {
+  questionBanks: number;
+  examinees: number;
+  exams: number;
 }
 
-export default function QuestionBanksPage() {
-  const [banks, setBanks] = useState<QuestionBank[]>([]);
+// Komponen untuk satu kartu statistik
+function StatCard({ title, value, icon, loading }: { title: string; value: number; icon: React.ReactNode; loading: boolean }) {
+  return (
+    <Paper withBorder p="md" radius="md">
+      <Group justify="space-between">
+        <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+          {title}
+        </Text>
+        <ThemeIcon color="gray" variant="light" size={38} radius="md">
+          {icon}
+        </ThemeIcon>
+      </Group>
+
+      {loading ? (
+        <Skeleton height={30} mt={10} radius="sm" />
+      ) : (
+        <Text fz={30} fw={700} mt={10}>
+          {value}
+        </Text>
+      )}
+    </Paper>
+  );
+}
+
+// Halaman utama Dashboard
+export default function DashboardPage() {
+  // PERBAIKAN: Hapus baris 'const axios = useAxios()'
+  const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [opened, { open, close }] = useDisclosure(false); // Hook untuk mengontrol modal
-  const [editingBank, setEditingBank] = useState<QuestionBank | null>(null);
 
-  // Fungsi untuk membuka modal dalam mode 'edit'
-  const openEditModal = (bank: QuestionBank) => {
-    setEditingBank(bank); // Simpan data bank yang akan diedit
-    form.setValues({ name: bank.name, description: bank.description }); // Isi form dengan datanya
-    open(); // Buka modal
-  };
-
-  // Fungsi untuk menangani penghapusan
-  const handleDeleteBank = async (bankId: number) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus bank soal ini?")) {
-      try {
-        await api.delete(`/question-banks/${bankId}`);
-        // Hapus bank soal dari daftar tanpa me-refresh
-        setBanks((currentBanks) => currentBanks.filter((b) => b.id !== bankId));
-        notifications.show({
-          title: "Berhasil!",
-          message: "Bank soal telah dihapus.",
-          color: "teal",
-        });
-      } catch (err) {
-        notifications.show({
-          title: "Gagal",
-          message: "Terjadi kesalahan saat menghapus bank soal.",
-          color: "red",
-        });
-      }
-    }
-  };
-
-  // Hook untuk mengelola form
-  const form = useForm({
-    initialValues: {
-      name: "",
-      description: "",
-    },
-    validate: {
-      name: (value) =>
-        value.trim().length > 0 ? null : "Nama bank soal tidak boleh kosong",
-    },
-  });
-
-  // Fetch data awal
   useEffect(() => {
-    const fetchQuestionBanks = async () => {
+    const fetchStats = async () => {
+      setLoading(true);
       try {
-        const response = await api.get("/question-banks");
-        setBanks(response.data);
-      } catch (err) {
-        setError("Gagal mengambil data bank soal.");
+        // PERBAIKAN: Langsung gunakan 'axios' yang di-import
+        const [qbRes, examineeRes, examRes] = await Promise.all([
+          axios.get('/question-banks'),
+          axios.get('/examinees'),
+          axios.get('/exams'),
+        ]);
+
+        setStats({
+          questionBanks: qbRes.data.length,
+          examinees: examineeRes.data.total,
+          exams: examRes.data.length,
+        });
+
+      } catch (error) {
+        console.error("Gagal mengambil data statistik:", error);
+        setStats({ questionBanks: 0, examinees: 0, exams: 0 });
       } finally {
         setLoading(false);
       }
     };
-    fetchQuestionBanks();
+
+    fetchStats();
   }, []);
-
-  // Fungsi untuk menangani submit form
-  const handleSubmit = async (values: typeof form.values) => {
-    try {
-      if (editingBank) {
-        // --- UPDATE LOGIC ---
-        const response = await api.patch(
-          `/question-banks/${editingBank.id}`,
-          values
-        );
-        setBanks((currentBanks) =>
-          currentBanks.map((b) => (b.id === editingBank.id ? response.data : b))
-        );
-        notifications.show({
-          title: "Berhasil!",
-          message: "Bank soal telah berhasil diperbarui.",
-          color: "teal",
-        });
-      } else {
-        // --- CREATE LOGIC (yang sudah ada) ---
-        const response = await api.post("/question-banks", values);
-        setBanks((currentBanks) => [...currentBanks, response.data]);
-        notifications.show({
-          title: "Berhasil!",
-          message: "Bank soal baru telah berhasil ditambahkan.",
-          color: "teal",
-        });
-      }
-      close();
-      form.reset();
-      setEditingBank(null); // Reset state edit
-    } catch (err) {
-      notifications.show({
-        title: "Gagal",
-        message: "Terjadi kesalahan.",
-        color: "red",
-      });
-    }
-  };
-
-  if (loading)
-    return (
-      <Center>
-        <Loader />
-      </Center>
-    );
-  if (error)
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
-
-  const rows = banks.map((bank) => (
-    <Table.Tr key={bank.id}>
-      <Table.Td>{bank.id}</Table.Td>
-      <Table.Td>
-        <Link
-          href={`/admin/question-banks/${bank.id}`}
-          style={{ textDecoration: "none" }}
-        >
-          {bank.name}
-        </Link>
-      </Table.Td>
-      <Table.Td>{bank.description}</Table.Td>
-      <Table.Td>{new Date(bank.created_at).toLocaleDateString()}</Table.Td>
-      <Table.Td>
-        <Group>
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => openEditModal(bank)}
-          >
-            Edit
-          </Button>
-          <Button
-            size="xs"
-            color="red"
-            onClick={() => handleDeleteBank(bank.id)}
-          >
-            Hapus
-          </Button>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
 
   return (
     <>
-      <Modal
-        opened={opened}
-        onClose={() => {
-          close();
-          setEditingBank(null);
-          form.reset();
-        }}
-        title={editingBank ? "Edit Bank Soal" : "Tambah Bank Soal Baru"}
-        centered
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <TextInput
-            withAsterisk
-            label="Nama Bank Soal"
-            placeholder="Contoh: Matematika Dasar"
-            {...form.getInputProps("name")}
-          />
-          <Textarea
-            label="Deskripsi"
-            placeholder="Deskripsi singkat mengenai bank soal"
-            mt="md"
-            {...form.getInputProps("description")}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button type="submit">Simpan</Button>
-          </Group>
-        </form>
-      </Modal>
+      <Title order={2} mb="xl">
+        Dashboard
+      </Title>
 
-      <Group justify="space-between">
-        <Title order={2}>Manajemen Bank Soal</Title>
-        <Button onClick={open}>Tambah Bank Soal Baru</Button>
-      </Group>
-
-      <Table mt="md" withTableBorder withColumnBorders>
-        <Table.Thead>{/* ... Header Tabel ... */}</Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
-      {/* ... Tampilan jika tabel kosong ... */}
+      <Grid>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <StatCard
+            title="Total Bank Soal"
+            value={stats?.questionBanks ?? 0}
+            icon={<IconBox size={24} />}
+            loading={loading}
+          />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <StatCard
+            title="Total Peserta"
+            value={stats?.examinees ?? 0}
+            icon={<IconUsers size={24} />}
+            loading={loading}
+          />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <StatCard
+            title="Total Ujian"
+            value={stats?.exams ?? 0}
+            icon={<IconFileText size={24} />}
+            loading={loading}
+          />
+        </Grid.Col>
+      </Grid>
     </>
   );
 }

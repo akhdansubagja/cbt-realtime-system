@@ -443,6 +443,13 @@ export class ParticipantsService {
     return response;
   }
 
+  async findOne(id: number) {
+    return this.participantRepository.findOne({
+      where: { id },
+      relations: ['examinee'], // Ini penting untuk mengambil data nama peserta
+    });
+  }
+
   private async recalculateAndBroadcastScore(participantId: number) {
     const correctAnswers = await this.answerRepository.find({
       where: {

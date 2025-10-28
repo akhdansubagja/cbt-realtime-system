@@ -3,7 +3,8 @@ import { CreateExamineeDto } from './dto/create-examinee.dto';
 import { UpdateExamineeDto } from './dto/update-examinee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Examinee } from './entities/examinee.entity';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
+
 
 interface PaginationOptions {
   page: number;
@@ -22,11 +23,17 @@ export class ExamineesService {
     return this.examineeRepository.save(newExaminee);
   }
 
-  async findAll(options: PaginationOptions) {
+  async findAll(options: PaginationOptions, search?: string) {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
+    // Tentukan kondisi pencarian
+    const whereCondition = search
+      ? { name: ILike(`%${search}%`) } // ILike untuk case-insensitive search
+      : {};
+
     const [data, total] = await this.examineeRepository.findAndCount({
+      where: whereCondition, // Terapkan kondisi di sini
       order: { name: 'ASC' },
       take: limit,
       skip: skip,

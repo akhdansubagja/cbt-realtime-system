@@ -14,11 +14,24 @@ import {
   TextInput,
   Pagination,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useHotkeys} from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
 import Link from "next/link";
+import { useMemo, useRef } from "react";
+import { Stack, ActionIcon, Flex, Box, Kbd } from "@mantine/core";
+import { DataTable, type DataTableSortStatus } from "mantine-datatable";
+import {
+  IconEdit,
+  IconTrash,
+  IconSearch,
+  IconPlus,
+  IconEye,
+} from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
+import sortBy from "lodash/sortBy";
+import dayjs from "dayjs";
 
 interface Examinee {
   id: number;
@@ -35,6 +48,15 @@ export default function ExamineesPage() {
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 10; // 10 data per halaman
+  const [query, setQuery] = useState("");
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Examinee>>({
+    columnAccessor: "name",
+    direction: "asc",
+  });
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
 
   const form = useForm({
     initialValues: { name: "" },
@@ -46,14 +68,36 @@ export default function ExamineesPage() {
 
   useEffect(() => {
     setLoading(true);
-    api.get(`/examinees?page=${activePage}&limit=${limit}`)
+    // Tambahkan parameter `search` ke URL
+    api
+      .get(
+        `/examinees?page=${activePage}&limit=${limit}&search=${debouncedQuery}`
+      )
       .then((response) => {
         setExaminees(response.data.data);
         setTotalPages(response.data.last_page);
       })
-      .catch(() => setError('Gagal mengambil data peserta.'))
+      .catch(() => setError("Gagal mengambil data peserta."))
       .finally(() => setLoading(false));
-  }, [activePage]); // <-- Dijalankan setiap kali 'activePage' berubah
+    // --- PERUBAHAN 2 DI SINI ---
+  }, [activePage, debouncedQuery]);
+
+  useHotkeys([
+    ['/', () => searchInputRef.current?.focus()],
+  ]);
+
+  useEffect(() => {
+    // Atur timer untuk 500ms (setengah detik)
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 500);
+
+    // Fungsi cleanup ini sangat penting.
+    // Ia akan membatalkan timer sebelumnya setiap kali Anda mengetik huruf baru.
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [query]); // <-- useEffect ini hanya berjalan saat 'query' berubah
 
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
@@ -165,6 +209,7 @@ export default function ExamineesPage() {
 
   return (
     <>
+      {/* Modal untuk Tambah/Edit */}
       <Modal
         opened={opened}
         onClose={() => {
@@ -183,47 +228,105 @@ export default function ExamineesPage() {
             {...form.getInputProps("name")}
           />
           <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={close}>
+              Batal
+            </Button>
             <Button type="submit">Simpan</Button>
           </Group>
         </form>
       </Modal>
 
-      <Group justify="space-between">
-        <Title order={2}>Manajemen Peserta</Title>
-        <Button
-          onClick={() => {
-            setEditingExaminee(null);
-            form.reset();
-            open();
-          }}
-        >
-          Tambah Peserta Baru
-        </Button>
-      </Group>
+      {/* --- BAGIAN BARU DIMULAI DARI SINI --- */}
+      <Stack>
+        <Flex justify="space-between" align="center">
+          <Title order={2}>Manajemen Peserta</Title>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={() => {
+              setEditingExaminee(null);
+              form.reset();
+              open();
+            }}
+          >
+            Tambah Baru
+          </Button>
+        </Flex>
 
-      <Table mt="md" withTableBorder withColumnBorders>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th style={{ width: 60 }}>ID</Table.Th>
-            <Table.Th>Nama Peserta</Table.Th>
-            <Table.Th>Tanggal Didaftarkan</Table.Th>
-            <Table.Th style={{ width: 180 }}>Aksi</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
+        <TextInput
+          ref={searchInputRef}
+          placeholder="Cari peserta berdasarkan nama..."
+          leftSection={<IconSearch size={16} />}
+          rightSection={<Kbd>/</Kbd>}
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+        />
 
-      {examinees.length === 0 && (
-        <Text mt="md" ta="center">
-          Belum ada peserta yang didaftarkan.
-        </Text>
-      )}
-
-      {totalPages > 1 && (
-        <Center mt="md">
-          <Pagination total={totalPages} value={activePage} onChange={setPage} />
-        </Center>
-      )}
+        <Box>
+          <DataTable<Examinee>
+            withTableBorder
+            withColumnBorders
+            borderRadius="md"
+            shadow="sm"
+            minHeight={200}
+            records={examinees}
+            idAccessor="id"
+            columns={[
+              { accessor: "name", title: "Nama Peserta", sortable: true },
+              {
+                accessor: "created_at",
+                title: "Tanggal Didaftarkan",
+                sortable: true,
+                textAlign: "center",
+                render: (record) =>
+                  dayjs(record.created_at).format("DD MMM YYYY"),
+              },
+              {
+                accessor: "actions",
+                title: "Aksi",
+                textAlign: "center",
+                render: (examinee) => (
+                  <Group gap={4} justify="center" wrap="nowrap">
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="blue"
+                      onClick={() =>
+                        router.push(`/admin/examinees/${examinee.id}`)
+                      }
+                    >
+                      <IconEye size={20} />
+                    </ActionIcon>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="yellow"
+                      onClick={() => openEditModal(examinee)}
+                    >
+                      <IconEdit size={20} />
+                    </ActionIcon>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => handleDeleteExaminee(examinee.id)}
+                    >
+                      <IconTrash size={20} />
+                    </ActionIcon>
+                  </Group>
+                ),
+              },
+            ]}
+            sortStatus={sortStatus}
+            onSortStatusChange={setSortStatus}
+            // --- Mengintegrasikan Paginasi Server-Side ---
+            totalRecords={totalPages * limit}
+            recordsPerPage={limit}
+            page={activePage}
+            onPageChange={(p) => setPage(p)}
+            noRecordsText="Tidak ada data untuk ditampilkan"
+          />
+        </Box>
+      </Stack>
     </>
   );
 }

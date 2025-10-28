@@ -7,6 +7,8 @@ import "./globals.css";
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications'; // <-- 2. Import Komponen Notifikasi
 import '@mantine/dates/styles.css';
+import 'mantine-datatable/styles.css';
+import { theme } from '../theme';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         <ColorSchemeScript />
       </head>
       <body className={inter.className}>
-        <MantineProvider>
+        <MantineProvider theme={theme}>
           <Notifications /> {/* <-- 3. Tambahkan Komponen di sini */}
           {children}
         </MantineProvider>

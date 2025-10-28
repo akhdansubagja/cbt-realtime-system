@@ -38,4 +38,10 @@ export class ParticipantsController {
   getParticipantAnswers(@Param('id') id: string) {
     return this.participantsService.getParticipantAnswers(+id);
   }
+
+  @Get(':id')
+  @UseGuards(ParticipantGuard) // Kita amankan juga endpoint ini
+  findOne(@Param('id') id: string) {
+    return this.participantsService.findOne(+id);
+  }
 }

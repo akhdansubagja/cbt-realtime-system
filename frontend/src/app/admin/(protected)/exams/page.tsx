@@ -30,9 +30,15 @@ import "dayjs/locale/id"; // Import locale untuk bahasa Indonesia
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
 import api from "@/lib/axios";
 import Link from "next/link";
+import { useMemo } from 'react';
+import { Flex, Box } from '@mantine/core'; // Stack, etc. sudah ada
+import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
+import { IconEdit, IconTrash, IconSearch, IconEye, IconPlus } from '@tabler/icons-react'; // IconPlus sudah ada
+import { useRouter } from 'next/navigation';
+import sortBy from 'lodash/sortBy';
+import dayjs from 'dayjs';
 
 // Definisikan tipe data yang kita butuhkan
 interface Exam {
@@ -67,6 +73,12 @@ export default function ExamsPage() {
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<number[]>([]); // State untuk checkbox
   const [pickerBankId, setPickerBankId] = useState<string | null>(null); // Untuk dropdown di modal
   const [questionsInPicker, setQuestionsInPicker] = useState<Question[]>([]); // Untuk daftar soal di modal
+  const [query, setQuery] = useState('');
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Exam>>({
+    columnAccessor: 'title',
+    direction: 'asc',
+  });
+  const router = useRouter();
 
   const form = useForm({
     initialValues: {
@@ -132,6 +144,18 @@ export default function ExamsPage() {
         });
       });
   }, [pickerBankId]); // <-- 'Dengarkan' perubahan pada pickerBankId
+
+  const sortedAndFilteredRecords = useMemo(() => {
+    let filtered = exams;
+    if (query) {
+      filtered = exams.filter(({ title, code }) =>
+        title.toLowerCase().includes(query.toLowerCase()) ||
+        code.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+    const sorted = sortBy(filtered, sortStatus.columnAccessor);
+    return sortStatus.direction === 'desc' ? sorted.reverse() : sorted;
+  }, [exams, query, sortStatus]);
 
   const handleDeleteExam = async (examId: number) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus ujian ini?")) {
@@ -529,38 +553,95 @@ export default function ExamsPage() {
         </Group>
       </Modal>
 
-      <Group justify="space-between">
-        <Title order={2}>Manajemen Ujian</Title>
-        <Button
-          onClick={() => {
-            setEditingExam(null);
-            form.reset();
-            open();
-          }}
-        >
-          Buat Ujian Baru
-        </Button>
-      </Group>
+      <Stack>
+        <Flex justify="space-between" align="center">
+          <Title order={2}>Manajemen Ujian</Title>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={() => {
+              setEditingExam(null);
+              form.reset();
+              open();
+            }}
+          >
+            Buat Ujian Baru
+          </Button>
+        </Flex>
 
-      <Table mt="md" withTableBorder withColumnBorders>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th style={{ width: 60 }}>ID</Table.Th>
-            <Table.Th>Judul Ujian</Table.Th>
-            <Table.Th>Kode</Table.Th>
-            <Table.Th>Durasi</Table.Th>
-            <Table.Th>Status</Table.Th>
-            <Table.Th style={{ width: 180 }}>Aksi</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
+        <TextInput
+          placeholder="Cari ujian berdasarkan judul atau kode..."
+          leftSection={<IconSearch size={16} />}
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+        />
 
-      {exams.length === 0 && (
-        <Text mt="md" ta="center">
-          Belum ada ujian yang dibuat.
-        </Text>
-      )}
+        <Box>
+          <DataTable<Exam>
+            withTableBorder
+            withColumnBorders // <-- Sesuai permintaan Anda
+            borderRadius="md"
+            shadow="sm"
+            minHeight={200}
+            records={sortedAndFilteredRecords}
+            idAccessor="id"
+            columns={[
+              { accessor: 'title', title: 'Judul Ujian', sortable: true },
+              { accessor: 'code', title: 'Kode', sortable: true },
+              {
+                accessor: 'duration_minutes',
+                title: 'Durasi',
+                sortable: true,
+                textAlign: 'center',
+                render: (exam) => `${exam.duration_minutes} Menit`,
+              },
+              {
+                accessor: 'status',
+                title: 'Status',
+                textAlign: 'center',
+                render: (exam) => getStatus(exam.start_time, exam.end_time),
+              },
+              {
+                accessor: 'actions',
+                title: 'Aksi',
+                textAlign: 'center',
+                render: (exam) => (
+                  <Group gap={4} justify="center" wrap="nowrap">
+                    <Button
+                      size="compact-xs"
+                      variant="filled"
+                      color="teal"
+                      leftSection={<IconEye size={14}/>}
+                      onClick={() => router.push(`/admin/monitoring/${exam.id}`)}
+                    >
+                      Monitor
+                    </Button>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="yellow"
+                      onClick={() => openEditModal(exam)}
+                    >
+                      <IconEdit size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => handleDeleteExam(exam.id)}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                ),
+              },
+            ]}
+            sortStatus={sortStatus}
+            onSortStatusChange={setSortStatus}
+            noRecordsText="Tidak ada ujian yang dibuat"
+            // Paginasi bisa ditambahkan di sini jika diperlukan nanti
+          />
+        </Box>
+      </Stack>
     </>
   );
 }

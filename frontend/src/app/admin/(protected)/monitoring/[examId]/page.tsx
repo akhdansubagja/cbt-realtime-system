@@ -22,6 +22,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DatePickerInput } from "@mantine/dates";
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
+import { Stack, Flex, Box, ActionIcon } from "@mantine/core";
+import { IconArrowLeft, IconFileExport } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 
 interface ParticipantScore {
   id: number;
@@ -31,8 +34,14 @@ interface ParticipantScore {
   start_time?: string; // <-- TAMBAHKAN BARIS INI
 }
 
+interface ExamInfo {
+  title: string;
+  code: string;
+}
+
 export default function MonitoringPage() {
   const params = useParams();
+  const router = useRouter();
   const examId = params.examId as string;
   const [participants, setParticipants] = useState<ParticipantScore[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,24 +58,38 @@ export default function MonitoringPage() {
     null,
   ]);
   const [quickFilter, setQuickFilter] = useState<string | null>(null);
+  const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
 
   // 1. Ambil data awal peserta
   useEffect(() => {
     if (!examId) return;
-    api
-      .get(`/exams/${examId}/participants`)
-      .then((response) => {
-        const initialScores = response.data.map((p: any) => ({
+
+    const fetchInitialData = async () => {
+      setLoading(true);
+      try {
+        const [participantsRes, examRes] = await Promise.all([
+          api.get(`/exams/${examId}/participants`),
+          api.get(`/exams/${examId}`),
+        ]);
+
+        const initialScores = participantsRes.data.map((p: any) => ({
           id: p.id,
           name: p.examinee.name,
           score: p.current_score,
           status: p.status,
-          start_time: p.start_time, // <-- TAMBAHKAN BARIS INI
+          start_time: p.start_time,
         }));
+
         setAllParticipants(initialScores);
-      })
-      .catch(() => setError("Gagal mengambil data peserta."))
-      .finally(() => setLoading(false));
+        setExamInfo({ title: examRes.data.title, code: examRes.data.code });
+      } catch (err) {
+        setError("Gagal mengambil data awal.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
   }, [examId]);
 
   // 2. Hubungkan ke WebSocket
@@ -273,83 +296,92 @@ export default function MonitoringPage() {
 
   return (
     <>
-      <Title order={2}>Monitoring Ujian Real-Time</Title>
-      <Text c="dimmed">
-        Skor akan diperbarui dan diurutkan secara otomatis.
-      </Text>
-
-      {/* --- UI BARU UNTUK FILTER DAN EKSPOR --- */}
-      <Paper withBorder p="md" mt="md">
-        <Group>
+      <Stack>
+      {/* --- HEADER BARU --- */}
+      <Flex justify="space-between" align="center">
+          <Group>
+              <ActionIcon variant="default" onClick={() => router.back()} size="lg">
+                  <IconArrowLeft />
+              </ActionIcon>
+              <Box>
+                  <Title order={3}>Monitoring Ujian: {examInfo?.title}</Title>
+                  <Text c="dimmed" size="sm">Skor diperbarui dan diurutkan secara real-time.</Text>
+              </Box>
+          </Group>
+      </Flex>
+      
+      {/* --- KONTROL FILTER & EKSPOR BARU --- */}
+      <Paper withBorder p="md" radius="md">
+        <Flex justify="space-between" align="flex-end" gap="md">
           <DatePickerInput
             type="range"
             label="Filter Berdasarkan Tanggal Mulai"
             placeholder="Pilih rentang tanggal"
             value={dateRange}
-            onChange={(value) => {
-              // 'value' di sini adalah array berisi [string | null, string | null]
-              const [start, end] = value;
-              // Ubah string menjadi objek Date sebelum disimpan ke state
+            onChange={(value) =>
               setDateRange([
-                start ? new Date(start) : null,
-                end ? new Date(end) : null,
-              ]);
-            }}
+                value[0] ? new Date(value[0]) : null,
+                value[1] ? new Date(value[1]) : null,
+              ])
+            }
             clearable
+            style={{ flex: 1 }}
           />
           <Button
+            leftSection={<IconFileExport size={16} />}
             onClick={handleExport}
             disabled={filteredParticipants.length === 0}
-            style={{ alignSelf: "flex-end" }}
           >
             Ekspor ke Excel
           </Button>
-        </Group>
+        </Flex>
       </Paper>
 
-      <Paper withBorder p="md" mt="md">
-        <Table withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>ID Peserta</Table.Th>
-              <Table.Th>Nama</Table.Th>
-              <Table.Th>Skor</Table.Th>
-              <Table.Th>Status</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          {/* Gunakan motion.tbody untuk mengaktifkan layout animation */}
-          <motion.tbody layout>
-            <AnimatePresence>
-              {filteredParticipants.map((p) => (
-                <motion.tr
-                  key={p.id}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <Table.Td>{p.id}</Table.Td>
-                  <Table.Td>{p.name}</Table.Td>
-                  <Table.Td fw={700}>{p.score ?? "-"}</Table.Td>
-                  <Table.Td>
+      {/* --- LEADERBOARD REAL-TIME BARU --- */}
+      <AnimatePresence>
+        <Stack gap="xs" mt="md">
+          {filteredParticipants.map((p, index) => (
+            <motion.div
+              key={p.id}
+              layout // Ini adalah kunci animasi framer-motion
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <Paper withBorder shadow="xs" p="sm" radius="md">
+                <Flex align="center" justify="space-between" gap="md">
+                  <Group>
+                    <Text fw={700} fz={20} w={40} ta="center" c="dimmed">
+                      #{index + 1}
+                    </Text>
+                    <Text fw={500}>{p.name}</Text>
+                  </Group>
+                  <Group>
                     <Badge
-                      color={p.status === "finished" ? "gray" : "green"}
-                      variant="light"
-                    >
-                      {p.status === "finished" ? "Selesai" : "Mengerjakan"}
-                    </Badge>
-                  </Table.Td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </motion.tbody>
-        </Table>
-        {filteredParticipants.length === 0 && (
-          <Text mt="md" ta="center">
-            Belum ada peserta yang sesuai dengan filter.
-          </Text>
-        )}
-      </Paper>
+                        color={p.status === 'finished' ? 'gray' : 'green'}
+                        variant="light"
+                        size="lg"
+                      >
+                        {p.status === 'finished' ? 'Selesai' : 'Mengerjakan'}
+                      </Badge>
+                    <Text fz={24} fw={700} w={80} ta="right">
+                      {p.score ?? '-'}
+                    </Text>
+                  </Group>
+                </Flex>
+              </Paper>
+            </motion.div>
+          ))}
+        </Stack>
+      </AnimatePresence>
+
+      {!loading && filteredParticipants.length === 0 && (
+        <Center mt="xl">
+          <Text c="dimmed">Belum ada peserta yang memulai ujian atau sesuai dengan filter.</Text>
+        </Center>
+      )}
+    </Stack>
     </>
   );
 }
