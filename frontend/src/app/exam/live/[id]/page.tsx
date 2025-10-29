@@ -38,6 +38,7 @@ import {
   IconArrowRight,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
+import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
 
 // Definisikan tipe data yang lebih detail
 interface QuestionDetail {
@@ -281,149 +282,159 @@ export default function LiveExamPage() {
     examData.exam.exam_questions[currentQuestionIndex];
 
   return (
-    <AppShell header={{ height: 70 }} padding="md">
-      {/* --- HEADER UJIAN BARU --- */}
-      <AppShell.Header>
-        <Flex h="100%" px="md" align="center" justify="space-between">
-          <Box>
-            <Title order={5}>{examData.exam.title}</Title>
-            <Text size="sm" c="dimmed">
-              Peserta: {examData.examinee.name}
-            </Text>
-          </Box>
-          <Group>
-            <Box w={120}>
-              <Group>
-                <IconClock size={18} />
-                <Text fw={700} fz="lg" c={timeLeft < 60 ? "red" : "inherit"}>
-                  {Math.floor(timeLeft / 60)}:
-                  {("0" + (timeLeft % 60)).slice(-2)}
-                </Text>
-              </Group>
-              <Progress
-                value={(timeLeft / (examData.exam.duration_minutes * 60)) * 100}
-                color={timeLeft < 60 ? "red" : "blue"}
-                size="xs"
-              />
+    <Box>
+      {/* --- Tambahkan tombol di pojok --- */}
+      <Box style={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}>
+        <ThemeToggle />
+      </Box>
+      <AppShell header={{ height: 70 }} padding="md">
+        {/* --- HEADER UJIAN BARU --- */}
+        <AppShell.Header>
+          <Flex h="100%" px="md" align="center" justify="space-between">
+            <Box>
+              <Title order={5}>{examData.exam.title}</Title>
+              <Text size="sm" c="dimmed">
+                Peserta: {examData.examinee.name}
+              </Text>
             </Box>
-            <Button color="red" onClick={() => setIsModalOpen(true)}>
-              Selesai
+            <Group>
+              <Box w={120}>
+                <Group>
+                  <IconClock size={18} />
+                  <Text fw={700} fz="lg" c={timeLeft < 60 ? "red" : "inherit"}>
+                    {Math.floor(timeLeft / 60)}:
+                    {("0" + (timeLeft % 60)).slice(-2)}
+                  </Text>
+                </Group>
+                <Progress
+                  value={
+                    (timeLeft / (examData.exam.duration_minutes * 60)) * 100
+                  }
+                  color={timeLeft < 60 ? "red" : "blue"}
+                  size="xs"
+                />
+              </Box>
+              <ThemeToggle />
+              <Button color="red" onClick={() => setIsModalOpen(true)}>
+                Selesai
+              </Button>
+            </Group>
+          </Flex>
+        </AppShell.Header>
+
+        {/* --- KONTEN UTAMA (SOAL) --- */}
+        <AppShell.Main>
+          <Container>
+            <Paper withBorder p="xl" radius="md" shadow="sm">
+              <Text fw={500}>Soal No. {currentQuestionIndex + 1}</Text>
+              <Text mt="lg" mb="xl" size="lg">
+                {currentExamQuestion.question.question_text}
+              </Text>
+
+              <Radio.Group
+                value={answers[currentExamQuestion.id] || null}
+                onChange={(value) =>
+                  handleAnswerChange(currentExamQuestion.id, value)
+                }
+              >
+                <Stack>
+                  {currentExamQuestion.question.options.map((option) => (
+                    <Paper key={option.key} withBorder p="md" radius="sm">
+                      <Radio
+                        value={option.key}
+                        label={`${option.key}. ${option.text}`}
+                      />
+                    </Paper>
+                  ))}
+                </Stack>
+              </Radio.Group>
+            </Paper>
+
+            {/* --- TOMBOL NAVIGASI & DAFTAR SOAL --- */}
+            <Flex justify="space-between" mt="xl">
+              <Button
+                variant="default"
+                leftSection={<IconArrowLeft size={16} />}
+                onClick={() => setCurrentQuestionIndex((p) => p - 1)}
+                disabled={currentQuestionIndex === 0}
+              >
+                Sebelumnya
+              </Button>
+              <Button
+                variant="outline"
+                leftSection={<IconGripVertical size={16} />}
+                onClick={openNav}
+              >
+                Daftar Soal
+              </Button>
+              <Button
+                rightSection={<IconArrowRight size={16} />}
+                onClick={() => setCurrentQuestionIndex((p) => p + 1)}
+                disabled={
+                  currentQuestionIndex ===
+                  examData.exam.exam_questions.length - 1
+                }
+              >
+                Selanjutnya
+              </Button>
+            </Flex>
+          </Container>
+        </AppShell.Main>
+
+        {/* --- DRAWER UNTUK NAVIGASI SOAL --- */}
+        <Drawer
+          opened={navOpened}
+          onClose={closeNav}
+          title="Navigasi Soal"
+          position="right"
+        >
+          <SimpleGrid cols={5} spacing="sm">
+            {examData.exam.exam_questions.map((q, index) => {
+              // Deklarasi variabel yang hilang ada di sini
+              const isCurrent = index === currentQuestionIndex;
+              const isAnswered = !!answers[q.id];
+
+              return (
+                <Button
+                  key={q.id}
+                  variant={
+                    isCurrent ? "filled" : isAnswered ? "light" : "outline"
+                  }
+                  color={isAnswered || isCurrent ? "blue" : "gray"}
+                  onClick={() => {
+                    setCurrentQuestionIndex(index);
+                    closeNav();
+                  }}
+                >
+                  {index + 1}
+                </Button>
+              );
+            })}
+          </SimpleGrid>
+        </Drawer>
+
+        {/* --- MODAL KONFIRMASI (Tidak ada perubahan) --- */}
+        <Modal
+          opened={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Konfirmasi Selesai Ujian"
+          centered
+        >
+          <Text>Apakah Anda yakin ingin menyelesaikan sesi ujian ini?</Text>
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={() => setIsModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              color="red"
+              loading={isFinishing}
+              onClick={() => handleFinishExam(true)}
+            >
+              Ya, Selesaikan
             </Button>
           </Group>
-        </Flex>
-      </AppShell.Header>
-
-      {/* --- KONTEN UTAMA (SOAL) --- */}
-      <AppShell.Main>
-        <Container>
-          <Paper withBorder p="xl" radius="md" shadow="sm">
-            <Text fw={500}>Soal No. {currentQuestionIndex + 1}</Text>
-            <Text mt="lg" mb="xl" size="lg">
-              {currentExamQuestion.question.question_text}
-            </Text>
-
-            <Radio.Group
-              value={answers[currentExamQuestion.id] || null}
-              onChange={(value) =>
-                handleAnswerChange(currentExamQuestion.id, value)
-              }
-            >
-              <Stack>
-                {currentExamQuestion.question.options.map((option) => (
-                  <Paper key={option.key} withBorder p="md" radius="sm">
-                    <Radio
-                      value={option.key}
-                      label={`${option.key}. ${option.text}`}
-                    />
-                  </Paper>
-                ))}
-              </Stack>
-            </Radio.Group>
-          </Paper>
-
-          {/* --- TOMBOL NAVIGASI & DAFTAR SOAL --- */}
-          <Flex justify="space-between" mt="xl">
-            <Button
-              variant="default"
-              leftSection={<IconArrowLeft size={16} />}
-              onClick={() => setCurrentQuestionIndex((p) => p - 1)}
-              disabled={currentQuestionIndex === 0}
-            >
-              Sebelumnya
-            </Button>
-            <Button
-              variant="outline"
-              leftSection={<IconGripVertical size={16} />}
-              onClick={openNav}
-            >
-              Daftar Soal
-            </Button>
-            <Button
-              rightSection={<IconArrowRight size={16} />}
-              onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-              disabled={
-                currentQuestionIndex === examData.exam.exam_questions.length - 1
-              }
-            >
-              Selanjutnya
-            </Button>
-          </Flex>
-        </Container>
-      </AppShell.Main>
-
-      {/* --- DRAWER UNTUK NAVIGASI SOAL --- */}
-      <Drawer
-        opened={navOpened}
-        onClose={closeNav}
-        title="Navigasi Soal"
-        position="right"
-      >
-        <SimpleGrid cols={5} spacing="sm">
-          {examData.exam.exam_questions.map((q, index) => {
-            // Deklarasi variabel yang hilang ada di sini
-            const isCurrent = index === currentQuestionIndex;
-            const isAnswered = !!answers[q.id];
-
-            return (
-              <Button
-                key={q.id}
-                variant={
-                  isCurrent ? "filled" : isAnswered ? "light" : "outline"
-                }
-                color={isAnswered || isCurrent ? "blue" : "gray"}
-                onClick={() => {
-                  setCurrentQuestionIndex(index);
-                  closeNav();
-                }}
-              >
-                {index + 1}
-              </Button>
-            );
-          })}
-        </SimpleGrid>
-      </Drawer>
-
-      {/* --- MODAL KONFIRMASI (Tidak ada perubahan) --- */}
-      <Modal
-        opened={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Konfirmasi Selesai Ujian"
-        centered
-      >
-        <Text>Apakah Anda yakin ingin menyelesaikan sesi ujian ini?</Text>
-        <Group justify="flex-end" mt="md">
-          <Button variant="default" onClick={() => setIsModalOpen(false)}>
-            Batal
-          </Button>
-          <Button
-            color="red"
-            loading={isFinishing}
-            onClick={() => handleFinishExam(true)}
-          >
-            Ya, Selesaikan
-          </Button>
-        </Group>
-      </Modal>
-    </AppShell>
+        </Modal>
+      </AppShell>
+    </Box>
   );
 }

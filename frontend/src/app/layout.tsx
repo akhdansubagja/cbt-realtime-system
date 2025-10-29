@@ -1,30 +1,27 @@
-// src/app/layout.tsx
 import '@mantine/core/styles.css';
-import '@mantine/notifications/styles.css'; // <-- 1. Import CSS Notifikasi
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ColorSchemeScript, MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications'; // <-- 2. Import Komponen Notifikasi
-import '@mantine/dates/styles.css';
 import 'mantine-datatable/styles.css';
-import { theme } from '../theme';
+import React from 'react';
+import { ColorSchemeScript } from '@mantine/core';
+import { Providers } from './Providers';
 
-const inter = Inter({ subsets: ["latin"] });
+export const metadata = {
+  title: 'CBT Realtime System',
+  description: 'Aplikasi Ujian Online Real-time',
+};
 
-export const metadata = { /* ... */ };
-
-export default function RootLayout({ children }: { children: React.ReactNode; }) {
+export default function RootLayout({ children }: { children: any }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <ColorSchemeScript />
+        <ColorSchemeScript defaultColorScheme="auto" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <meta
+          name="viewport"
+          content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
+        />
       </head>
-      <body className={inter.className}>
-        <MantineProvider theme={theme}>
-          <Notifications /> {/* <-- 3. Tambahkan Komponen di sini */}
-          {children}
-        </MantineProvider>
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

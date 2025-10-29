@@ -13,12 +13,18 @@ import {
   Alert,
   List,
   ThemeIcon,
+  Box,
+  Stack,
+  Grid,
+  Group,
+  AppShell,
 } from "@mantine/core";
 import { IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
 import axios from "axios";
 import api from "@/lib/axios";
-import { Stack, Grid, Box, Group } from "@mantine/core";
 import { IconClock, IconListNumbers } from "@tabler/icons-react";
+import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
+import { ParticipantLayout } from "@/components/layout/ParticipantLayout";
 
 // --- PERBAIKAN TIPE DATA DI SINI ---
 interface ExamData {
@@ -103,74 +109,81 @@ export default function ExamSessionPage() {
   }
 
   return (
-    <Container
-      fluid
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "var(--mantine-color-gray-0)",
-      }}
-    >
-      <Stack w={600}>
-        {examData && (
-          <Paper withBorder shadow="md" p={30} radius="md">
-            <Stack align="center">
-              <Text c="dimmed">Selamat datang,</Text>
-              <Title order={3}>{examData.examinee.name}</Title>
+    <AppShell>
+      <Box style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <ThemeToggle />
+      </Box>
 
-              <Text mt="md" mb="xs">
-                Anda akan memulai ujian:
-              </Text>
-              <Title order={2} ta="center">
-                {examData.exam.title}
-              </Title>
+      <AppShell.Main>
+        <Container
+          fluid
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+          }}
+        >
+          <Stack w={600}>
+            {examData && (
+              <Paper withBorder shadow="md" p={30} radius="md">
+                <Stack align="center">
+                  <Text c="dimmed">Selamat datang,</Text>
+                  <Title order={3}>{examData.examinee.name}</Title>
 
-              <Grid mt="xl" w="100%">
-                <Grid.Col span={6}>
-                  <Paper withBorder p="md" radius="sm">
-                    <Group>
-                      <ThemeIcon variant="light" size="lg">
-                        <IconClock size={20} />
-                      </ThemeIcon>
-                      <Box>
-                        <Text size="xs" c="dimmed">
-                          Durasi
-                        </Text>
-                        <Text fw={500}>
-                          {examData.exam.duration_minutes} Menit
-                        </Text>
-                      </Box>
-                    </Group>
-                  </Paper>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Paper withBorder p="md" radius="sm">
-                    <Group>
-                      <ThemeIcon variant="light" size="lg">
-                        <IconListNumbers size={20} />
-                      </ThemeIcon>
-                      <Box>
-                        <Text size="xs" c="dimmed">
-                          Jumlah Soal
-                        </Text>
-                        <Text fw={500}>
-                          {examData.exam.exam_questions.length} Soal
-                        </Text>
-                      </Box>
-                    </Group>
-                  </Paper>
-                </Grid.Col>
-              </Grid>
+                  <Text mt="md" mb="xs">
+                    Anda akan memulai ujian:
+                  </Text>
+                  <Title order={2} ta="center">
+                    {examData.exam.title}
+                  </Title>
 
-              <Button fullWidth mt="xl" size="lg" onClick={handleStartExam}>
-                Saya Siap, Mulai Kerjakan
-              </Button>
-            </Stack>
-          </Paper>
-        )}
-      </Stack>
-    </Container>
+                  <Grid mt="xl" w="100%">
+                    <Grid.Col span={6}>
+                      <Paper withBorder p="md" radius="sm">
+                        <Group>
+                          <ThemeIcon variant="light" size="lg">
+                            <IconClock size={20} />
+                          </ThemeIcon>
+                          <Box>
+                            <Text size="xs" c="dimmed">
+                              Durasi
+                            </Text>
+                            <Text fw={500}>
+                              {examData.exam.duration_minutes} Menit
+                            </Text>
+                          </Box>
+                        </Group>
+                      </Paper>
+                    </Grid.Col>
+                    <Grid.Col span={6}>
+                      <Paper withBorder p="md" radius="sm">
+                        <Group>
+                          <ThemeIcon variant="light" size="lg">
+                            <IconListNumbers size={20} />
+                          </ThemeIcon>
+                          <Box>
+                            <Text size="xs" c="dimmed">
+                              Jumlah Soal
+                            </Text>
+                            <Text fw={500}>
+                              {examData.exam.exam_questions.length} Soal
+                            </Text>
+                          </Box>
+                        </Group>
+                      </Paper>
+                    </Grid.Col>
+                  </Grid>
+
+                  <Button fullWidth mt="xl" size="lg" onClick={handleStartExam}>
+                    Saya Siap, Mulai Kerjakan
+                  </Button>
+                </Stack>
+              </Paper>
+            )}
+          </Stack>
+        </Container>
+      </AppShell.Main>
+    </AppShell>
   );
 }

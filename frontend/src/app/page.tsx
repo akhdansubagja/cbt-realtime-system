@@ -14,11 +14,15 @@ import {
   Alert,
   Loader,
   Center,
+  MantineTheme,
+  Box,
+  Stack,
+  Text,
+  AppShell,
 } from "@mantine/core";
 import axios from "axios";
-import { Stack, Text } from "@mantine/core";
 import { IconUser, IconKey } from "@tabler/icons-react";
-
+import { ThemeToggle } from "../components/layout/ThemeToggle";
 // Definisikan tipe data untuk examinee
 interface Examinee {
   id: number;
@@ -111,74 +115,83 @@ export default function HomePage() {
   };
 
   return (
-    <Container
-      fluid
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "var(--mantine-color-gray-0)",
-      }}
-    >
-      <Stack w={420}>
-        <Title ta="center">Ujian Online</Title>
-        <Text c="dimmed" size="sm" ta="center" mb={20}>
-          Silakan pilih nama dan masukkan kode untuk memulai ujian.
-        </Text>
+    <AppShell>
+      <Box style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <ThemeToggle />
+      </Box>
 
-        <Paper withBorder shadow="md" p={30} radius="md">
-          {isFetchingExaminees ? (
-            <Center>
-              <Loader />
-              <Text ml="md">Memuat daftar peserta...</Text>
-            </Center>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleJoinExam();
-              }}
-            >
-              <Stack gap="md">
-                <Select
-                  leftSection={<IconUser size={16} />}
-                  label="Pilih Nama Anda"
-                  placeholder="Cari dan pilih nama Anda"
-                  data={examinees}
-                  value={selectedExamineeId}
-                  onChange={setSelectedExamineeId}
-                  searchable
-                  required
-                />
-                <TextInput
-                  leftSection={<IconKey size={16} />}
-                  label="Kode Ujian"
-                  placeholder="Masukkan kode ujian"
-                  value={examCode}
-                  onChange={(event) => setExamCode(event.currentTarget.value)}
-                  required
-                />
+      <AppShell.Main>
+        <Container
+          fluid
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+          }}
+        >
+          <Stack w={420}>
+            <Title ta="center">Ujian Online</Title>
+            <Text c="dimmed" size="sm" ta="center" mb={20}>
+              Silakan pilih nama dan masukkan kode untuk memulai ujian.
+            </Text>
 
-                {error && (
-                  <Alert
-                    color="red"
-                    title="Gagal Bergabung"
-                    withCloseButton
-                    onClose={() => setError("")}
-                  >
-                    {error}
-                  </Alert>
-                )}
+            <Paper withBorder shadow="md" p={30} radius="md">
+              {isFetchingExaminees ? (
+                <Center>
+                  <Loader />
+                  <Text ml="md">Memuat daftar peserta...</Text>
+                </Center>
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleJoinExam();
+                  }}
+                >
+                  <Stack gap="md">
+                    <Select
+                      leftSection={<IconUser size={16} />}
+                      label="Pilih Nama Anda"
+                      placeholder="Cari dan pilih nama Anda"
+                      data={examinees}
+                      value={selectedExamineeId}
+                      onChange={setSelectedExamineeId}
+                      searchable
+                      required
+                    />
+                    <TextInput
+                      leftSection={<IconKey size={16} />}
+                      label="Kode Ujian"
+                      placeholder="Masukkan kode ujian"
+                      value={examCode}
+                      onChange={(event) =>
+                        setExamCode(event.currentTarget.value)
+                      }
+                      required
+                    />
 
-                <Button type="submit" fullWidth mt="md" loading={loading}>
-                  Gabung Ujian
-                </Button>
-              </Stack>
-            </form>
-          )}
-        </Paper>
-      </Stack>
-    </Container>
+                    {error && (
+                      <Alert
+                        color="red"
+                        title="Gagal Bergabung"
+                        withCloseButton
+                        onClose={() => setError("")}
+                      >
+                        {error}
+                      </Alert>
+                    )}
+
+                    <Button type="submit" fullWidth mt="md" loading={loading}>
+                      Gabung Ujian
+                    </Button>
+                  </Stack>
+                </form>
+              )}
+            </Paper>
+          </Stack>
+        </Container>
+      </AppShell.Main>
+    </AppShell>
   );
 }

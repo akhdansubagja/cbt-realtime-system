@@ -55,16 +55,16 @@ describe('ExamineesController', () => {
   });
 
   describe('findAll', () => {
-    it('should return paginated examinees', async () => {
-      const paginatedResult = { data: [new Examinee()], total: 1, page: 1, last_page: 1 };
-      mockExamineesService.findAll.mockResolvedValue(paginatedResult);
-
-      const result = await controller.findAll('1', '10');
-
-      expect(result).toEqual(paginatedResult);
-      expect(service.findAll).toHaveBeenCalledWith({ page: 1, limit: 10 });
+      it('should return paginated examinees', async () => {
+        const paginatedResult = { data: [new Examinee()], total: 1, page: 1, last_page: 1 };
+        mockExamineesService.findAll.mockResolvedValue(paginatedResult);
+  
+        const result = await controller.findAll('1', '10', 'searchQuery');
+  
+        expect(result).toEqual(paginatedResult);
+        expect(service.findAll).toHaveBeenCalledWith({ page: 1, limit: 10 }, 'searchQuery');
+      });
     });
-  });
 
   describe('findAllSimple', () => {
     it('should return a simple list of examinees', async () => {

@@ -11,6 +11,9 @@ DONE3. buat fitur agar memudahkan dalam membuat soal baru, maksudnya adalah sepe
 DONE4. buat fitur untuk dapat melihat detail peserta, maksudnya seperti ujian apa saja yang telah
 diikuti oleh user tersebut, lalu tanggal pelaksanaanya, skornya dan lain lain
 
+5. buat agar soal ujian maupun jawabannya tidak bisa disalin
+
+
 
 OPSIONAL
 1. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur checklist)
@@ -20,6 +23,5 @@ SECURITY
 DONE1. di halaman live exam untuk saat ini bisa terbobol hanya dengan modal mengganti URL
 
 
-Oke, ada sedikit masalah, ternyata pada saat user waktu ujiannya sudah habis, sistem tidak menyimpan data ke tabel participants
 
 

@@ -10,6 +10,8 @@ import {
   Stack,
   Flex,
   useMantineTheme,
+  ActionIcon,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -18,9 +20,12 @@ import {
   IconUsers,
   IconFileText,
   IconBox,
+  IconSun,
+  IconMoon,
 } from "@tabler/icons-react";
 import { useRouter, usePathname } from "next/navigation";
 import React from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 // Data untuk navigasi, agar lebih rapi dan mudah diubah
 const navLinks = [
@@ -79,25 +84,31 @@ export function AdminDashboardLayout({
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{
-        width: 250,
-        breakpoint: "sm",
-        collapsed: { mobile: !opened },
-      }}
+      navbar={{ width: 250, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-          {/* Logo atau Judul Aplikasi bisa disini */}
-          <Title order={4}>CBT Admin</Title>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+            />
+            <Title order={4}>CBT Admin</Title>
+          </Group>
+          <ThemeToggle />
         </Group>
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
-        <Flex direction="column" justify="space-between" style={{ height: "100%" }}>
+        <Flex
+          direction="column"
+          justify="space-between"
+          style={{ height: "100%" }}
+        >
           <Stack>{mainLinks}</Stack>
-
           <NavLink
             href="#"
             label="Logout"
@@ -108,7 +119,6 @@ export function AdminDashboardLayout({
           />
         </Flex>
       </AppShell.Navbar>
-
       <AppShell.Main>{children}</AppShell.Main>
     </AppShell>
   );
