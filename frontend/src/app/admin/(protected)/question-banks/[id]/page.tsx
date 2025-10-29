@@ -129,7 +129,7 @@ export default function SingleQuestionBankPage() {
   const form = useForm({
     initialValues: {
       question_text: "",
-      question_type: "multiple_choice" as "multiple_choice" | "essay",
+      question_type: "multiple_choice",
       image_url: "",
       options: [
         { key: "A", text: "" },
@@ -537,22 +537,6 @@ export default function SingleQuestionBankPage() {
             idAccessor="id"
             columns={[
               { accessor: "question_text", title: "Teks Soal", ellipsis: true },
-              {
-                accessor: "question_type",
-                title: "Tipe",
-                textAlign: "center",
-                width: 150,
-                render: (q) => (
-                  <Badge
-                    variant="light"
-                    color={q.question_type === "essay" ? "blue" : "teal"}
-                  >
-                    {q.question_type === "multiple_choice"
-                      ? "Pilihan Ganda"
-                      : "Esai"}
-                  </Badge>
-                ),
-              },
               {
                 accessor: "actions",
                 title: "Aksi",

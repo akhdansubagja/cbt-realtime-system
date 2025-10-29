@@ -14,7 +14,6 @@ import {
 // Enum untuk tipe soal
 export enum QuestionType {
   MULTIPLE_CHOICE = 'multiple_choice',
-  ESSAY = 'essay',
 }
 
 @Entity({ name: 'questions' })

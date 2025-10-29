@@ -3,6 +3,7 @@ import 'mantine-datatable/styles.css';
 import React from 'react';
 import { ColorSchemeScript } from '@mantine/core';
 import { Providers } from './Providers';
+import "@mantine/dates/styles.css";
 
 export const metadata = {
   title: 'CBT Realtime System',

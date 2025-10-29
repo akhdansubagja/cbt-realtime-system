@@ -638,7 +638,6 @@ export default function ExamsPage() {
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
             noRecordsText="Tidak ada ujian yang dibuat"
-            // Paginasi bisa ditambahkan di sini jika diperlukan nanti
           />
         </Box>
       </Stack>
