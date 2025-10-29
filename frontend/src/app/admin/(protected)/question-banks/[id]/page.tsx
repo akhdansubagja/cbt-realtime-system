@@ -21,18 +21,22 @@ import {
   Pagination,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconTrash } from "@tabler/icons-react";
 import api from "@/lib/axios";
 import { useMemo } from "react";
-import { Flex, Box, Stack, Badge } from "@mantine/core";
+import { Flex, Box, Stack, Badge, Paper, Image } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconEdit,
   IconSearch,
   IconPlus,
   IconArrowLeft,
+  IconUpload,
+  IconX,
+  IconPhoto,
 } from "@tabler/icons-react"; // IconTrash sudah ada
 import dayjs from "dayjs";
 import sortBy from "lodash/sortBy";
@@ -80,11 +84,53 @@ export default function SingleQuestionBankPage() {
     direction: "asc",
   });
 
+  const handleImageUpload = (files: File[]) => {
+    if (files.length === 0) return;
+    const file = files[0];
+    const formData = new FormData();
+    formData.append("file", file); // 'file' harus cocok dengan nama field di backend
+
+    // Tampilkan notifikasi loading
+    const uploadNotification = notifications.show({
+      loading: true,
+      title: "Mengunggah gambar...",
+      message: "Mohon tunggu.",
+      autoClose: false,
+      withCloseButton: false,
+    });
+
+    api
+      .post("/questions/upload", formData)
+      .then((response) => {
+        // Simpan URL gambar ke dalam form
+        form.setFieldValue("image_url", response.data.url);
+        notifications.update({
+          id: uploadNotification,
+          color: "teal",
+          title: "Berhasil!",
+          message: "Gambar telah berhasil diunggah.",
+          icon: <IconUpload size={16} />,
+          autoClose: 3000,
+        });
+      })
+      .catch((error) => {
+        notifications.update({
+          id: uploadNotification,
+          color: "red",
+          title: "Gagal",
+          message: error.response?.data?.message || "Gagal mengunggah gambar.",
+          icon: <IconX size={16} />,
+          autoClose: 5000,
+        });
+      });
+  };
+
   // --- 1. SETUP FORM YANG LEBIH KOMPLEKS ---
   const form = useForm({
     initialValues: {
       question_text: "",
       question_type: "multiple_choice" as "multiple_choice" | "essay",
+      image_url: "",
       options: [
         { key: "A", text: "" },
         { key: "B", text: "" },
@@ -191,6 +237,7 @@ export default function SingleQuestionBankPage() {
       bank_id: parseInt(bankId),
       question_text: values.question_text,
       question_type: values.question_type,
+      image_url: values.image_url,
       ...(values.question_type === "multiple_choice" && {
         options: values.options,
         correct_answer: values.correct_answer,
@@ -326,6 +373,65 @@ export default function SingleQuestionBankPage() {
             minRows={3}
             {...form.getInputProps("question_text")}
           />
+
+          <Box mt="md">
+            {/* Jika BELUM ada gambar, tampilkan Dropzone */}
+            {!form.values.image_url && (
+              <Dropzone
+                onDrop={handleImageUpload}
+                onReject={(files) => console.log("rejected files", files)}
+                maxSize={5 * 1024 ** 2} // 5MB
+                accept={IMAGE_MIME_TYPE}
+              >
+                <Group
+                  justify="center"
+                  gap="xl"
+                  mih={150}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <Dropzone.Accept>
+                    <IconUpload size={52} stroke={1.5} />
+                  </Dropzone.Accept>
+                  <Dropzone.Reject>
+                    <IconX size={52} stroke={1.5} />
+                  </Dropzone.Reject>
+                  <Dropzone.Idle>
+                    <IconPhoto size={52} stroke={1.5} />
+                  </Dropzone.Idle>
+                  <div>
+                    <Text size="xl" inline>
+                      Seret gambar ke sini atau klik untuk memilih file
+                    </Text>
+                    <Text size="sm" c="dimmed" inline mt={7}>
+                      Ukuran file maksimal 5MB
+                    </Text>
+                  </div>
+                </Group>
+              </Dropzone>
+            )}
+
+            {/* Jika SUDAH ada gambar, tampilkan preview dan tombol hapus */}
+            {form.values.image_url && (
+              <Paper withBorder p="sm" radius="sm">
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_API_URL}${form.values.image_url}`}
+                  alt="Preview soal"
+                  height={200}
+                  width="auto"
+                  fit="contain"
+                />
+                <Button
+                  fullWidth
+                  variant="light"
+                  color="red"
+                  mt="sm"
+                  onClick={() => form.setFieldValue("image_url", "")}
+                >
+                  Hapus Gambar
+                </Button>
+              </Paper>
+            )}
+          </Box>
           <Select
             label="Tipe Soal"
             data={["multiple_choice", "essay"]}

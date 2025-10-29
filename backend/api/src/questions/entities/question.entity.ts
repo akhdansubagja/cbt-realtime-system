@@ -32,6 +32,9 @@ export class Question {
   @Column()
   question_text: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  image_url: string;
+
   @Column({
     type: 'enum',
     enum: QuestionType,

@@ -30,6 +30,7 @@ import {
   rem,
   ActionIcon,
   Flex,
+  Image,
 } from "@mantine/core";
 import {
   IconGripVertical,
@@ -44,6 +45,7 @@ import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
 interface QuestionDetail {
   id: number;
   question_text: string;
+  image_url?: string;
   options: { key: string; text: string }[];
 }
 
@@ -330,6 +332,18 @@ export default function LiveExamPage() {
               <Text mt="lg" mb="xl" size="lg">
                 {currentExamQuestion.question.question_text}
               </Text>
+
+              {currentExamQuestion.question.image_url && (
+                <Image
+                  mt="md"
+                  radius="sm"
+                  mah={300} // Batasi tinggi maksimal gambar agar tidak terlalu besar
+                  w="auto"
+                  fit="contain"
+                  src={`${process.env.NEXT_PUBLIC_API_URL}${currentExamQuestion.question.image_url}`}
+                  alt={`Gambar untuk soal no. ${currentQuestionIndex + 1}`}
+                />
+              )}
 
               <Radio.Group
                 value={answers[currentExamQuestion.id] || null}

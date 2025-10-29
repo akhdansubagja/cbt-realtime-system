@@ -6,4 +6,5 @@ export class CreateQuestionDto {
   question_type: QuestionType; // 'multiple_choice' atau 'essay'
   options?: any; // Opsional
   correct_answer?: string; // Opsional
+  image_url?: string;
 }
