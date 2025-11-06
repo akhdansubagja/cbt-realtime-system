@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+
 // Import semua Entity
 import { User } from './users/entities/user.entity';
 import { QuestionBank } from './question-banks/entities/question-bank.entity';
@@ -28,6 +29,8 @@ import { LiveExamModule } from './live-exam/live-exam.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { ParticipantExamQuestion } from './participants/entities/participant-exam-question.entity';
 import { AuthModule } from './auth/auth.module';
+import { BatchesModule } from './batches/batches.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -42,6 +45,7 @@ import { AuthModule } from './auth/auth.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
+      autoLoadEntities: true,
       // V V V BAGIAN YANG DIPERBAIKI V V V
       entities: [
         User,
@@ -70,6 +74,8 @@ import { AuthModule } from './auth/auth.module';
     ExamsModule,
     ExamineesModule,
     ParticipantsModule,
+    BatchesModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

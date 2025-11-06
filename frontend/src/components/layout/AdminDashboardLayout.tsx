@@ -22,6 +22,7 @@ import {
   IconBox,
   IconSun,
   IconMoon,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 import { useRouter, usePathname } from "next/navigation";
 import React from "react";
@@ -43,6 +44,11 @@ const navLinks = [
     href: "/admin/examinees",
     label: "Manajemen Peserta",
     icon: IconUsers,
+  },
+  {
+    href: "/admin/batches",
+    label: "Manajemen Batch",
+    icon: IconUsersGroup,
   },
   {
     href: "/admin/exams",

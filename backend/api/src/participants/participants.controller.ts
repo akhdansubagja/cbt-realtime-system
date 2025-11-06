@@ -1,10 +1,20 @@
 // src/participants/participants.controller.ts
 
-import { Controller, Post, Body, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  UseGuards,
+  Delete,
+  Patch,
+  ParseUUIDPipe,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ParticipantsService } from './participants.service';
 import { JoinExamDto } from './dto/join-exam.dto';
 import { ParticipantGuard } from 'src/auth/guards/participant.guard';
-
 
 @Controller('participants')
 export class ParticipantsController {
@@ -43,5 +53,10 @@ export class ParticipantsController {
   @UseGuards(ParticipantGuard) // Kita amankan juga endpoint ini
   findOne(@Param('id') id: string) {
     return this.participantsService.findOne(+id);
+  }
+
+  @Get('by-examinee/:examineeId')
+  findAllByExaminee(@Param('examineeId') examineeId: number) {
+    return this.participantsService.findAllByExaminee(examineeId);
   }
 }

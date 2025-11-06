@@ -13,6 +13,8 @@ diikuti oleh user tersebut, lalu tanggal pelaksanaanya, skornya dan lain lain
 
 5. buat agar soal ujian maupun jawabannya tidak bisa disalin
 
+6. buat agar pada halaman manajemen peserta 
+
 
 
 OPSIONAL

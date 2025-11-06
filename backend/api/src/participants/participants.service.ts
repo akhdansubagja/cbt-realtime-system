@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Exam } from 'src/exams/entities/exam.entity';
@@ -20,6 +21,7 @@ import { ExamRule } from 'src/exams/entities/exam-rule.entity';
 import { Question } from 'src/questions/entities/question.entity';
 import { LiveExamGateway } from 'src/live-exam/live-exam.gateway';
 import { AuthService } from 'src/auth/auth.service';
+import { ParticipantsController } from './participants.controller';
 
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
@@ -449,6 +451,20 @@ export class ParticipantsService {
       relations: ['examinee'], // Ini penting untuk mengambil data nama peserta
     });
   }
+
+  async findAllByExaminee(examineeId: number) {
+  return this.participantRepository.find({
+    where: { 
+      examinee: { id: examineeId }
+    },
+    relations: {
+      exam: true,
+    },
+    order: {
+      id: 'DESC', // or use 'start_time' if you want to order by exam start time
+    },
+  });
+}
 
   private async recalculateAndBroadcastScore(participantId: number) {
     const correctAnswers = await this.answerRepository.find({

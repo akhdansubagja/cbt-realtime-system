@@ -13,8 +13,9 @@ import {
   Modal,
   TextInput,
   Pagination,
+  Select,
 } from "@mantine/core";
-import { useDisclosure, useHotkeys} from "@mantine/hooks";
+import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
@@ -32,17 +33,20 @@ import {
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
+import { Batch } from "@/types/batch";
 
 interface Examinee {
   id: number;
   name: string;
   created_at: string;
+  batch: Batch | null; // <-- GANTI dari batch_id?: number
 }
 
 export default function ExamineesPage() {
   const [examinees, setExaminees] = useState<Examinee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [opened, { open, close }] = useDisclosure(false);
   const [editingExaminee, setEditingExaminee] = useState<Examinee | null>(null);
   const [activePage, setPage] = useState(1);
@@ -59,32 +63,57 @@ export default function ExamineesPage() {
   const router = useRouter();
 
   const form = useForm({
-    initialValues: { name: "" },
+    initialValues: {
+      name: "",
+      batch_id: null as number | null,
+    },
     validate: {
       name: (value) =>
         value.trim().length > 0 ? null : "Nama peserta tidak boleh kosong",
     },
   });
 
+  const fetchBatches = async () => {
+    try {
+      const response = await api.get("/batches");
+
+      // PERBAIKAN: Endpoint ini mengembalikan array secara langsung
+      setBatches(response.data);
+    } catch (err) {
+      console.error("Gagal mengambil data batch untuk dropdown");
+    }
+  };
+
+  const fetchExaminees = async (page = activePage, search = debouncedQuery) => {
+    try {
+      setLoading(true);
+      const response = await api.get(
+        `/examinees?page=${page}&limit=${limit}&search=${search}`
+      );
+      console.log(
+        "[DEBUG-FRONTEND] Data Diterima (fetchExaminees):",
+        response.data.data
+      );
+      setExaminees(response.data.data);
+      setTotalPages(response.data.last_page);
+    } catch (err) {
+      setError("Gagal mengambil data peserta.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setLoading(true);
-    // Tambahkan parameter `search` ke URL
-    api
-      .get(
-        `/examinees?page=${activePage}&limit=${limit}&search=${debouncedQuery}`
-      )
-      .then((response) => {
-        setExaminees(response.data.data);
-        setTotalPages(response.data.last_page);
-      })
-      .catch(() => setError("Gagal mengambil data peserta."))
-      .finally(() => setLoading(false));
+    // Panggil fungsi yang sudah dideklarasikan di atas
+    fetchExaminees();
     // --- PERUBAHAN 2 DI SINI ---
   }, [activePage, debouncedQuery]);
 
-  useHotkeys([
-    ['/', () => searchInputRef.current?.focus()],
-  ]);
+  useEffect(() => {
+    fetchBatches();
+  }, []);
+
+  useHotkeys([["/", () => searchInputRef.current?.focus()]]);
 
   useEffect(() => {
     // Atur timer untuk 500ms (setengah detik)
@@ -101,7 +130,10 @@ export default function ExamineesPage() {
 
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
-    form.setValues({ name: examinee.name });
+    form.setValues({
+      name: examinee.name,
+      batch_id: examinee.batch?.id || null, // <-- GANTI LOGIKA INI
+    });
     open();
   };
 
@@ -125,30 +157,35 @@ export default function ExamineesPage() {
     }
   };
 
-  const handleSubmit = async (values: { name: string }) => {
+  const handleSubmit = async (values: typeof form.values) => {
     try {
       if (editingExaminee) {
-        const response = await api.patch(
-          `/examinees/${editingExaminee.id}`,
-          values
-        );
-        setExaminees((current) =>
-          current.map((e) => (e.id === editingExaminee.id ? response.data : e))
-        );
-        notifications.show({
-          title: "Berhasil!",
-          message: "Data peserta telah diperbarui.",
-          color: "teal",
+        // 1. Simpan ke DB
+        await api.patch(`/examinees/${editingExaminee.id}`, {
+          name: values.name,
+          batch_id: values.batch_id || undefined,
         });
       } else {
-        const response = await api.post("/examinees", values);
-        setExaminees((current) => [...current, response.data]);
-        notifications.show({
-          title: "Berhasil!",
-          message: "Peserta baru telah ditambahkan.",
-          color: "teal",
+        // 1. Simpan ke DB
+        await api.post("/examinees", {
+          name: values.name,
+          batch_id: values.batch_id || undefined,
         });
       }
+
+      // 2. TUNGGU (await) sampai data baru selesai diambil
+      await fetchExaminees();
+
+      // 3. Tampilkan notifikasi SETELAH data baru ada
+      notifications.show({
+        title: "Berhasil!",
+        message: editingExaminee
+          ? "Data peserta telah diperbarui."
+          : "Peserta baru telah ditambahkan.",
+        color: "teal",
+      });
+
+      // 4. Baru tutup modal dan reset form
       close();
       form.reset();
       setEditingExaminee(null);
@@ -207,6 +244,11 @@ export default function ExamineesPage() {
     </Table.Tr>
   ));
 
+  const batchOptions = batches.map((batch) => ({
+    value: String(batch.id), // Select butuh value string
+    label: batch.name,
+  }));
+
   return (
     <>
       {/* Modal untuk Tambah/Edit */}
@@ -221,18 +263,31 @@ export default function ExamineesPage() {
         centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
-          <TextInput
-            withAsterisk
-            label="Nama Lengkap Peserta"
-            placeholder="Contoh: Budi Santoso"
-            {...form.getInputProps("name")}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button variant="default" onClick={close}>
-              Batal
-            </Button>
-            <Button type="submit">Simpan</Button>
-          </Group>
+          <Stack>
+            <TextInput
+              withAsterisk
+              label="Nama Lengkap Peserta"
+              placeholder="Contoh: Budi Santoso"
+              {...form.getInputProps("name")}
+            />
+            <Select
+              label="Batch"
+              placeholder="Pilih batch (Opsional)"
+              data={batchOptions}
+              // Konversi nilai form (number) ke string, dan sebaliknya
+              value={form.values.batch_id ? String(form.values.batch_id) : null}
+              onChange={(value) =>
+                form.setFieldValue("batch_id", value ? Number(value) : null)
+              }
+              clearable
+            />
+            <Group justify="flex-end" mt="md">
+              <Button variant="default" onClick={close}>
+                Batal
+              </Button>
+              <Button type="submit">Simpan</Button>
+            </Group>
+          </Stack>
         </form>
       </Modal>
 
@@ -272,6 +327,13 @@ export default function ExamineesPage() {
             idAccessor="id"
             columns={[
               { accessor: "name", title: "Nama Peserta", sortable: true },
+              {
+                accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)
+                title: "Batch",
+                sortable: true,
+                render: (examinee) =>
+                  examinee.batch?.name || <Text c="dimmed">N/A</Text>, // <-- GANTI LOGIKA INI
+              },
               {
                 accessor: "created_at",
                 title: "Tanggal Didaftarkan",

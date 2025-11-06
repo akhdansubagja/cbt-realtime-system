@@ -1,187 +1,107 @@
-"use client";
+// frontend/src/app/admin/(protected)/examinees/[id]/page.tsx
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import {
   Title,
-  Table,
+  Paper,
+  Text,
   Loader,
   Alert,
-  Center,
-  Button,
-  Group,
-  Text,
-  Paper,
-  Badge,
-} from "@mantine/core";
-import api from "@/lib/axios";
-import { useMemo } from "react";
-import { Stack, Flex, Box, ActionIcon } from "@mantine/core";
-import { DataTable, type DataTableSortStatus } from "mantine-datatable";
-import { IconArrowLeft } from "@tabler/icons-react";
-import sortBy from "lodash/sortBy";
-import dayjs from "dayjs";
+  Breadcrumbs,
+  Anchor,
+  Stack,
+} from '@mantine/core';
+import { IconAlertCircle } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+import api from '@/lib/axios';
+import { Examinee } from '@/types/examinee';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { ExamineeHistoryChart } from '@/components/charts/ExamineeHistoryChart';
 
-// Definisikan tipe data yang kita harapkan dari backend
-interface ParticipantSession {
-  id: number;
-  status: "started" | "finished";
-  final_score: number | null;
-  start_time: string;
-  exam: {
-    title: string;
-  };
-}
-
-interface ExamineeDetails {
-  id: number;
-  name: string;
-  participants: ParticipantSession[];
-}
 
 export default function ExamineeDetailPage() {
   const params = useParams();
-  const router = useRouter();
-  const examineeId = params.id as string;
+  const id = params.id as string;
+  const examineeId = parseInt(id, 10); // ID sebagai number
 
-  const [examineeData, setExamineeData] = useState<ExamineeDetails | null>(
-    null
-  );
+  const [examinee, setExaminee] = useState<Examinee | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [sortStatus, setSortStatus] = useState<
-    DataTableSortStatus<ParticipantSession>
-  >({
-    columnAccessor: "start_time",
-    direction: "desc",
-  });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!examineeId) return;
-    api
-      .get(`/examinees/${examineeId}`)
-      .then((response) => {
-        setExamineeData(response.data);
-      })
-      .catch(() => setError("Gagal mengambil data detail peserta."))
-      .finally(() => setLoading(false));
+
+    const fetchExamineeDetail = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // Endpoint ini mengambil detail 1 peserta
+        const response = await api.get(`/examinees/${examineeId}`);
+        setExaminee(response.data);
+      } catch (err) {
+        setError('Gagal mengambil detail peserta.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExamineeDetail();
   }, [examineeId]);
 
-  const sortedRecords = useMemo(() => {
-    if (!examineeData) return [];
-    const sorted = sortBy(examineeData.participants, sortStatus.columnAccessor);
-    return sortStatus.direction === "desc" ? sorted.reverse() : sorted;
-  }, [examineeData, sortStatus]);
+  // Menampilkan state loading
+  if (loading) {
+    return <Loader />;
+  }
 
-  if (loading)
+  // Menampilkan state error
+  if (error) {
     return (
-      <Center>
-        <Loader />
-      </Center>
-    );
-  if (error)
-    return (
-      <Alert color="red" title="Error">
+      <Alert
+        icon={<IconAlertCircle size={16} />}
+        title="Error!"
+        color="red"
+      >
         {error}
       </Alert>
     );
-  if (!examineeData)
-    return <Alert color="yellow">Data peserta tidak ditemukan.</Alert>;
+  }
 
-  const rows = examineeData.participants.map((session) => (
-    <Table.Tr key={session.id}>
-      <Table.Td>{session.exam.title}</Table.Td>
-      <Table.Td>
-        {new Date(session.start_time).toLocaleString("id-ID")}
-      </Table.Td>
-      <Table.Td>
-        <Badge
-          color={session.status === "finished" ? "gray" : "green"}
-          variant="light"
-        >
-          {session.status === "finished" ? "Selesai" : "Mengerjakan"}
-        </Badge>
-      </Table.Td>
-      <Table.Td fw={700}>{session.final_score ?? "-"}</Table.Td>
-    </Table.Tr>
-  ));
+  // Menampilkan jika peserta tidak ditemukan
+  if (!examinee) {
+    return <Text>Data peserta tidak ditemukan.</Text>;
+  }
 
   return (
-    <>
-      <Stack>
-        {/* --- HEADER BARU --- */}
-        <Flex justify="space-between" align="center">
-          <Group>
-            <ActionIcon
-              variant="default"
-              onClick={() => router.back()}
-              size="lg"
-            >
-              <IconArrowLeft />
-            </ActionIcon>
-            <Box>
-              <Text c="dimmed" size="xs">
-                Profil Peserta
-              </Text>
-              <Title order={3}>{examineeData.name}</Title>
-            </Box>
-          </Group>
-        </Flex>
+    <Stack>
+      <Breadcrumbs mb="md">
+        {/* Link kembali ke Batch (jika ada) atau ke daftar Peserta */}
+        {examinee.batch_id ? (
+          <Anchor component={Link} href={`/admin/batches/${examinee.batch_id}`}>
+            Detail Batch
+          </Anchor>
+        ) : (
+          <Anchor component={Link} href="/admin/examinees">
+            Manajemen Peserta
+          </Anchor>
+        )}
+        <Text>{examinee.name}</Text>
+      </Breadcrumbs>
 
-        {/* --- TABEL RIWAYAT UJIAN BARU --- */}
-        <Box mt="md">
-          <DataTable<ParticipantSession>
-            withTableBorder
-            withColumnBorders
-            borderRadius="md"
-            shadow="sm"
-            minHeight={200}
-            records={sortedRecords}
-            idAccessor="id"
-            columns={[
-              {
-                accessor: "exam.title",
-                title: "Judul Ujian",
-                sortable: true,
-              },
-              {
-                accessor: "start_time",
-                title: "Waktu Mulai",
-                sortable: true,
-                textAlign: "center",
-                render: (session) =>
-                  dayjs(session.start_time).format("DD MMM YYYY, HH:mm"),
-              },
-              {
-                accessor: "status",
-                title: "Status",
-                sortable: true,
-                textAlign: "center",
-                render: (session) => (
-                  <Badge
-                    color={session.status === "finished" ? "gray" : "green"}
-                    variant="light"
-                  >
-                    {session.status === "finished" ? "Selesai" : "Mengerjakan"}
-                  </Badge>
-                ),
-              },
-              {
-                accessor: "final_score",
-                title: "Skor Akhir",
-                sortable: true,
-                textAlign: "center",
-                render: (session) => (
-                  <Text fw={700}>{session.final_score ?? "-"}</Text>
-                ),
-              },
-            ]}
-            sortStatus={sortStatus}
-            onSortStatusChange={setSortStatus}
-            noRecordsText="Peserta ini belum pernah mengikuti ujian."
-          />
-        </Box>
-      </Stack>
-    </>
+      <Title order={2} mb="md">
+        Detail Peserta: {examinee.name}
+      </Title>
+
+      {/* V V V Tampilkan Komponen Grafik V V V */}
+      {/* Kita hanya perlu meneruskan examineeId. 
+          Komponen akan menangani logikanya sendiri.
+      */}
+      <ExamineeHistoryChart examineeId={examineeId} />
+      {/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */}
+
+      {/* Anda bisa menambahkan info lain tentang peserta di sini 
+          di dalam <Paper> lain jika mau */}
+    </Stack>
   );
 }
