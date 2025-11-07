@@ -14,6 +14,9 @@ import {
   TextInput,
   Pagination,
   Select,
+  Avatar,
+  FileInput,
+  Image,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
@@ -40,6 +43,7 @@ interface Examinee {
   name: string;
   created_at: string;
   batch: Batch | null; // <-- GANTI dari batch_id?: number
+  avatar_url: string | null;
 }
 
 export default function ExamineesPage() {
@@ -62,10 +66,15 @@ export default function ExamineesPage() {
 
   const router = useRouter();
 
+  const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
+    useDisclosure(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   const form = useForm({
     initialValues: {
       name: "",
-      batch_id: null as number | null,
+      batch_id: null as string | null,
+      avatar: null as File | null,
     },
     validate: {
       name: (value) =>
@@ -89,10 +98,6 @@ export default function ExamineesPage() {
       setLoading(true);
       const response = await api.get(
         `/examinees?page=${page}&limit=${limit}&search=${search}`
-      );
-      console.log(
-        "[DEBUG-FRONTEND] Data Diterima (fetchExaminees):",
-        response.data.data
       );
       setExaminees(response.data.data);
       setTotalPages(response.data.last_page);
@@ -132,7 +137,8 @@ export default function ExamineesPage() {
     setEditingExaminee(examinee);
     form.setValues({
       name: examinee.name,
-      batch_id: examinee.batch?.id || null, // <-- GANTI LOGIKA INI
+      batch_id: examinee.batch?.id ? String(examinee.batch.id) : null,
+      avatar: null, // Selalu reset input file saat edit
     });
     open();
   };
@@ -159,24 +165,32 @@ export default function ExamineesPage() {
 
   const handleSubmit = async (values: typeof form.values) => {
     try {
+      // 1. Buat FormData
+      const formData = new FormData();
+      formData.append("name", values.name);
+
+      if (values.batch_id) {
+        formData.append("batch_id", values.batch_id);
+      }
+      if (values.avatar) {
+        formData.append("avatar", values.avatar);
+      }
+
       if (editingExaminee) {
-        // 1. Simpan ke DB
-        await api.patch(`/examinees/${editingExaminee.id}`, {
-          name: values.name,
-          batch_id: values.batch_id || undefined,
+        // 2. Kirim sebagai PATCH (catatan: beberapa backend butuh _method='PATCH')
+        await api.patch(`/examinees/${editingExaminee.id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        // 1. Simpan ke DB
-        await api.post("/examinees", {
-          name: values.name,
-          batch_id: values.batch_id || undefined,
+        // 3. Kirim sebagai POST
+        await api.post("/examinees", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
       }
 
-      // 2. TUNGGU (await) sampai data baru selesai diambil
-      await fetchExaminees();
+      // 4. Logika sisanya sama
+      await fetchExaminees(); // Panggil fetchExaminees yang sudah di-await
 
-      // 3. Tampilkan notifikasi SETELAH data baru ada
       notifications.show({
         title: "Berhasil!",
         message: editingExaminee
@@ -185,7 +199,6 @@ export default function ExamineesPage() {
         color: "teal",
       });
 
-      // 4. Baru tutup modal dan reset form
       close();
       form.reset();
       setEditingExaminee(null);
@@ -195,6 +208,13 @@ export default function ExamineesPage() {
         message: "Terjadi kesalahan.",
         color: "red",
       });
+    }
+  };
+
+  const handleAvatarClick = (imageUrl: string | null) => {
+    if (imageUrl) {
+      setSelectedImage(`http://localhost:3000/${imageUrl}`);
+      openImageModal();
     }
   };
 
@@ -251,6 +271,17 @@ export default function ExamineesPage() {
 
   return (
     <>
+      {/* --- MODAL UNTUK GAMBAR --- */}
+      <Modal
+        opened={imageModalOpened}
+        onClose={closeImageModal}
+        title="Lihat Avatar"
+        centered
+        size="lg"
+      >
+        <Image src={selectedImage} alt="Avatar Peserta" />
+      </Modal>
+
       {/* Modal untuk Tambah/Edit */}
       <Modal
         opened={opened}
@@ -270,15 +301,19 @@ export default function ExamineesPage() {
               placeholder="Contoh: Budi Santoso"
               {...form.getInputProps("name")}
             />
+            <FileInput
+              label="Foto Avatar (Opsional)"
+              placeholder="Pilih gambar..."
+              accept="image/png,image/jpeg"
+              {...form.getInputProps("avatar")}
+            />
             <Select
               label="Batch"
               placeholder="Pilih batch (Opsional)"
               data={batchOptions}
               // Konversi nilai form (number) ke string, dan sebaliknya
               value={form.values.batch_id ? String(form.values.batch_id) : null}
-              onChange={(value) =>
-                form.setFieldValue("batch_id", value ? Number(value) : null)
-              }
+              {...form.getInputProps("batch_id")}
               clearable
             />
             <Group justify="flex-end" mt="md">
@@ -326,6 +361,26 @@ export default function ExamineesPage() {
             records={examinees}
             idAccessor="id"
             columns={[
+              {
+                accessor: "avatar_url",
+                title: "Avatar",
+                render: (examinee) => (
+                  <Avatar
+                    src={
+                      examinee.avatar_url
+                        ? `http://localhost:3000/${examinee.avatar_url}`
+                        : null
+                    }
+                    radius="xl"
+                    onClick={() => handleAvatarClick(examinee.avatar_url)}
+                    style={{
+                      cursor: examinee.avatar_url ? "pointer" : "default",
+                    }}
+                  >
+                    {examinee.name.charAt(0)}
+                  </Avatar>
+                ),
+              },
               { accessor: "name", title: "Nama Peserta", sortable: true },
               {
                 accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)

@@ -11,9 +11,13 @@ DONE3. buat fitur agar memudahkan dalam membuat soal baru, maksudnya adalah sepe
 DONE4. buat fitur untuk dapat melihat detail peserta, maksudnya seperti ujian apa saja yang telah
 diikuti oleh user tersebut, lalu tanggal pelaksanaanya, skornya dan lain lain
 
-5. buat agar soal ujian maupun jawabannya tidak bisa disalin
+DONE5. buat agar soal ujian maupun jawabannya tidak bisa disalin
 
-6. buat agar pada halaman manajemen peserta 
+DONE6. buat agar peserta atau examinee, dapat menggunakan foto atau gambar
+
+7. buat agar untuk menambahkan peserta ke dalam sebuah batch menjadi lebih mudah, misalkan bisa langsung menambahkan pada saat sedang melihat detail suatu batch
+
+
 
 
 

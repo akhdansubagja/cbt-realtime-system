@@ -7,6 +7,7 @@ import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
@@ -30,6 +31,10 @@ async function bootstrap() {
   });
 
   app.useWebSocketAdapter(new IoAdapter(app));
+
+  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
+    prefix: '/uploads/', // Ini akan membuat URL-nya http://.../uploads/[nama_file]
+  });
 
   await app.startAllMicroservices(); // <-- 3. JALANKAN SEMUA MICROSERVICES
   await app.listen(3000); // <-- JALANKAN SERVER WEB

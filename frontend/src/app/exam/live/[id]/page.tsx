@@ -19,6 +19,7 @@ import {
   Stack,
   Box,
   Modal,
+  useMantineColorScheme,
 } from "@mantine/core";
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
@@ -76,6 +77,7 @@ export default function LiveExamPage() {
   const [examData, setExamData] = useState<ExamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { colorScheme } = useMantineColorScheme();
 
   // State untuk ujian
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -327,7 +329,18 @@ export default function LiveExamPage() {
         {/* --- KONTEN UTAMA (SOAL) --- */}
         <AppShell.Main>
           <Container>
-            <Paper withBorder p="xl" radius="md" shadow="sm">
+            <Paper
+              withBorder
+              p="xl"
+              radius="md"
+              shadow="sm"
+              style={{
+                WebkitUserSelect: 'none', // Safari
+                msUserSelect: 'none',     // IE10+
+                userSelect: 'none',       // Standar
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+            >
               <Text fw={500}>Soal No. {currentQuestionIndex + 1}</Text>
               <Text mt="lg" mb="xl" size="lg">
                 {currentExamQuestion.question.question_text}
@@ -353,10 +366,42 @@ export default function LiveExamPage() {
               >
                 <Stack>
                   {currentExamQuestion.question.options.map((option) => (
-                    <Paper key={option.key} withBorder p="md" radius="sm">
+                    // 1. KITA KEMBALIKAN <Paper> ANDA
+                    <Paper
+                      key={option.key}
+                      withBorder
+                      p="md"
+                      radius="sm"
+                      // 2. TAMBAHKAN onClick UNTUK MEMICU PERUBAHAN
+                      onClick={() =>
+                        handleAnswerChange(currentExamQuestion.id, option.key)
+                      }
+                      // 3. TAMBAHKAN STYLING UNTUK CURSOR & HOVER
+                      styles={(theme) => ({
+                        root: {
+                          cursor: "pointer",
+                          transition: "background-color 150ms ease",
+                          "&:hover": {
+                            backgroundColor:
+                              colorScheme === "dark"
+                                ? theme.colors.dark[6]
+                                : theme.colors.gray[0],
+                          },
+                          WebkitUserSelect: 'none',
+                          msUserSelect: 'none',
+                          userSelect: 'none',
+                        },
+                      })}
+                    >
                       <Radio
                         value={option.key}
                         label={`${option.key}. ${option.text}`}
+                        // 4. BUAT RADIO INTERNAL TIDAK BISA DIKLIK
+                        // AGAR TIDAK KONFLIK DENGAN onClick DARI <Paper>
+                        styles={{
+                          label: { cursor: "pointer" },
+                          radio: { pointerEvents: "none" },
+                        }}
                       />
                     </Paper>
                   ))}

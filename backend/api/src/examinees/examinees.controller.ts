@@ -9,19 +9,31 @@ import {
   Param,
   Delete,
   Query,
+  ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { ExamineesService } from './examinees.service';
 import { CreateExamineeDto } from './dto/create-examinee.dto';
 import { UpdateExamineeDto } from './dto/update-examinee.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express } from 'express';
+import File from 'multer';
 
 @Controller('examinees')
 export class ExamineesController {
   constructor(private readonly examineesService: ExamineesService) {}
 
   @Post()
-  create(@Body() createExamineeDto: CreateExamineeDto) {
-    return this.examineesService.create(createExamineeDto);
+  @UseInterceptors(FileInterceptor('avatar'))
+  create(
+    @Body() createExamineeDto: CreateExamineeDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    // Nanti kita akan teruskan 'file' ini ke service
+    return this.examineesService.create(createExamineeDto, file);
   }
+
   @Get()
   findAll(
     @Query('page') page: string = '1',
@@ -48,11 +60,14 @@ export class ExamineesController {
   }
 
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('avatar'))
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateExamineeDto: UpdateExamineeDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.examineesService.update(+id, updateExamineeDto);
+    // Nanti kita akan teruskan 'file' ini ke service
+    return this.examineesService.update(id, updateExamineeDto, file);
   }
 
   @Delete(':id')

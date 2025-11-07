@@ -5,6 +5,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Examinee } from './entities/examinee.entity';
 import { Repository, ILike } from 'typeorm';
 import { Batch } from 'src/batches/entities/batch.entity';
+import { Express } from 'express'; // Pastikan ini ada
+import { promises as fs } from 'fs'; // Untuk hapus file (async)
+import { join } from 'path'; // Untuk path file
 
 interface PaginationOptions {
   page: number;
@@ -20,7 +23,10 @@ export class ExamineesService {
     private readonly batchRepository: Repository<Batch>,
   ) {}
 
-  async create(createExamineeDto: CreateExamineeDto) {
+  async create(
+    createExamineeDto: CreateExamineeDto,
+    file: Express.Multer.File,
+  ) {
     const { batch_id, ...restDto } = createExamineeDto;
 
     let batch: Batch | null = null;
@@ -35,7 +41,8 @@ export class ExamineesService {
 
     const examinee = this.examineeRepository.create({
       ...restDto,
-      batch: batch ?? undefined, // <-- Hubungkan relasinya (gunakan undefined jika null)
+      batch: batch ?? undefined,
+      avatar_url: file ? file.path : undefined,
     });
 
     return this.examineeRepository.save(examinee);
@@ -79,8 +86,17 @@ export class ExamineesService {
   }
 
   // --- LOGIKA UPDATE BARU ---
-  async update(id: number, updateExamineeDto: UpdateExamineeDto) {
+  async update(
+    id: number,
+    updateExamineeDto: UpdateExamineeDto,
+    file: Express.Multer.File,
+  ) {
     const { batch_id, ...restDto } = updateExamineeDto;
+
+    const existingExaminee = await this.examineeRepository.findOneBy({ id });
+    if (!existingExaminee) {
+      throw new NotFoundException(`Examinee with ID ${id} not found`);
+    }
 
     let batch: Batch | null = null;
     if (batch_id) {
@@ -90,8 +106,27 @@ export class ExamineesService {
       }
     }
 
+    const updatePayload: Partial<Examinee> = {
+      ...restDto,
+      batch: batch ?? undefined,
+    };
+
+    if (file) {
+      // 1. File baru diunggah, hapus file lama jika ada
+      if (existingExaminee.avatar_url) {
+        try {
+          await fs.unlink(join(process.cwd(), existingExaminee.avatar_url));
+        } catch (err) {
+          console.error('Gagal menghapus file lama:', err.message);
+        }
+      }
+      // 2. Set avatar_url ke path file baru
+      updatePayload.avatar_url = file.path;
+    }
+
     const examinee = await this.examineeRepository.preload({
       id: id,
+      ...updatePayload,
       ...restDto,
       batch: batch ?? undefined, // <-- Perbarui relasi batch (gunakan undefined bukan null)
     });

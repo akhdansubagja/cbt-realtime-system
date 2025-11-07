@@ -5,4 +5,5 @@ export interface BatchParticipantReport {
   examinee_name: string;
   examCount: string; // Tipe-nya string karena dari kueri mentah (raw query)
   totalScore: string; // Sama, ini juga string
+  examinee_avatar_url: string | null;
 }

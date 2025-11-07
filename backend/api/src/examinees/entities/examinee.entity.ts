@@ -20,6 +20,9 @@ export class Examinee {
   @Column({ unique: true }) // Kita buat nama harus unik untuk menghindari duplikasi
   name: string;
 
+  @Column({ nullable: true })
+  avatar_url: string;
+
   @OneToMany(() => Participant, (participant) => participant.examinee)
   participants: Participant[];
 
@@ -27,7 +30,6 @@ export class Examinee {
     onDelete: 'SET NULL',
     nullable: true,
   })
-  
   @JoinColumn({ name: 'batch_id' }) // <-- Ini kuncinya
   batch: Batch;
 
