@@ -8,6 +8,7 @@ import { Batch } from 'src/batches/entities/batch.entity';
 import { Express } from 'express'; // Pastikan ini ada
 import { promises as fs } from 'fs'; // Untuk hapus file (async)
 import { join } from 'path'; // Untuk path file
+import { CreateBulkExamineesDto } from './dto/create-bulk-examinees.dto';
 
 interface PaginationOptions {
   page: number;
@@ -152,5 +153,35 @@ export class ExamineesService {
       select: ['id', 'name'], // <-- Kunci efisiensi: hanya ambil kolom yang dibutuhkan
       order: { name: 'ASC' },
     });
+  }
+
+  async createBulkWithAvatars(
+    createBulkExamineesDto: CreateBulkExamineesDto,
+    files: Array<Express.Multer.File>,
+  ) {
+    const { names, batch_id } = createBulkExamineesDto;
+
+    let batch: Batch | null = null;
+    if (batch_id) {
+      batch = await this.batchRepository.findOneBy({ id: batch_id });
+      if (!batch) {
+        throw new NotFoundException(`Batch with ID ${batch_id} not found`);
+      }
+    }
+
+    // Buat array entitas Examinee
+    // Kita asumsikan urutan 'names' dan 'files' cocok
+    const newExaminees = names.map((name, index) => {
+      const file = files[index]; // Ambil file yang sesuai
+      
+      return this.examineeRepository.create({
+        name: name,
+        batch: batch ?? undefined,
+        avatar_url: file ? file.path : undefined,
+      });
+    });
+
+    // Simpan semua entitas baru ke database dalam satu operasi
+    return this.examineeRepository.save(newExaminees);
   }
 }

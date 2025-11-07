@@ -32,12 +32,15 @@ export class BatchesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() updateBatchDto: UpdateBatchDto) {
-    return this.batchesService.update(+id, updateBatchDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateBatchDto: UpdateBatchDto,
+  ) {
+    return this.batchesService.update(id, updateBatchDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.batchesService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.batchesService.remove(id);
   }
 }

@@ -12,17 +12,31 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ExamineesService } from './examinees.service';
 import { CreateExamineeDto } from './dto/create-examinee.dto';
 import { UpdateExamineeDto } from './dto/update-examinee.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
 import File from 'multer';
+import { CreateBulkExamineesDto } from './dto/create-bulk-examinees.dto';
 
 @Controller('examinees')
 export class ExamineesController {
   constructor(private readonly examineesService: ExamineesService) {}
+
+  @Post('bulk-with-avatars')
+  @UseInterceptors(FilesInterceptor('avatars', 50)) // Menerima hingga 50 file
+  createBulkWithAvatars(
+    @Body() createBulkExamineesDto: CreateBulkExamineesDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    return this.examineesService.createBulkWithAvatars(
+      createBulkExamineesDto,
+      files,
+    );
+  }
 
   @Post()
   @UseInterceptors(FileInterceptor('avatar'))

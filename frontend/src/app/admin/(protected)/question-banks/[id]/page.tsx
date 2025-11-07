@@ -528,10 +528,12 @@ export default function SingleQuestionBankPage() {
         {/* --- TABEL SOAL BARU --- */}
         <Box>
           <DataTable<Question>
-            withTableBorder
-            withColumnBorders
+            withTableBorder={false}
+            withColumnBorders={false}
             borderRadius="md"
             shadow="sm"
+            striped
+            highlightOnHover
             minHeight={200}
             records={sortedRecords}
             idAccessor="id"

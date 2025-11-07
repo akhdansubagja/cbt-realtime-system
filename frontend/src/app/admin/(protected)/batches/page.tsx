@@ -9,11 +9,12 @@ import {
   Loader,
   Alert,
   Text,
-  Modal, // <-- Tambahkan ini
-  TextInput, // <-- Tambahkan ini
-  Stack, // <-- Tambahkan ini
+  Modal,
+  TextInput,
+  Stack,
+  ActionIcon,
 } from '@mantine/core';
-import { IconAlertCircle, IconEye, IconPlus } from '@tabler/icons-react'; // <-- Tambahkan IconPlus
+import { IconAlertCircle, IconEye, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react'; // <-- Tambahkan IconPlus
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { Batch } from '@/types/batch';
@@ -29,6 +30,7 @@ export default function BatchesPage() {
 
   // State untuk Modal
   const [opened, { open, close }] = useDisclosure(false);
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
 
   // Form hook untuk modal
   const form = useForm({
@@ -61,22 +63,65 @@ export default function BatchesPage() {
     fetchBatches();
   }, []);
 
+  // Handler untuk Buka Modal (Mode Create)
+  const openCreateModal = () => {
+    form.reset();
+    setEditingBatch(null);
+    open();
+  };
+
+  // Handler untuk Buka Modal (Mode Edit)
+  const openEditModal = (batch: Batch) => {
+    form.setValues({ name: batch.name });
+    setEditingBatch(batch);
+    open();
+  };
+
+  // Handler untuk Hapus Batch
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus batch ini?')) {
+      try {
+        await api.delete(`/batches/${id}`);
+        notifications.show({
+          title: 'Berhasil!',
+          message: 'Batch telah dihapus.',
+          color: 'teal',
+        });
+        fetchBatches(); // Refresh tabel
+      } catch (err) {
+        notifications.show({
+          title: 'Gagal',
+          message: 'Gagal menghapus batch.',
+          color: 'red',
+        });
+      }
+    }
+  };
+
   // Handler untuk submit form
   const handleSubmit = async (values: { name: string }) => {
     try {
-      await api.post('/batches', values);
+      if (editingBatch) {
+        // Mode Update
+        await api.patch(`/batches/${editingBatch.id}`, values);
+      } else {
+        // Mode Create
+        await api.post('/batches', values);
+      }
+
       notifications.show({
         title: 'Berhasil!',
-        message: 'Batch baru telah ditambahkan.',
+        message: `Data batch telah ${editingBatch ? 'diperbarui' : 'ditambahkan'}.`,
         color: 'teal',
       });
+      
       close();
       form.reset();
       fetchBatches(); // Muat ulang data tabel
     } catch (err) {
       notifications.show({
         title: 'Gagal',
-        message: 'Gagal menambahkan batch baru.',
+        message: 'Gagal menyimpan data batch.',
         color: 'red',
       });
     }
@@ -106,16 +151,31 @@ export default function BatchesPage() {
       <Table.Td>{batch.id}</Table.Td>
       <Table.Td>{batch.name}</Table.Td>
       <Table.Td>
-        <Button
-          component={Link}
-          href={`/admin/batches/${batch.id}`}
-          leftSection={<IconEye size={14} />}
-          variant="outline"
-          size="xs"
-        >
-          Lihat Detail
-        </Button>
-        {/* Anda bisa tambahkan tombol Edit/Hapus di sini nanti */}
+        <Group gap="xs">
+          <Button
+            component={Link}
+            href={`/admin/batches/${batch.id}`}
+            leftSection={<IconEye size={14} />}
+            variant="outline"
+            size="xs"
+          >
+            Lihat Detail
+          </Button>
+          <ActionIcon
+            variant="subtle"
+            color="yellow"
+            onClick={() => openEditModal(batch)}
+          >
+            <IconPencil size={16} />
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            onClick={() => handleDelete(batch.id)}
+          >
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Group>
       </Table.Td>
     </Table.Tr>
   ));
@@ -130,6 +190,34 @@ export default function BatchesPage() {
           form.reset();
         }}
         title="Buat Batch Baru"
+        centered
+      >
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack>
+            <TextInput
+              withAsterisk
+              label="Nama Batch"
+              placeholder="Contoh: Batch Januari 2025"
+              {...form.getInputProps('name')}
+            />
+            <Group justify="flex-end" mt="md">
+              <Button variant="default" onClick={close}>
+                Batal
+              </Button>
+              <Button type="submit">Simpan</Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
+
+      {/* --- MODAL UNTUK CREATE/EDIT --- */}
+      <Modal
+        opened={opened}
+        onClose={() => {
+          close();
+          form.reset();
+        }}
+        title={editingBatch ? 'Edit Batch' : 'Buat Batch Baru'}
         centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>

@@ -353,10 +353,12 @@ export default function ExamineesPage() {
 
         <Box>
           <DataTable<Examinee>
-            withTableBorder
-            withColumnBorders
+            withTableBorder={false}
+            withColumnBorders={false}
             borderRadius="md"
             shadow="sm"
+            striped
+            highlightOnHover
             minHeight={200}
             records={examinees}
             idAccessor="id"
@@ -381,26 +383,24 @@ export default function ExamineesPage() {
                   </Avatar>
                 ),
               },
-              { accessor: "name", title: "Nama Peserta", sortable: true },
+              { accessor: "name", title: "Nama Peserta", sortable: true},
               {
                 accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)
                 title: "Batch",
-                sortable: true,
+                sortable: false,
                 render: (examinee) =>
                   examinee.batch?.name || <Text c="dimmed">N/A</Text>, // <-- GANTI LOGIKA INI
               },
               {
                 accessor: "created_at",
                 title: "Tanggal Didaftarkan",
-                sortable: true,
-                textAlign: "center",
+                sortable: false,
                 render: (record) =>
                   dayjs(record.created_at).format("DD MMM YYYY"),
               },
               {
                 accessor: "actions",
                 title: "Aksi",
-                textAlign: "center",
                 render: (examinee) => (
                   <Group gap={4} justify="center" wrap="nowrap">
                     <ActionIcon

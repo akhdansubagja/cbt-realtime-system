@@ -21,15 +21,25 @@ import { Batch } from "@/types/batch"; // Tipe ini sekarang berisi Examinee
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BatchParticipantTable } from "@/components/batches/BatchParticipantTable";
-import { BatchAverageChart } from "@/components/batches/BatchAverageChart"; // <-- Tambahkan ini
+import { BatchAverageChart } from "@/components/batches/BatchAverageChart";
+import { IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { useRouter } from "next/navigation";
+import { BulkAddExamineesModal } from "@/components/examinees/BulkAddExamineesModal";
 
 export default function BatchDetailPage() {
   const params = useParams();
-  const id = params.id as string; // Ambil ID dari URL
+  const id = params.id as string;
+  const batchId = parseInt(id, 10);
+  const router = useRouter();
+  const [bulkModalOpened, { open: openBulkModal, close: closeBulkModal }] =
+    useDisclosure(false);
 
   const [batch, setBatch] = useState<Batch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!id) return; // Jangan fetch jika ID belum siap
@@ -94,6 +104,16 @@ export default function BatchDetailPage() {
   return (
     <>
       <Stack>
+        <BulkAddExamineesModal
+          opened={bulkModalOpened}
+          onClose={closeBulkModal}
+          onSuccess={() => {
+            // Cara termudah untuk me-refresh tabel adalah me-refresh
+            // data server untuk halaman ini
+            setRefreshKey((prevKey) => prevKey + 1);
+          }}
+          lockedBatchId={batchId} // <-- Kirim ID batch ke modal
+        />
         <Breadcrumbs mb="md">
           <Anchor component={Link} href="/admin/batches">
             Manajemen Batch
@@ -101,13 +121,16 @@ export default function BatchDetailPage() {
           <Text>{batch.name}</Text>
         </Breadcrumbs>
 
-        <Title order={2} mb="md">
-          {batch.name}
-        </Title>
+        <Group justify="space-between" mb="md">
+          <Title order={2}>{batch.name}</Title>
+          <Button leftSection={<IconPlus size={16} />} onClick={openBulkModal}>
+            Tambah Peserta
+          </Button>
+        </Group>
 
-        <BatchAverageChart batchId={batch.id} />
+        <BatchAverageChart batchId={batch.id} key={`chart-${refreshKey}`} />
 
-        <BatchParticipantTable batchId={batch.id} />
+        <BatchParticipantTable batchId={batch.id} key={`table-${refreshKey}`} />
       </Stack>
     </>
   );

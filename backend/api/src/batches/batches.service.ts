@@ -40,11 +40,23 @@ export class BatchesService {
 
     return batch;
   }
-  update(id: number, updateBatchDto: UpdateBatchDto) {
-    return `This action updates a #${id} batch`;
+  async update(id: number, updateBatchDto: UpdateBatchDto) {
+    const batch = await this.batchRepository.preload({
+      id: id,
+      ...updateBatchDto,
+    });
+    if (!batch) {
+      throw new NotFoundException(`Batch with ID ${id} not found`);
+    }
+    return this.batchRepository.save(batch);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} batch`;
+  async remove(id: number) {
+    const batch = await this.batchRepository.findOneBy({ id });
+    if (!batch) {
+      throw new NotFoundException(`Batch with ID ${id} not found`);
+    }
+    await this.batchRepository.remove(batch);
+    return { message: `Batch with ID ${id} deleted` };
   }
 }

@@ -288,10 +288,12 @@ export default function QuestionBanksPage() {
 
         <Box>
           <DataTable<QuestionBank>
-            withTableBorder
-            withColumnBorders
+            withTableBorder={false}
+            withColumnBorders={false}
             borderRadius="md"
             shadow="sm"
+            striped
+            highlightOnHover
             minHeight={200}
             records={paginatedRecords} // <-- Menggunakan data yang sudah difilter & diurutkan
             idAccessor="id"
@@ -300,7 +302,6 @@ export default function QuestionBanksPage() {
               {
                 accessor: "description",
                 title: "Deskripsi",
-                textAlign: "center", // Agar tombol berada di tengah kolom
                 width: 150, // Beri lebar tetap agar rapi
                 render: (bank) => {
                   // Jika tidak ada deskripsi, jangan tampilkan tombol
@@ -333,14 +334,12 @@ export default function QuestionBanksPage() {
                 accessor: "created_at",
                 title: "Tanggal Dibuat",
                 sortable: true,
-                textAlign: 'center',
                 render: (record) =>
                   dayjs(record.created_at).format("DD MMM YYYY"),
               },
               {
                 accessor: "actions",
-                title: <Text mr="xs">Aksi</Text>,
-                textAlign: "center",
+                title: "Aksi",
                 render: (bank) => (
                   <Group gap={4} justify="center" wrap="nowrap">
                     <ActionIcon

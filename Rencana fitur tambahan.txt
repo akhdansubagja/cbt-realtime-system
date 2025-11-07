@@ -15,7 +15,9 @@ DONE5. buat agar soal ujian maupun jawabannya tidak bisa disalin
 
 DONE6. buat agar peserta atau examinee, dapat menggunakan foto atau gambar
 
-7. buat agar untuk menambahkan peserta ke dalam sebuah batch menjadi lebih mudah, misalkan bisa langsung menambahkan pada saat sedang melihat detail suatu batch
+DONE7. buat agar untuk menambahkan peserta ke dalam sebuah batch menjadi lebih mudah, misalkan bisa langsung menambahkan pada saat sedang melihat detail suatu batch
+
+8. 
 
 
 

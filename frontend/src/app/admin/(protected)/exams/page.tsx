@@ -577,33 +577,32 @@ export default function ExamsPage() {
 
         <Box>
           <DataTable<Exam>
-            withTableBorder
-            withColumnBorders // <-- Sesuai permintaan Anda
+            withTableBorder={false}
+            withColumnBorders={false}
             borderRadius="md"
             shadow="sm"
+            striped
+            highlightOnHover
             minHeight={200}
             records={sortedAndFilteredRecords}
             idAccessor="id"
             columns={[
               { accessor: 'title', title: 'Judul Ujian', sortable: true },
-              { accessor: 'code', title: 'Kode', sortable: true },
+              { accessor: 'code', title: 'Kode', sortable: false },
               {
                 accessor: 'duration_minutes',
                 title: 'Durasi',
-                sortable: true,
-                textAlign: 'center',
+                sortable: false,
                 render: (exam) => `${exam.duration_minutes} Menit`,
               },
               {
                 accessor: 'status',
                 title: 'Status',
-                textAlign: 'center',
                 render: (exam) => getStatus(exam.start_time, exam.end_time),
               },
               {
                 accessor: 'actions',
                 title: 'Aksi',
-                textAlign: 'center',
                 render: (exam) => (
                   <Group gap={4} justify="center" wrap="nowrap">
                     <Button
