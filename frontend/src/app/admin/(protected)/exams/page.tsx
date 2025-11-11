@@ -24,6 +24,9 @@ import {
   ScrollArea,
   Checkbox,
   Textarea,
+  Menu,
+  Indicator,
+  Tooltip,
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
 import "dayjs/locale/id"; // Import locale untuk bahasa Indonesia
@@ -32,13 +35,21 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
 import Link from "next/link";
-import { useMemo } from 'react';
-import { Flex, Box } from '@mantine/core'; // Stack, etc. sudah ada
-import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
-import { IconEdit, IconTrash, IconSearch, IconEye, IconPlus } from '@tabler/icons-react'; // IconPlus sudah ada
-import { useRouter } from 'next/navigation';
-import sortBy from 'lodash/sortBy';
-import dayjs from 'dayjs';
+import { useMemo } from "react";
+import { Flex, Box } from "@mantine/core"; // Stack, etc. sudah ada
+import { DataTable, type DataTableSortStatus } from "mantine-datatable";
+import {
+  IconEdit,
+  IconTrash,
+  IconSearch,
+  IconEye,
+  IconPlus,
+  IconDotsVertical,
+  IconPencil,
+} from "@tabler/icons-react"; // IconPlus sudah ada
+import { useRouter } from "next/navigation";
+import sortBy from "lodash/sortBy";
+import dayjs from "dayjs";
 
 // Definisikan tipe data yang kita butuhkan
 interface Exam {
@@ -73,10 +84,10 @@ export default function ExamsPage() {
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<number[]>([]); // State untuk checkbox
   const [pickerBankId, setPickerBankId] = useState<string | null>(null); // Untuk dropdown di modal
   const [questionsInPicker, setQuestionsInPicker] = useState<Question[]>([]); // Untuk daftar soal di modal
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Exam>>({
-    columnAccessor: 'title',
-    direction: 'asc',
+    columnAccessor: "title",
+    direction: "asc",
   });
   const router = useRouter();
 
@@ -148,13 +159,14 @@ export default function ExamsPage() {
   const sortedAndFilteredRecords = useMemo(() => {
     let filtered = exams;
     if (query) {
-      filtered = exams.filter(({ title, code }) =>
-        title.toLowerCase().includes(query.toLowerCase()) ||
-        code.toLowerCase().includes(query.toLowerCase())
+      filtered = exams.filter(
+        ({ title, code }) =>
+          title.toLowerCase().includes(query.toLowerCase()) ||
+          code.toLowerCase().includes(query.toLowerCase())
       );
     }
     const sorted = sortBy(filtered, sortStatus.columnAccessor);
-    return sortStatus.direction === 'desc' ? sorted.reverse() : sorted;
+    return sortStatus.direction === "desc" ? sorted.reverse() : sorted;
   }, [exams, query, sortStatus]);
 
   const handleDeleteExam = async (examId: number) => {
@@ -282,11 +294,30 @@ export default function ExamsPage() {
     const start = startTime ? new Date(startTime) : null;
     const end = endTime ? new Date(endTime) : null;
 
-    if (end && now > end) return <Badge color="gray">Selesai</Badge>;
-    if (start && now >= start)
-      return <Badge color="green">Sedang Berlangsung</Badge>;
-    if (start && now < start) return <Badge color="blue">Terjadwal</Badge>;
-    return <Badge color="violet">Selalu Aktif</Badge>;
+    let color: string;
+    let text: string;
+
+    if (end && now > end) {
+      color = "gray";
+      text = "Selesai";
+    } else if (start && now >= start) {
+      color = "green";
+      text = "Berlangsung";
+    } else if (start && now < start) {
+      color = "blue";
+      text = "Terjadwal";
+    } else {
+      color = "cyan";
+      text = "Selalu Aktif";
+    }
+
+    return (
+      <Group justify="center">
+        <Tooltip label={text} withArrow position="top">
+          <Indicator color={color} size={15}processing={color === "green"} />
+        </Tooltip>
+      </Group>
+    );
   };
 
   if (loading)
@@ -587,50 +618,58 @@ export default function ExamsPage() {
             records={sortedAndFilteredRecords}
             idAccessor="id"
             columns={[
-              { accessor: 'title', title: 'Judul Ujian', sortable: true },
-              { accessor: 'code', title: 'Kode', sortable: false },
+              { accessor: "title", title: "Judul Ujian", sortable: true },
+              { accessor: "code", title: "Kode", sortable: false },
               {
-                accessor: 'duration_minutes',
-                title: 'Durasi',
+                accessor: "duration_minutes",
+                title: "Durasi",
                 sortable: false,
                 render: (exam) => `${exam.duration_minutes} Menit`,
               },
               {
-                accessor: 'status',
-                title: 'Status',
+                accessor: "status",
+                title: "Status",
+                textAlign: "center",
                 render: (exam) => getStatus(exam.start_time, exam.end_time),
               },
               {
-                accessor: 'actions',
-                title: 'Aksi',
+                accessor: "actions",
+                title: "",
+                textAlign: "right",
                 render: (exam) => (
-                  <Group gap={4} justify="center" wrap="nowrap">
-                    <Button
-                      size="compact-xs"
-                      variant="filled"
-                      color="teal"
-                      leftSection={<IconEye size={14}/>}
-                      onClick={() => router.push(`/admin/monitoring/${exam.id}`)}
-                    >
-                      Monitor
-                    </Button>
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      color="yellow"
-                      onClick={() => openEditModal(exam)}
-                    >
-                      <IconEdit size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      color="red"
-                      onClick={() => handleDeleteExam(exam.id)}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
+                  <Menu shadow="md" width={200}>
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray">
+                        <IconDotsVertical size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconEye size={14} />}
+                        color="teal"
+                        onClick={() =>
+                          router.push(`/admin/monitoring/${exam.id}`)
+                        }
+                      >
+                        Monitor Ujian
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconPencil size={14} />}
+                        color="yellow"
+                        onClick={() => openEditModal(exam)}
+                      >
+                        Edit Ujian
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        onClick={() => handleDeleteExam(exam.id)}
+                      >
+                        Hapus Ujian
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
                 ),
               },
             ]}

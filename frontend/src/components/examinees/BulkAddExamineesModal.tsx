@@ -84,8 +84,9 @@ export function BulkAddExamineesModal({
       }
 
       // Loop melalui setiap peserta dan tambahkan datanya
-      values.examinees.forEach((examinee, index) => {
-        formData.append('names', examinee.name);
+     values.examinees.forEach((examinee, index) => {
+        formData.append('names[]', examinee.name); 
+        
         if (examinee.avatar) {
           formData.append('avatars', examinee.avatar);
         }

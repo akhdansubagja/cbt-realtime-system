@@ -1,5 +1,5 @@
 // backend/api/src/examinees/dto/create-bulk-examinees.dto.ts
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   IsArray,
   IsNotEmpty,

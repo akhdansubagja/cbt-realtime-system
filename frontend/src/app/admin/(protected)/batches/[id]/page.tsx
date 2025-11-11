@@ -21,11 +21,12 @@ import { Batch } from "@/types/batch"; // Tipe ini sekarang berisi Examinee
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BatchParticipantTable } from "@/components/batches/BatchParticipantTable";
-import { BatchAverageChart } from "@/components/batches/BatchAverageChart";
+import { InteractiveBatchChart } from "@/components/batches/InteractiveBatchChart";
 import { IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { BulkAddExamineesModal } from "@/components/examinees/BulkAddExamineesModal";
+
 
 export default function BatchDetailPage() {
   const params = useParams();
@@ -128,7 +129,9 @@ export default function BatchDetailPage() {
           </Button>
         </Group>
 
-        <BatchAverageChart batchId={batch.id} key={`chart-${refreshKey}`} />
+        {/* <InteractiveBatchChartV2 batchId={batch.id} key={`chart-${refreshKey}`} /> */}
+
+        <InteractiveBatchChart batchId={batch.id} key={`chart-${refreshKey}`} />
 
         <BatchParticipantTable batchId={batch.id} key={`table-${refreshKey}`} />
       </Stack>

@@ -17,7 +17,9 @@ DONE6. buat agar peserta atau examinee, dapat menggunakan foto atau gambar
 
 DONE7. buat agar untuk menambahkan peserta ke dalam sebuah batch menjadi lebih mudah, misalkan bisa langsung menambahkan pada saat sedang melihat detail suatu batch
 
-8. 
+8. buat agar grafik pada halaman detail batch agar lebih bagus dan lebih fungsional, misalkan jadi kita dapat memilih seperti keseluruhan rata rata nilai ujian yang sudah ada pada saat ini, ataupun memilih setiap ujian yang ada pada batch tersebut berdasarkan pesertanya tentunya, jadi nanti misalkan saya memilih untuk melihat chart atau grafik dari ujian Informatika 2025, nah maka di situ akan menampilkan grafik dari nilai keseluruhan anggota pada batch tersebut, terhadap ujian tersebut. lalu saya juga ingin pada setiap diagram batangnya, diberi warna berbeda-beda, jangan sama semua warna biru.
+
+9. fitur export ke excel pada halaman detail batch, yang dapat mengexport keseluruhan informasi yang ada, baik informasi tiap peserta ujian, maupun informasi tiap grafik yang ada
 
 
 
@@ -26,6 +28,8 @@ DONE7. buat agar untuk menambahkan peserta ke dalam sebuah batch menjadi lebih m
 OPSIONAL
 1. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur checklist)
 2. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
+3. buat agar primary key "examinee" menggunakan campuran autoincrement ditambah tanggal dan waktu, atau mungkin nanti bisa migrasi menggunakan uuid
+4. buat agar pada halaman utama pada saat ingin ujian, yaitu pada halaman peserta harus memasukkan nama dan kelas, hanya peserta yang sudah dipilih dan ditentukan oleh admin, dapat menginputkan namanya, jadi tidak keseluruhan peserta akan ditampilkan di dalam suatu form tersebut
 
 SECURITY
 DONE1. di halaman live exam untuk saat ini bisa terbobol hanya dengan modal mengganti URL

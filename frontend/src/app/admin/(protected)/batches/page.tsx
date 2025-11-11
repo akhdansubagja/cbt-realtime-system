@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Title,
@@ -13,32 +13,48 @@ import {
   TextInput,
   Stack,
   ActionIcon,
-} from '@mantine/core';
-import { IconAlertCircle, IconEye, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react'; // <-- Tambahkan IconPlus
-import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
-import { Batch } from '@/types/batch';
-import Link from 'next/link';
-import { useForm } from '@mantine/form'; // <-- Tambahkan ini
-import { useDisclosure } from '@mantine/hooks'; // <-- Tambahkan ini
-import { notifications } from '@mantine/notifications'; // <-- Tambahkan ini
+  Menu,
+} from "@mantine/core";
+import {
+  IconAlertCircle,
+  IconEye,
+  IconPlus,
+  IconPencil,
+  IconTrash,
+  IconDotsVertical,
+  IconSearch,
+} from "@tabler/icons-react"; // <-- Tambahkan IconPlus
+import { useEffect, useState } from "react";
+import api from "@/lib/axios";
+import { Batch } from "@/types/batch";
+import Link from "next/link";
+import { useForm } from "@mantine/form"; // <-- Tambahkan ini
+import { useDisclosure } from "@mantine/hooks"; // <-- Tambahkan ini
+import { notifications } from "@mantine/notifications"; // <-- Tambahkan ini
+import dayjs from "dayjs";
 
 export default function BatchesPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   // State untuk Modal
   const [opened, { open, close }] = useDisclosure(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
 
+  const filteredBatches = batches.filter((batch) =>
+    batch.name.toLowerCase().includes(query.toLowerCase())
+  );
+
   // Form hook untuk modal
   const form = useForm({
     initialValues: {
-      name: '',
+      name: "",
     },
     validate: {
-      name: (value) => (value.trim().length > 0 ? null : 'Nama batch harus diisi'),
+      name: (value) =>
+        value.trim().length > 0 ? null : "Nama batch harus diisi",
     },
   });
 
@@ -47,12 +63,12 @@ export default function BatchesPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/batches');
+      const response = await api.get("/batches");
       // Asumsi /batches mengembalikan array langsung,
       // jika pakai paginasi, gunakan response.data.data
-      setBatches(response.data); 
+      setBatches(response.data);
     } catch (err) {
-      setError('Gagal mengambil data batch. Coba lagi nanti.');
+      setError("Gagal mengambil data batch. Coba lagi nanti.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -79,20 +95,20 @@ export default function BatchesPage() {
 
   // Handler untuk Hapus Batch
   const handleDelete = async (id: number) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus batch ini?')) {
+    if (window.confirm("Apakah Anda yakin ingin menghapus batch ini?")) {
       try {
         await api.delete(`/batches/${id}`);
         notifications.show({
-          title: 'Berhasil!',
-          message: 'Batch telah dihapus.',
-          color: 'teal',
+          title: "Berhasil!",
+          message: "Batch telah dihapus.",
+          color: "teal",
         });
         fetchBatches(); // Refresh tabel
       } catch (err) {
         notifications.show({
-          title: 'Gagal',
-          message: 'Gagal menghapus batch.',
-          color: 'red',
+          title: "Gagal",
+          message: "Gagal menghapus batch.",
+          color: "red",
         });
       }
     }
@@ -106,23 +122,25 @@ export default function BatchesPage() {
         await api.patch(`/batches/${editingBatch.id}`, values);
       } else {
         // Mode Create
-        await api.post('/batches', values);
+        await api.post("/batches", values);
       }
 
       notifications.show({
-        title: 'Berhasil!',
-        message: `Data batch telah ${editingBatch ? 'diperbarui' : 'ditambahkan'}.`,
-        color: 'teal',
+        title: "Berhasil!",
+        message: `Data batch telah ${
+          editingBatch ? "diperbarui" : "ditambahkan"
+        }.`,
+        color: "teal",
       });
-      
+
       close();
       form.reset();
       fetchBatches(); // Muat ulang data tabel
     } catch (err) {
       notifications.show({
-        title: 'Gagal',
-        message: 'Gagal menyimpan data batch.',
-        color: 'red',
+        title: "Gagal",
+        message: "Gagal menyimpan data batch.",
+        color: "red",
       });
     }
   };
@@ -135,50 +153,56 @@ export default function BatchesPage() {
   // Menampilkan state error
   if (error) {
     return (
-      <Alert
-        icon={<IconAlertCircle size={16} />}
-        title="Error!"
-        color="red"
-      >
+      <Alert icon={<IconAlertCircle size={16} />} title="Error!" color="red">
         {error}
       </Alert>
     );
   }
 
   // Menampilkan data dalam tabel
-  const rows = batches.map((batch) => (
-    <Table.Tr key={batch.id}>
-      <Table.Td>{batch.id}</Table.Td>
-      <Table.Td>{batch.name}</Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          <Button
-            component={Link}
-            href={`/admin/batches/${batch.id}`}
-            leftSection={<IconEye size={14} />}
-            variant="outline"
-            size="xs"
-          >
-            Lihat Detail
-          </Button>
-          <ActionIcon
-            variant="subtle"
-            color="yellow"
-            onClick={() => openEditModal(batch)}
-          >
-            <IconPencil size={16} />
-          </ActionIcon>
-          <ActionIcon
-            variant="subtle"
-            color="red"
-            onClick={() => handleDelete(batch.id)}
-          >
-            <IconTrash size={16} />
-          </ActionIcon>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
+  const rows = filteredBatches.map(
+    (
+      batch // <-- Gunakan filteredBatches
+    ) => (
+      <Table.Tr key={batch.id}>
+        <Table.Td>{batch.name}</Table.Td>
+        <Table.Td>{dayjs(batch.createdAt).format("DD MMM YYYY")}</Table.Td>
+        <Table.Td align="right">
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="gray">
+                <IconDotsVertical size={16} />
+              </ActionIcon>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<IconEye size={14} />}
+                component={Link}
+                href={`/admin/batches/${batch.id}`}
+              >
+                Lihat Detail
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconPencil size={14} />}
+                color="yellow"
+                onClick={() => openEditModal(batch)}
+              >
+                Edit
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconTrash size={14} />}
+                color="red"
+                onClick={() => handleDelete(batch.id)}
+              >
+                Hapus
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Table.Td>
+      </Table.Tr>
+    )
+  );
 
   return (
     <>
@@ -198,7 +222,7 @@ export default function BatchesPage() {
               withAsterisk
               label="Nama Batch"
               placeholder="Contoh: Batch Januari 2025"
-              {...form.getInputProps('name')}
+              {...form.getInputProps("name")}
             />
             <Group justify="flex-end" mt="md">
               <Button variant="default" onClick={close}>
@@ -217,7 +241,7 @@ export default function BatchesPage() {
           close();
           form.reset();
         }}
-        title={editingBatch ? 'Edit Batch' : 'Buat Batch Baru'}
+        title={editingBatch ? "Edit Batch" : "Buat Batch Baru"}
         centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -226,7 +250,7 @@ export default function BatchesPage() {
               withAsterisk
               label="Nama Batch"
               placeholder="Contoh: Batch Januari 2025"
-              {...form.getInputProps('name')}
+              {...form.getInputProps("name")}
             />
             <Group justify="flex-end" mt="md">
               <Button variant="default" onClick={close}>
@@ -246,17 +270,28 @@ export default function BatchesPage() {
         </Button>
       </Group>
 
+      <TextInput
+        placeholder="Cari batch berdasarkan nama..."
+        leftSection={<IconSearch size={16} />}
+        value={query}
+        onChange={(e) => setQuery(e.currentTarget.value)}
+        mb="md"
+      />
+
       {/* --- TABEL DATA --- */}
       <Paper shadow="sm" p="lg">
-        {batches.length === 0 ? (
-          <Text>Belum ada data batch.</Text>
+        {/* V V V PERBARUI EMPTY STATE V V V */}
+        {filteredBatches.length === 0 ? (
+          <Text>
+            {query ? "Tidak ada hasil pencarian" : "Belum ada data batch."}
+          </Text>
         ) : (
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>ID</Table.Th>
                 <Table.Th>Nama Batch</Table.Th>
-                <Table.Th>Aksi</Table.Th>
+                <Table.Th>Tanggal Dibuat</Table.Th>
+                <Table.Th align="right"></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>{rows}</Table.Tbody>

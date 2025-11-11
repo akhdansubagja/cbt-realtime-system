@@ -17,6 +17,8 @@ import {
   Avatar,
   FileInput,
   Image,
+  rem,
+  Menu,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
@@ -32,6 +34,8 @@ import {
   IconSearch,
   IconPlus,
   IconEye,
+  IconDotsVertical,
+  IconPencil,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
@@ -55,7 +59,8 @@ export default function ExamineesPage() {
   const [editingExaminee, setEditingExaminee] = useState<Examinee | null>(null);
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 10; // 10 data per halaman
+  const PAGE_SIZES = [10, 25, 50, 100];
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[3]);
   const [query, setQuery] = useState("");
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Examinee>>({
     columnAccessor: "name",
@@ -97,7 +102,8 @@ export default function ExamineesPage() {
     try {
       setLoading(true);
       const response = await api.get(
-        `/examinees?page=${page}&limit=${limit}&search=${search}`
+        // Ganti 'limit' dengan 'pageSize'
+        `/examinees?page=${page}&limit=${pageSize}&search=${search}`
       );
       setExaminees(response.data.data);
       setTotalPages(response.data.last_page);
@@ -112,7 +118,11 @@ export default function ExamineesPage() {
     // Panggil fungsi yang sudah dideklarasikan di atas
     fetchExaminees();
     // --- PERUBAHAN 2 DI SINI ---
-  }, [activePage, debouncedQuery]);
+  }, [activePage, debouncedQuery, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize]);
 
   useEffect(() => {
     fetchBatches();
@@ -121,17 +131,14 @@ export default function ExamineesPage() {
   useHotkeys([["/", () => searchInputRef.current?.focus()]]);
 
   useEffect(() => {
-    // Atur timer untuk 500ms (setengah detik)
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
-    }, 500);
+    }, 500); // 500ms delay
 
-    // Fungsi cleanup ini sangat penting.
-    // Ia akan membatalkan timer sebelumnya setiap kali Anda mengetik huruf baru.
     return () => {
       clearTimeout(handler);
     };
-  }, [query]); // <-- useEffect ini hanya berjalan saat 'query' berubah
+  }, [query]);
 
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
@@ -383,7 +390,7 @@ export default function ExamineesPage() {
                   </Avatar>
                 ),
               },
-              { accessor: "name", title: "Nama Peserta", sortable: true},
+              { accessor: "name", title: "Nama Peserta", sortable: true },
               {
                 accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)
                 title: "Batch",
@@ -400,46 +407,55 @@ export default function ExamineesPage() {
               },
               {
                 accessor: "actions",
-                title: "Aksi",
+                title: "",
+                textAlign: "right", 
                 render: (examinee) => (
-                  <Group gap={4} justify="center" wrap="nowrap">
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      color="blue"
-                      onClick={() =>
-                        router.push(`/admin/examinees/${examinee.id}`)
-                      }
-                    >
-                      <IconEye size={20} />
-                    </ActionIcon>
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      color="yellow"
-                      onClick={() => openEditModal(examinee)}
-                    >
-                      <IconEdit size={20} />
-                    </ActionIcon>
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      color="red"
-                      onClick={() => handleDeleteExaminee(examinee.id)}
-                    >
-                      <IconTrash size={20} />
-                    </ActionIcon>
-                  </Group>
+                  <Menu shadow="md" width={200}>
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray">
+                        <IconDotsVertical size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconEye size={14} />}
+                        onClick={() =>
+                          router.push(`/admin/examinees/${examinee.id}`)
+                        }
+                      >
+                        Lihat Riwayat
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconPencil size={14} />}
+                        color="yellow"
+                        onClick={() => openEditModal(examinee)}
+                      >
+                        Edit
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        onClick={() => handleDeleteExaminee(examinee.id)}
+                      >
+                        Hapus
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
                 ),
               },
             ]}
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
-            // --- Mengintegrasikan Paginasi Server-Side ---
-            totalRecords={totalPages * limit}
-            recordsPerPage={limit}
+            totalRecords={totalPages * pageSize} // Total data dari server
+            recordsPerPage={pageSize}
             page={activePage}
             onPageChange={(p) => setPage(p)}
+            recordsPerPageOptions={PAGE_SIZES}
+            onRecordsPerPageChange={setPageSize}
+            paginationText={({ from, to, totalRecords }) =>
+              `${from} - ${to} dari ${totalRecords}`
+            }
             noRecordsText="Tidak ada data untuk ditampilkan"
           />
         </Box>

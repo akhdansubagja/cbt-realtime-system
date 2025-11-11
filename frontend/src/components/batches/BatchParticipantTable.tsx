@@ -125,7 +125,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
       {/* ^ ^ ^ BATAS PEMINDAHAN ^ ^ ^ */}
 
       <Title order={4} mb="md">
-        Peringkat Peserta (Berdasarkan Total Skor)
+        Daftar Peserta
       </Title>
       <Table striped highlightOnHover>
         <Table.Thead>

@@ -16,42 +16,24 @@ export class ReportsService {
 
   /**
    * Endpoint A (Tabel):
-   * Mengambil semua peserta dalam satu batch,
-   * diurutkan berdasarkan total skor,
-   * dan menghitung jumlah ujian yang telah selesai.
+   * Diurutkan berdasarkan NAMA, dan sekarang juga MENGAMBIL avatar_url
    */
   async getBatchParticipantReport(batchId: number) {
-    return (
-      this.examineeRepository
-        .createQueryBuilder('examinee')
-
-        // 1. Ambil data 'participant' terkait
-        //    TAPI filter 'finished' di dalam 'ON' clause
-        .leftJoin(
-          'examinee.participants',
-          'participant',
-          'participant.status = :status', // <-- Pindahkan filter ke sini
-          { status: 'finished' },
-        )
-
-        // 2. Sekarang, 'WHERE' HANYA memfilter peserta berdasarkan batch
-        .where('examinee.batch_id = :batchId', { batchId })
-
-        // 3. Hitung jumlah ujian (akan jadi '0' jika tidak ada join)
-        .addSelect('COUNT(participant.id)', 'examCount')
-
-        // 4. Hitung total skor (gunakan COALESCE untuk mengubah NULL jadi 0)
-        .addSelect('COALESCE(SUM(participant.final_score), 0)', 'totalScore')
-
-        // 5. Kelompokkan berdasarkan ID peserta
-        .groupBy('examinee.id')
-
-        // 6. Urutkan berdasarkan total skor (DESC)
-        .orderBy('"totalScore"', 'DESC') // Aman menggunakan alias di sini
-
-        // 7. Ambil data mentahnya
-        .getRawMany()
-    );
+    return this.examineeRepository
+      .createQueryBuilder('examinee')
+      .leftJoin(
+        'examinee.participants',
+        'participant',
+        'participant.status = :status',
+        { status: 'finished' },
+      )
+      .where('examinee.batch_id = :batchId', { batchId })
+      .addSelect('examinee.avatar_url', 'examinee_avatar_url')
+      .addSelect('COUNT(participant.id)', 'examCount')
+      .addSelect('COALESCE(SUM(participant.final_score), 0)', 'totalScore')
+      .groupBy('examinee.id, examinee.avatar_url')
+      .orderBy('examinee.name', 'ASC') // <-- PERBAIKAN: Urut abjad
+      .getRawMany();
   }
 
   /**
@@ -59,25 +41,59 @@ export class ReportsService {
    * Menghitung nilai rata-rata batch untuk setiap ujian yang diambil.
    */
   async getBatchAverageReport(batchId: number) {
-    return (
-      this.participantRepository
-        .createQueryBuilder('participant')
-        .innerJoin('participant.examinee', 'examinee')
-        .innerJoin('participant.exam', 'exam')
-        .where('examinee.batch_id = :batchId', { batchId })
-        .andWhere('participant.status = :status', { status: 'finished' })
+    return this.participantRepository
+      .createQueryBuilder('participant')
+      .innerJoin('participant.examinee', 'examinee')
+      .innerJoin('participant.exam', 'exam')
+      .where('examinee.batch_id = :batchId', { batchId })
+      .andWhere('participant.status = :status', { status: 'finished' })
+      .select('exam.title', 'examTitle')
+      .addSelect('ROUND(AVG(participant.final_score), 2)', 'averageScore')
+      .groupBy('exam.id')
+      .addGroupBy('exam.title')
+      .orderBy('exam.title', 'ASC')
+      .getRawMany();
+  }
 
-        // V V V PERBAIKAN DI SINI V V V
-        // Kita gunakan .select() untuk MENGGANTI pilihan kolom default,
-        // bukan .addSelect() (yang MENAMBAH).
-        .select('exam.title', 'examTitle')
-        .addSelect('ROUND(AVG(participant.final_score), 2)', 'averageScore')
-        // ^ ^ ^ BATAS PERBAIKAN ^ ^ ^
+  /**
+   * Endpoint A (Dropdown):
+   * Memperbaiki error SQL 'examinee.name'
+   */
+  async getBatchUniqueExams(batchId: number) {
+    return this.participantRepository
+      .createQueryBuilder('participant')
+      .innerJoin('participant.examinee', 'examinee')
+      .innerJoin('participant.exam', 'exam')
+      .where('examinee.batch_id = :batchId', { batchId })
+      .andWhere('participant.status = :status', { status: 'finished' })
+      .select(['exam.id AS id', 'exam.title AS title'])
+      .groupBy('exam.id, exam.title')
+      // PERBAIKAN: Mengurutkan berdasarkan 'exam.title', bukan 'examinee.name'
+      .orderBy('exam.title', 'ASC') 
+      .getRawMany();
+  }
 
-        .groupBy('exam.id') // Kita masih perlu group by ID untuk akurasi
-        .addGroupBy('exam.title')
-        .orderBy('exam.title', 'ASC')
-        .getRawMany()
-    );
+  /**
+   * Endpoint B (Grafik Drill-down):
+   * Sekarang juga MENGAMBIL avatar_url
+   */
+  async getBatchExamPerformance(batchId: number, examId: number) {
+    return this.examineeRepository
+      .createQueryBuilder('examinee')
+      .leftJoin(
+        'examinee.participants',
+        'participant',
+        'participant.exam_id = :examId AND participant.status = :status',
+        { examId, status: 'finished' },
+      )
+      .where('examinee.batch_id = :batchId', { batchId })
+      .select([
+        'examinee.name AS name',
+        'COALESCE(participant.final_score, 0) AS score',
+        'examinee.avatar_url AS avatar_url', // <-- PERBAIKAN: Tambah avatar
+      ])
+      .groupBy('examinee.id, participant.final_score, examinee.avatar_url')
+      .orderBy('examinee.name', 'ASC') // <-- PERBAIKAN: Urut abjad
+      .getRawMany();
   }
 }

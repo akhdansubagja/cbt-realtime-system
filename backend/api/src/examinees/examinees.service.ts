@@ -159,7 +159,8 @@ export class ExamineesService {
     createBulkExamineesDto: CreateBulkExamineesDto,
     files: Array<Express.Multer.File>,
   ) {
-    const { names, batch_id } = createBulkExamineesDto;
+    // PERBAIKAN: Baca dari '.names' bukan '["names[]"]'
+    const { names, batch_id } = createBulkExamineesDto; 
 
     let batch: Batch | null = null;
     if (batch_id) {
@@ -169,10 +170,9 @@ export class ExamineesService {
       }
     }
 
-    // Buat array entitas Examinee
-    // Kita asumsikan urutan 'names' dan 'files' cocok
+    // Kode ini sekarang aman karena 'names' dijamin berupa array oleh DTO
     const newExaminees = names.map((name, index) => {
-      const file = files[index]; // Ambil file yang sesuai
+      const file = files[index]; 
       
       return this.examineeRepository.create({
         name: name,
@@ -181,7 +181,6 @@ export class ExamineesService {
       });
     });
 
-    // Simpan semua entitas baru ke database dalam satu operasi
     return this.examineeRepository.save(newExaminees);
   }
 }

@@ -22,6 +22,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_JVM_PERFORMANCE_OPTS: "-server -XX:ParallelGCThreads=1 -Xms512M -Xmx512M -XX:-UseContainerSupport"
     ports:
       - "2181:2181"
     restart: unless-stopped
@@ -42,6 +43,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_JVM_PERFORMANCE_OPTS: "-server -XX:ParallelGCThreads=1 -Xms512M -Xmx512M -XX:-UseContainerSupport"
     restart: unless-stopped
 
 volumes:
