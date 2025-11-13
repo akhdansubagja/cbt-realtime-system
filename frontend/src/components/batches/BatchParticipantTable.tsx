@@ -2,7 +2,7 @@
 "use client";
 
 import api from "@/lib/axios";
-import { BatchParticipantReport } from "@/types/batchParticipantReport";
+import { BatchParticipantReportData } from "@/types/batchParticipantReport";
 import {
   Alert,
   Button,
@@ -14,6 +14,8 @@ import {
   Avatar,
   Modal,
   Image,
+  ScrollArea,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconAlertCircle, IconUserSearch } from "@tabler/icons-react";
@@ -25,7 +27,7 @@ interface BatchParticipantTableProps {
 }
 
 export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
-  const [data, setData] = useState<BatchParticipantReport[]>([]);
+  const [data, setData] = useState<BatchParticipantReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
@@ -74,41 +76,11 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
     );
   }
 
-  if (data.length === 0) {
+  if (!data || data.participantScores.length === 0) {
     return (
       <Text>Belum ada peserta di batch ini yang menyelesaikan ujian.</Text>
     );
   }
-
-  <Modal
-    opened={imageModalOpened}
-    onClose={closeImageModal}
-    title="Lihat Avatar"
-    centered
-    size="lg"
-  >
-    <Image src={selectedImage} alt="Avatar Peserta" />
-  </Modal>;
-
-  // Tampilkan tabel canggih Anda
-  const rows = data.map((row) => (
-    <Table.Tr key={row.examinee_id}>
-      <Table.Td>{row.examinee_name}</Table.Td>
-      <Table.Td align="center">{row.examCount}</Table.Td>
-      <Table.Td align="center">{row.totalScore}</Table.Td>
-      <Table.Td>
-        <Button
-          component={Link}
-          href={`/admin/examinees/${row.examinee_id}`}
-          leftSection={<IconUserSearch size={14} />}
-          variant="outline"
-          size="xs"
-        >
-          Lihat Riwayat
-        </Button>
-      </Table.Td>
-    </Table.Tr>
-  ));
 
   return (
     <Paper shadow="sm" p="lg" withBorder>
@@ -127,56 +99,88 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
       <Title order={4} mb="md">
         Daftar Peserta
       </Title>
-      <Table striped highlightOnHover>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Avatar</Table.Th>
-            <Table.Th>Nama Peserta</Table.Th>
-            <Table.Th>Jumlah Ujian Selesai</Table.Th>
-            <Table.Th>Total Skor</Table.Th>
-            <Table.Th>Aksi</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {/* Kita gunakan .map() langsung di sini. 
-            Variabel 'rows' (baris 95) tidak diperlukan lagi.
-          */}
-          {data.map((row) => (
-            <Table.Tr key={row.examinee_id}>
-              <Table.Td>
-                <Avatar
-                  src={
-                    row.examinee_avatar_url
-                      ? `http://localhost:3000/${row.examinee_avatar_url}`
-                      : null
-                  }
-                  radius="xl"
-                  onClick={() => handleAvatarClick(row.examinee_avatar_url)}
-                  style={{
-                    cursor: row.examinee_avatar_url ? "pointer" : "default",
-                  }}
-                >
-                  {row.examinee_name.charAt(0)}
-                </Avatar>
-              </Table.Td>
-              <Table.Td>{row.examinee_name}</Table.Td>
-              <Table.Td align="center">{row.examCount}</Table.Td>
-              <Table.Td align="center">{row.totalScore}</Table.Td>
-              <Table.Td>
-                <Button
-                  component={Link}
-                  href={`/admin/examinees/${row.examinee_id}`}
-                  leftSection={<IconUserSearch size={14} />}
-                  variant="outline"
-                  size="xs"
-                >
-                  Lihat Riwayat
-                </Button>
-              </Table.Td>
+      <ScrollArea>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Avatar</Table.Th>
+              <Table.Th>Nama Peserta</Table.Th>
+
+              {/* Kolom Ujian Dinamis */}
+              {data.uniqueExams.map((exam) => (
+                <Table.Th key={exam.id} align="center" miw={100}>
+                  <Tooltip label={exam.title} withArrow multiline w={220}>
+                    <Text span truncate>
+                      {exam.shortTitle}
+                    </Text>
+                  </Tooltip>
+                </Table.Th>
+              ))}
+
+              <Table.Th align="center">Jml. Ujian</Table.Th>
+              <Table.Th align="center">Total Skor</Table.Th>
+              <Table.Th align="center">Rata-rata</Table.Th>
+              {/* Kolom Aksi dihapus */}
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
+          </Table.Thead>
+          <Table.Tbody>
+            {data.participantScores.map((participant) => {
+              // Buat lookup map untuk skor peserta ini agar pencarian cepat
+              const scoreMap = new Map(
+                participant.scores.map((s) => [s.examId, s.score])
+              );
+
+              return (
+                <Table.Tr key={participant.examinee.id}>
+                  {/* KolLOM AVATAR */}
+                  <Table.Td>
+                    <Avatar
+                      src={
+                        participant.examinee.avatar
+                          ? `http://localhost:3000/${participant.examinee.avatar}`
+                          : null
+                      }
+                      radius="xl"
+                      onClick={() =>
+                        handleAvatarClick(participant.examinee.avatar)
+                      }
+                      style={{
+                        cursor: participant.examinee.avatar
+                          ? "pointer"
+                          : "default",
+                      }}
+                    >
+                      {participant.examinee.name.charAt(0)}
+                    </Avatar>
+                  </Table.Td>
+
+                  {/* Kolom NAMA */}
+                  <Table.Td>{participant.examinee.name}</Table.Td>
+
+                  {/* Kolom NILAI DINAMIS */}
+                  {data.uniqueExams.map((exam) => {
+                    const score = scoreMap.get(exam.id);
+                    return (
+                      <Table.Td key={exam.id}>
+                        {score !== null && score !== undefined ? score : "-"}
+                      </Table.Td>
+                    );
+                  })}
+
+                  {/* Kolom AGREGAT BARU */}
+                  <Table.Td align="center">{participant.examCount}</Table.Td>
+                  <Table.Td align="center">{participant.totalScore}</Table.Td>
+                  <Table.Td align="center">
+                    {participant.averageScore.toFixed(2)}
+                  </Table.Td>
+
+                  {/* Kolom Aksi (Button) dihapus */}
+                </Table.Tr>
+              );
+            })}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
     </Paper>
   );
 }

@@ -628,7 +628,7 @@ export default function ExamsPage() {
               },
               {
                 accessor: "status",
-                title: "Status",
+                title: "Status Ujian",
                 textAlign: "center",
                 render: (exam) => getStatus(exam.start_time, exam.end_time),
               },

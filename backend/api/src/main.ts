@@ -3,7 +3,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { IoAdapter } from '@nestjs/platform-socket.io';
-import { Transport } from '@nestjs/microservices'; 
+import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
@@ -11,13 +11,19 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // 1. PANGGIL CORS PERTAMA KALI
+  app.enableCors({
+    origin: 'http://localhost:3001', // Izinkan frontend Anda
+    credentials: true,
+  });
+
+  // 2. SETELAH CORS, BARU PANGGIL STATIC ASSETS (DENGAN PATH YANG BENAR)
+  // Path ini (.. dari dist) akan mengarah ke folder 'uploads' di root 'api'
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
 
-  app.enableCors();
-
-  // 2. KONFIGURASI KAFKA CONSUMER
+  // 3. Sisa konfigurasi (Kafka, WebSockets)
   app.connectMicroservice({
     transport: Transport.KAFKA,
     options: {
@@ -25,18 +31,15 @@ async function bootstrap() {
         brokers: [process.env.KAFKA_BROKER_URL],
       },
       consumer: {
-        groupId: 'cbt-consumer', // Pastikan groupId sama dengan di kafka.module
+        groupId: 'cbt-consumer',
       },
     },
   });
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
-    prefix: '/uploads/', // Ini akan membuat URL-nya http://.../uploads/[nama_file]
-  });
-
-  await app.startAllMicroservices(); // <-- 3. JALANKAN SEMUA MICROSERVICES
-  await app.listen(3000); // <-- JALANKAN SERVER WEB
+  // 4. JALANKAN
+  await app.startAllMicroservices();
+  await app.listen(3000);
 }
-bootstrap();  
+bootstrap();

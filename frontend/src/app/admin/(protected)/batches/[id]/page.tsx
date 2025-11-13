@@ -14,7 +14,11 @@ import {
   Breadcrumbs,
   Stack,
 } from "@mantine/core";
-import { IconAlertCircle, IconUserSearch } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconUserSearch,
+  IconFileExport,
+} from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { Batch } from "@/types/batch"; // Tipe ini sekarang berisi Examinee
@@ -26,7 +30,6 @@ import { IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { BulkAddExamineesModal } from "@/components/examinees/BulkAddExamineesModal";
-
 
 export default function BatchDetailPage() {
   const params = useParams();
@@ -41,6 +44,8 @@ export default function BatchDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!id) return; // Jangan fetch jika ID belum siap
@@ -62,6 +67,42 @@ export default function BatchDetailPage() {
 
     fetchBatchDetail();
   }, [id]);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await api.get(`/reports/export/batch/${batchId}`, {
+        responseType: "blob", // Penting: kita minta file, bukan JSON
+      });
+
+      // Ambil nama file dari header 'content-disposition'
+      const contentDisposition = response.headers["content-disposition"];
+      let fileName = `laporan_batch_${batchId}.xlsx`; // Fallback
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1];
+        }
+      }
+
+      // Buat URL sementara dari blob (file) dan picu download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Bersihkan
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Gagal mengunduh laporan", err);
+      setError("Gagal mengunduh laporan. Coba lagi nanti.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Menampilkan state loading
   if (loading) {
@@ -124,14 +165,31 @@ export default function BatchDetailPage() {
 
         <Group justify="space-between" mb="md">
           <Title order={2}>{batch.name}</Title>
-          <Button leftSection={<IconPlus size={16} />} onClick={openBulkModal}>
-            Tambah Peserta
-          </Button>
+          <Group>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={openBulkModal}
+            >
+              Tambah Peserta
+            </Button>
+            <Button
+              leftSection={<IconFileExport size={16} />}
+              onClick={handleExport}
+              loading={isExporting}
+              variant="outline"
+            >
+              Export ke Excel
+            </Button>
+          </Group>
         </Group>
 
         {/* <InteractiveBatchChartV2 batchId={batch.id} key={`chart-${refreshKey}`} /> */}
 
-        <InteractiveBatchChart batchId={batch.id} key={`chart-${refreshKey}`} />
+        <InteractiveBatchChart
+          batchId={batch.id}
+          batchName={batch.name} // <-- TAMBAHKAN PROP INI
+          key={`chart-${refreshKey}`}
+        />
 
         <BatchParticipantTable batchId={batch.id} key={`table-${refreshKey}`} />
       </Stack>

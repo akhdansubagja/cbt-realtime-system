@@ -3,4 +3,5 @@
 export interface UniqueExam {
   id: number;
   title: string;
+  shortTitle: string;
 }
