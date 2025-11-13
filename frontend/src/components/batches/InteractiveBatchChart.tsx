@@ -301,7 +301,7 @@ export function InteractiveBatchChart({
 
                 return (
                   <Grid key={item.name} align="center">
-                    <Grid.Col span={2}>
+                    <Grid.Col span={2.4}>
                       <Group gap="xs" wrap="nowrap" justify="flex-start">
                         {/* Penomoran dengan ikon untuk juara 1-3, angka untuk sisanya */}
                         {index === 0 ? (
@@ -320,7 +320,7 @@ export function InteractiveBatchChart({
                         </Text>
                       </Group>
                     </Grid.Col>
-                    <Grid.Col span={10}>
+                    <Grid.Col span={9}>
                       <Tooltip
                         label={`${item.name}: ${score}`}
                         position="top"

@@ -14,6 +14,7 @@ import {
   Stack,
   ActionIcon,
   Menu,
+  Box,
 } from "@mantine/core";
 import {
   IconAlertCircle,
@@ -32,6 +33,7 @@ import { useForm } from "@mantine/form"; // <-- Tambahkan ini
 import { useDisclosure } from "@mantine/hooks"; // <-- Tambahkan ini
 import { notifications } from "@mantine/notifications"; // <-- Tambahkan ini
 import dayjs from "dayjs";
+import { useRouter } from "next/navigation";
 
 export default function BatchesPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -42,6 +44,8 @@ export default function BatchesPage() {
   // State untuk Modal
   const [opened, { open, close }] = useDisclosure(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
+
+  const router = useRouter(); // <-- TAMBAHKAN INI
 
   const filteredBatches = batches.filter((batch) =>
     batch.name.toLowerCase().includes(query.toLowerCase())
@@ -164,41 +168,47 @@ export default function BatchesPage() {
     (
       batch // <-- Gunakan filteredBatches
     ) => (
-      <Table.Tr key={batch.id}>
+      <Table.Tr
+        key={batch.id}
+        onClick={() => router.push(`/admin/batches/${batch.id}`)}
+        style={{ cursor: "pointer" }}
+      >
         <Table.Td>{batch.name}</Table.Td>
         <Table.Td>{dayjs(batch.createdAt).format("DD MMM YYYY")}</Table.Td>
         <Table.Td align="right">
-          <Menu shadow="md" width={200}>
-            <Menu.Target>
-              <ActionIcon variant="subtle" color="gray">
-                <IconDotsVertical size={16} />
-              </ActionIcon>
-            </Menu.Target>
+          <Box onClick={(e) => e.stopPropagation()}>
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="gray">
+                  <IconDotsVertical size={16} />
+                </ActionIcon>
+              </Menu.Target>
 
-            <Menu.Dropdown>
-              <Menu.Item
-                leftSection={<IconEye size={14} />}
-                component={Link}
-                href={`/admin/batches/${batch.id}`}
-              >
-                Lihat Detail
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconPencil size={14} />}
-                color="yellow"
-                onClick={() => openEditModal(batch)}
-              >
-                Edit
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconTrash size={14} />}
-                color="red"
-                onClick={() => handleDelete(batch.id)}
-              >
-                Hapus
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconEye size={14} />}
+                  component={Link}
+                  href={`/admin/batches/${batch.id}`}
+                >
+                  Lihat Detail
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconPencil size={14} />}
+                  color="yellow"
+                  onClick={() => openEditModal(batch)}
+                >
+                  Edit
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconTrash size={14} />}
+                  color="red"
+                  onClick={() => handleDelete(batch.id)}
+                >
+                  Hapus
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Box>
         </Table.Td>
       </Table.Tr>
     )

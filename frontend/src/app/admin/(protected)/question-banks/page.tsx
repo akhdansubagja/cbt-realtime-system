@@ -296,6 +296,10 @@ export default function QuestionBanksPage() {
             shadow="sm"
             striped
             highlightOnHover
+            rowStyle={() => ({ cursor: "pointer" })}
+            onRowClick={({ record: bank }) => {
+              router.push(`/admin/question-banks/${bank.id}`);
+            }}
             minHeight={200}
             records={paginatedRecords} // <-- Menggunakan data yang sudah difilter & diurutkan
             idAccessor="id"
@@ -344,38 +348,40 @@ export default function QuestionBanksPage() {
                 title: "",
                 textAlign: "right", // <-- Buat rata kanan
                 render: (bank) => (
-                  <Menu shadow="md" width={200}>
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray">
-                        <IconDotsVertical size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
+                  <Box onClick={(e) => e.stopPropagation()}>
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray">
+                          <IconDotsVertical size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
 
-                    <Menu.Dropdown>
-                      <Menu.Item
-                        leftSection={<IconEye size={14} />}
-                        onClick={() =>
-                          router.push(`/admin/question-banks/${bank.id}`)
-                        }
-                      >
-                        Lihat Detail Soal
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconPencil size={14} />}
-                        color="yellow"
-                        onClick={() => openEditModal(bank)}
-                      >
-                        Edit Nama/Deskripsi
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        onClick={() => handleDeleteBank(bank.id)}
-                      >
-                        Hapus
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            router.push(`/admin/question-banks/${bank.id}`)
+                          }
+                        >
+                          Lihat Detail Soal
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconPencil size={14} />}
+                          color="yellow"
+                          onClick={() => openEditModal(bank)}
+                        >
+                          Edit Nama/Deskripsi
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleDeleteBank(bank.id)}
+                        >
+                          Hapus
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Box>
                 ),
               },
             ]}

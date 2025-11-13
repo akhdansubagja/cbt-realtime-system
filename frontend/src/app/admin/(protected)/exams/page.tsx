@@ -59,6 +59,7 @@ interface Exam {
   duration_minutes: number;
   start_time: string | null;
   end_time: string | null;
+  created_at: string;
 }
 interface QuestionBank {
   value: string;
@@ -314,7 +315,7 @@ export default function ExamsPage() {
     return (
       <Group justify="center">
         <Tooltip label={text} withArrow position="top">
-          <Indicator color={color} size={15}processing={color === "green"} />
+          <Indicator color={color} size={15} processing={color === "green"} />
         </Tooltip>
       </Group>
     );
@@ -614,6 +615,10 @@ export default function ExamsPage() {
             shadow="sm"
             striped
             highlightOnHover
+            rowStyle={() => ({ cursor: "pointer" })}
+            onRowClick={({ record: exam }) => {
+              router.push(`/admin/monitoring/${exam.id}`);
+            }}
             minHeight={200}
             records={sortedAndFilteredRecords}
             idAccessor="id"
@@ -627,6 +632,12 @@ export default function ExamsPage() {
                 render: (exam) => `${exam.duration_minutes} Menit`,
               },
               {
+                accessor: "created_at",
+                title: "Tanggal Dibuat",
+                sortable: true,
+                render: (exam) => dayjs(exam.created_at).format("DD MMM YYYY"),
+              },
+              {
                 accessor: "status",
                 title: "Status Ujian",
                 textAlign: "center",
@@ -637,39 +648,41 @@ export default function ExamsPage() {
                 title: "",
                 textAlign: "right",
                 render: (exam) => (
-                  <Menu shadow="md" width={200}>
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray">
-                        <IconDotsVertical size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
+                  <Box onClick={(e) => e.stopPropagation()}>
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray">
+                          <IconDotsVertical size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
 
-                    <Menu.Dropdown>
-                      <Menu.Item
-                        leftSection={<IconEye size={14} />}
-                        color="teal"
-                        onClick={() =>
-                          router.push(`/admin/monitoring/${exam.id}`)
-                        }
-                      >
-                        Monitor Ujian
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconPencil size={14} />}
-                        color="yellow"
-                        onClick={() => openEditModal(exam)}
-                      >
-                        Edit Ujian
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        onClick={() => handleDeleteExam(exam.id)}
-                      >
-                        Hapus Ujian
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconEye size={14} />}
+                          color="teal"
+                          onClick={() =>
+                            router.push(`/admin/monitoring/${exam.id}`)
+                          }
+                        >
+                          Monitor Ujian
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconPencil size={14} />}
+                          color="yellow"
+                          onClick={() => openEditModal(exam)}
+                        >
+                          Edit Ujian
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleDeleteExam(exam.id)}
+                        >
+                          Hapus Ujian
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Box>
                 ),
               },
             ]}

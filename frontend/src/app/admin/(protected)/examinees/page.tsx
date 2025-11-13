@@ -366,6 +366,10 @@ export default function ExamineesPage() {
             shadow="sm"
             striped
             highlightOnHover
+            rowStyle={() => ({ cursor: "pointer" })}
+            onRowClick={({ record: examinee }) => {
+              router.push(`/admin/examinees/${examinee.id}`);
+            }}
             minHeight={200}
             records={examinees}
             idAccessor="id"
@@ -374,20 +378,22 @@ export default function ExamineesPage() {
                 accessor: "avatar_url",
                 title: "Avatar",
                 render: (examinee) => (
-                  <Avatar
-                    src={
-                      examinee.avatar_url
-                        ? `http://localhost:3000/${examinee.avatar_url}`
-                        : null
-                    }
-                    radius="xl"
-                    onClick={() => handleAvatarClick(examinee.avatar_url)}
-                    style={{
-                      cursor: examinee.avatar_url ? "pointer" : "default",
-                    }}
-                  >
-                    {examinee.name.charAt(0)}
-                  </Avatar>
+                  <Box onClick={(e) => e.stopPropagation()}>
+                    <Avatar
+                      src={
+                        examinee.avatar_url
+                          ? `http://localhost:3000/${examinee.avatar_url}`
+                          : null
+                      }
+                      radius="xl"
+                      onClick={() => handleAvatarClick(examinee.avatar_url)}
+                      style={{
+                        cursor: examinee.avatar_url ? "pointer" : "default",
+                      }}
+                    >
+                      {examinee.name.charAt(0)}
+                    </Avatar>
+                  </Box>
                 ),
               },
               { accessor: "name", title: "Nama Peserta", sortable: true },
@@ -408,40 +414,42 @@ export default function ExamineesPage() {
               {
                 accessor: "actions",
                 title: "",
-                textAlign: "right", 
+                textAlign: "right",
                 render: (examinee) => (
-                  <Menu shadow="md" width={200}>
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray">
-                        <IconDotsVertical size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
+                  <Box onClick={(e) => e.stopPropagation()}>
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray">
+                          <IconDotsVertical size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
 
-                    <Menu.Dropdown>
-                      <Menu.Item
-                        leftSection={<IconEye size={14} />}
-                        onClick={() =>
-                          router.push(`/admin/examinees/${examinee.id}`)
-                        }
-                      >
-                        Lihat Riwayat
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconPencil size={14} />}
-                        color="yellow"
-                        onClick={() => openEditModal(examinee)}
-                      >
-                        Edit
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        onClick={() => handleDeleteExaminee(examinee.id)}
-                      >
-                        Hapus
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            router.push(`/admin/examinees/${examinee.id}`)
+                          }
+                        >
+                          Lihat Riwayat
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconPencil size={14} />}
+                          color="yellow"
+                          onClick={() => openEditModal(examinee)}
+                        >
+                          Edit
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleDeleteExaminee(examinee.id)}
+                        >
+                          Hapus
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Box>
                 ),
               },
             ]}
