@@ -140,7 +140,27 @@ export class ExamineesService {
   }
 
   // --- LOGIKA DELETE BARU ---
-  remove(id: number) {
+  async remove(id: number) {
+    // 1. Cari data peserta dulu sebelum dihapus untuk mendapatkan nama filenya
+    const examinee = await this.examineeRepository.findOne({
+      where: { id },
+      select: ['id', 'avatar_url'], // Kita hanya butuh info url-nya
+    });
+
+    // 2. Jika peserta ada dan memiliki avatar, hapus file fisiknya
+    if (examinee && examinee.avatar_url) {
+      try {
+        // Menggunakan join(process.cwd(), ...) sama seperti di fungsi update
+        await fs.unlink(join(process.cwd(), examinee.avatar_url));
+      } catch (err) {
+        // Kita log error tapi jangan hentikan proses delete database
+        console.error(
+          `Gagal menghapus file fisik (mungkin sudah hilang): ${err.message}`,
+        );
+      }
+    }
+
+    // 3. Hapus data dari Database
     return this.examineeRepository.delete(id);
   }
 
@@ -160,7 +180,7 @@ export class ExamineesService {
     files: Array<Express.Multer.File>,
   ) {
     // PERBAIKAN: Baca dari '.names' bukan '["names[]"]'
-    const { names, batch_id } = createBulkExamineesDto; 
+    const { names, batch_id } = createBulkExamineesDto;
 
     let batch: Batch | null = null;
     if (batch_id) {
@@ -172,8 +192,8 @@ export class ExamineesService {
 
     // Kode ini sekarang aman karena 'names' dijamin berupa array oleh DTO
     const newExaminees = names.map((name, index) => {
-      const file = files[index]; 
-      
+      const file = files[index];
+
       return this.examineeRepository.create({
         name: name,
         batch: batch ?? undefined,

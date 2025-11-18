@@ -41,6 +41,7 @@ import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
 import { Batch } from "@/types/batch";
+import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 
 interface Examinee {
   id: number;
@@ -74,6 +75,11 @@ export default function ExamineesPage() {
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // const untuk preiview avatar
+  const [currentAvatarPreview, setCurrentAvatarPreview] = useState<
+    string | null
+  >(null);
 
   const form = useForm({
     initialValues: {
@@ -142,6 +148,12 @@ export default function ExamineesPage() {
 
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
+    if (examinee.avatar_url) {
+      // Pastikan URL ini sesuai dengan cara Anda menampilkan gambar di tabel
+      setCurrentAvatarPreview(`http://localhost:3000/${examinee.avatar_url}`);
+    } else {
+      setCurrentAvatarPreview(null);
+    }
     form.setValues({
       name: examinee.name,
       batch_id: examinee.batch?.id ? String(examinee.batch.id) : null,
@@ -151,15 +163,19 @@ export default function ExamineesPage() {
   };
 
   const handleDeleteExaminee = async (examineeId: number) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus peserta ini?")) {
+    const result = await confirmDelete(
+      "Hapus Peserta?",
+      "Peserta ini akan dihapus permanen dari sistem."
+    );
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/examinees/${examineeId}`);
+
+        // Update state tabel
         setExaminees((current) => current.filter((e) => e.id !== examineeId));
-        notifications.show({
-          title: "Berhasil!",
-          message: "Peserta telah dihapus.",
-          color: "teal",
-        });
+        // 2. Panggil Alert Sukses di sini
+        await showSuccessAlert("Terhapus!", "Data peserta berhasil dihapus.");
       } catch (err) {
         notifications.show({
           title: "Gagal",
@@ -308,6 +324,33 @@ export default function ExamineesPage() {
               placeholder="Contoh: Budi Santoso"
               {...form.getInputProps("name")}
             />
+            {/* 1. Preview Avatar Lama (Hanya muncul saat Edit dan user BELUM pilih file baru) */}
+            {editingExaminee && currentAvatarPreview && !form.values.avatar && (
+              <Center>
+                <Stack align="center" gap="xs">
+                  <Text size="sm" c="dimmed">
+                    Avatar Saat Ini:
+                  </Text>
+                  <Avatar src={currentAvatarPreview} size="xl" radius="md" />
+                </Stack>
+              </Center>
+            )}
+
+            {/* 2. Preview Avatar Baru (Muncul jika user BARU SAJA memilih file dari komputer) */}
+            {form.values.avatar && (
+              <Center>
+                <Stack align="center" gap="xs">
+                  <Text size="sm" c="teal">
+                    Akan diganti menjadi:
+                  </Text>
+                  <Avatar
+                    src={URL.createObjectURL(form.values.avatar)}
+                    size="xl"
+                    radius="md"
+                  />
+                </Stack>
+              </Center>
+            )}
             <FileInput
               label="Foto Avatar (Opsional)"
               placeholder="Pilih gambar..."
@@ -341,6 +384,7 @@ export default function ExamineesPage() {
             leftSection={<IconPlus size={16} />}
             onClick={() => {
               setEditingExaminee(null);
+              setCurrentAvatarPreview(null);
               form.reset();
               open();
             }}
@@ -360,7 +404,7 @@ export default function ExamineesPage() {
 
         <Box>
           <DataTable<Examinee>
-            withTableBorder={false}
+            withTableBorder
             withColumnBorders={false}
             borderRadius="md"
             shadow="sm"
@@ -377,6 +421,7 @@ export default function ExamineesPage() {
               {
                 accessor: "avatar_url",
                 title: "Avatar",
+                width: 80,
                 render: (examinee) => (
                   <Box onClick={(e) => e.stopPropagation()}>
                     <Avatar

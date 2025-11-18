@@ -50,6 +50,7 @@ import {
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
+import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 
 // Definisikan tipe data yang kita butuhkan
 interface Exam {
@@ -171,15 +172,16 @@ export default function ExamsPage() {
   }, [exams, query, sortStatus]);
 
   const handleDeleteExam = async (examId: number) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus ujian ini?")) {
+    const result = await confirmDelete(
+      'Hapus Peserta?',
+      'Peserta ini akan dihapus permanen dari sistem.'
+    );
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/exams/${examId}`);
         setExams((current) => current.filter((e) => e.id !== examId));
-        notifications.show({
-          title: "Berhasil!",
-          message: "Ujian telah dihapus.",
-          color: "teal",
-        });
+        await showSuccessAlert("Terhapus!", "Data peserta berhasil dihapus.");
       } catch (err) {
         notifications.show({
           title: "Gagal",
@@ -609,7 +611,7 @@ export default function ExamsPage() {
 
         <Box>
           <DataTable<Exam>
-            withTableBorder={false}
+            withTableBorder={true}
             withColumnBorders={false}
             borderRadius="md"
             shadow="sm"

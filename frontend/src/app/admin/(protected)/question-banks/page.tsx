@@ -35,6 +35,7 @@ import {
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
+import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 
 interface QuestionBank {
   id: number;
@@ -75,16 +76,17 @@ export default function QuestionBanksPage() {
 
   // Fungsi untuk menangani penghapusan
   const handleDeleteBank = async (bankId: number) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus bank soal ini?")) {
+    const result = await confirmDelete(
+      'Hapus Peserta?',
+      'Peserta ini akan dihapus permanen dari sistem.'
+    );
+
+    if (result.isConfirmed) {
       try {
         await api.delete(`/question-banks/${bankId}`);
         // Hapus bank soal dari daftar tanpa me-refresh
         setBanks((currentBanks) => currentBanks.filter((b) => b.id !== bankId));
-        notifications.show({
-          title: "Berhasil!",
-          message: "Bank soal telah dihapus.",
-          color: "teal",
-        });
+        await showSuccessAlert("Terhapus!", "Data peserta berhasil dihapus.");
       } catch (err) {
         notifications.show({
           title: "Gagal",
@@ -290,7 +292,7 @@ export default function QuestionBanksPage() {
 
         <Box>
           <DataTable<QuestionBank>
-            withTableBorder={false}
+            withTableBorder
             withColumnBorders={false}
             borderRadius="md"
             shadow="sm"

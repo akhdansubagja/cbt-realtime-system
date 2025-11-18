@@ -25,7 +25,7 @@ import {
   IconDotsVertical,
   IconSearch,
 } from "@tabler/icons-react"; // <-- Tambahkan IconPlus
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/axios";
 import { Batch } from "@/types/batch";
 import Link from "next/link";
@@ -34,134 +34,114 @@ import { useDisclosure } from "@mantine/hooks"; // <-- Tambahkan ini
 import { notifications } from "@mantine/notifications"; // <-- Tambahkan ini
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import { confirmDelete, showSuccessAlert } from "@/lib/swal";
+import { DataTable, DataTableSortStatus } from "mantine-datatable";
+import sortBy from "lodash/sortBy";
 
 export default function BatchesPage() {
+  // State Data
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // State DataTable Modern
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [query, setQuery] = useState("");
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Batch>>({
+    columnAccessor: "name",
+    direction: "asc",
+  });
 
-  // State untuk Modal
+  // State Modal & Router
   const [opened, { open, close }] = useDisclosure(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
-
-  const router = useRouter(); // <-- TAMBAHKAN INI
+  const router = useRouter();
 
   const filteredBatches = batches.filter((batch) =>
     batch.name.toLowerCase().includes(query.toLowerCase())
   );
 
-  // Form hook untuk modal
+  // 1. Form Hook (Sama seperti sebelumnya)
   const form = useForm({
-    initialValues: {
-      name: "",
-    },
-    validate: {
-      name: (value) =>
-        value.trim().length > 0 ? null : "Nama batch harus diisi",
-    },
+    initialValues: { name: "" },
+    validate: { name: (value) => (value.trim().length > 0 ? null : "Nama batch harus diisi") },
   });
 
-  // Pindahkan fetchBatches ke luar agar bisa dipanggil lagi
+  // 2. Fetch Data
   const fetchBatches = async () => {
     try {
       setLoading(true);
-      setError(null);
       const response = await api.get("/batches");
-      // Asumsi /batches mengembalikan array langsung,
-      // jika pakai paginasi, gunakan response.data.data
       setBatches(response.data);
     } catch (err) {
-      setError("Gagal mengambil data batch. Coba lagi nanti.");
-      console.error(err);
+      setError("Gagal mengambil data batch.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchBatches();
-  }, []);
+  useEffect(() => { fetchBatches(); }, []);
 
-  // Handler untuk Buka Modal (Mode Create)
-  const openCreateModal = () => {
-    form.reset();
-    setEditingBatch(null);
-    open();
-  };
+  // 3. LOGIKA PENTING: Filter -> Sort -> Paginate
+  const records = useMemo(() => {
+    let data = batches;
 
-  // Handler untuk Buka Modal (Mode Edit)
-  const openEditModal = (batch: Batch) => {
-    form.setValues({ name: batch.name });
-    setEditingBatch(batch);
-    open();
-  };
-
-  // Handler untuk Hapus Batch
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus batch ini?")) {
-      try {
-        await api.delete(`/batches/${id}`);
-        notifications.show({
-          title: "Berhasil!",
-          message: "Batch telah dihapus.",
-          color: "teal",
-        });
-        fetchBatches(); // Refresh tabel
-      } catch (err) {
-        notifications.show({
-          title: "Gagal",
-          message: "Gagal menghapus batch.",
-          color: "red",
-        });
-      }
+    // Filter Pencarian
+    if (query) {
+      data = data.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()));
     }
-  };
 
-  // Handler untuk submit form
+    // Sorting
+    data = sortBy(data, sortStatus.columnAccessor) as Batch[];
+    if (sortStatus.direction === "desc") data = data.reverse();
+
+    // Pagination
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE;
+    return data.slice(from, to);
+  }, [batches, query, sortStatus, page]);
+
+  // Total data (untuk indikator halaman)
+  const totalRecords = useMemo(() => {
+      return query ? batches.filter(b => b.name.toLowerCase().includes(query.toLowerCase())).length : batches.length;
+  }, [batches, query]);
+
+  // Reset halaman ke 1 jika user mengetik di search
+  useEffect(() => setPage(1), [query]);
+
+  // 4. Handler Actions (Create/Edit/Delete)
   const handleSubmit = async (values: { name: string }) => {
     try {
       if (editingBatch) {
-        // Mode Update
         await api.patch(`/batches/${editingBatch.id}`, values);
+        await showSuccessAlert("Berhasil", "Batch diperbarui");
       } else {
-        // Mode Create
         await api.post("/batches", values);
+        await showSuccessAlert("Berhasil", "Batch baru dibuat");
       }
-
-      notifications.show({
-        title: "Berhasil!",
-        message: `Data batch telah ${
-          editingBatch ? "diperbarui" : "ditambahkan"
-        }.`,
-        color: "teal",
-      });
-
-      close();
-      form.reset();
-      fetchBatches(); // Muat ulang data tabel
+      close(); form.reset(); fetchBatches();
     } catch (err) {
-      notifications.show({
-        title: "Gagal",
-        message: "Gagal menyimpan data batch.",
-        color: "red",
-      });
+      notifications.show({ title: "Gagal", message: "Terjadi kesalahan", color: "red" });
     }
   };
 
-  // Menampilkan state loading
-  if (loading) {
-    return <Loader />;
-  }
+  // Handler Delete dengan SweetAlert Baru
+  const handleDelete = async (id: number) => {
+    const result = await confirmDelete("Hapus Batch?", "Data peserta di dalamnya mungkin ikut terhapus!");
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/batches/${id}`);
+        setBatches((prev) => prev.filter((b) => b.id !== id)); // Hapus langsung dari tabel
+        await showSuccessAlert("Terhapus!", "Batch berhasil dihapus.");
+      } catch (err) {
+        notifications.show({ title: "Gagal", message: "Gagal menghapus batch.", color: "red" });
+      }
+    }
+  };
 
-  // Menampilkan state error
-  if (error) {
-    return (
-      <Alert icon={<IconAlertCircle size={16} />} title="Error!" color="red">
-        {error}
-      </Alert>
-    );
-  }
+  if (loading) return <Loader />;
+  if (error) return <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">{error}</Alert>;
 
   // Menampilkan data dalam tabel
   const rows = filteredBatches.map(
@@ -215,99 +195,102 @@ export default function BatchesPage() {
   );
 
   return (
-    <>
-      {/* --- MODAL UNTUK BUAT BATCH BARU --- */}
+    <Stack>
+      {/* Modal Form (Create/Edit) */}
       <Modal
         opened={opened}
-        onClose={() => {
-          close();
-          form.reset();
-        }}
-        title="Buat Batch Baru"
-        centered
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack>
-            <TextInput
-              withAsterisk
-              label="Nama Batch"
-              placeholder="Contoh: Batch Januari 2025"
-              {...form.getInputProps("name")}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="default" onClick={close}>
-                Batal
-              </Button>
-              <Button type="submit">Simpan</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-
-      {/* --- MODAL UNTUK CREATE/EDIT --- */}
-      <Modal
-        opened={opened}
-        onClose={() => {
-          close();
-          form.reset();
-        }}
+        onClose={() => { close(); form.reset(); }}
         title={editingBatch ? "Edit Batch" : "Buat Batch Baru"}
         centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>
-            <TextInput
-              withAsterisk
-              label="Nama Batch"
-              placeholder="Contoh: Batch Januari 2025"
-              {...form.getInputProps("name")}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="default" onClick={close}>
-                Batal
-              </Button>
+            <TextInput label="Nama Batch" placeholder="Contoh: Batch 2025" withAsterisk {...form.getInputProps("name")} />
+            <Group justify="flex-end">
+              <Button variant="default" onClick={close}>Batal</Button>
               <Button type="submit">Simpan</Button>
             </Group>
           </Stack>
         </form>
       </Modal>
 
-      {/* --- JUDUL HALAMAN & TOMBOL --- */}
-      <Group justify="space-between" mb="md">
+      {/* Header Halaman */}
+      <Group justify="space-between">
         <Title order={2}>Manajemen Batch</Title>
-        <Button leftSection={<IconPlus size={14} />} onClick={open}>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => { setEditingBatch(null); form.reset(); open(); }}>
           Tambah Batch
         </Button>
       </Group>
 
+      {/* Kolom Pencarian */}
       <TextInput
-        placeholder="Cari batch berdasarkan nama..."
+        placeholder="Cari batch..."
         leftSection={<IconSearch size={16} />}
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
-        mb="md"
       />
 
-      {/* --- TABEL DATA --- */}
-      <Paper shadow="sm" p="lg">
-        {/* V V V PERBARUI EMPTY STATE V V V */}
-        {filteredBatches.length === 0 ? (
-          <Text>
-            {query ? "Tidak ada hasil pencarian" : "Belum ada data batch."}
-          </Text>
-        ) : (
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Nama Batch</Table.Th>
-                <Table.Th>Tanggal Dibuat</Table.Th>
-                <Table.Th align="right"></Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>{rows}</Table.Tbody>
-          </Table>
-        )}
+      {/* TABEL MODERN */}
+      <Paper shadow="xs" withBorder p={0}>
+        <DataTable<Batch>
+          minHeight={150}
+          withTableBorder={false}
+          borderRadius="sm"
+          striped
+          highlightOnHover
+          // Data & Pagination
+          records={records}
+          totalRecords={totalRecords}
+          recordsPerPage={PAGE_SIZE}
+          page={page}
+          onPageChange={setPage}
+          // Sorting
+          sortStatus={sortStatus}
+          onSortStatusChange={setSortStatus}
+          // Interaksi
+          onRowClick={({ record }) => router.push(`/admin/batches/${record.id}`)}
+          rowStyle={() => ({ cursor: "pointer" })}
+          // Definisi Kolom
+          columns={[
+            { accessor: 'name', title: 'Nama Batch', sortable: true },
+            { 
+              accessor: 'createdAt', 
+              title: 'Tanggal Dibuat', 
+              sortable: true,
+              render: ({ createdAt }) => dayjs(createdAt).format("DD MMM YYYY HH:mm")
+            },
+            {
+              accessor: 'actions',
+              title: '',
+              textAlign: 'right',
+              render: (batch) => (
+                <Box onClick={(e) => e.stopPropagation()}>
+                  <Menu shadow="md" width={200} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray"><IconDotsVertical size={16} /></ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item leftSection={<IconEye size={14} />} onClick={() => router.push(`/admin/batches/${batch.id}`)}>
+                        Lihat Detail
+                      </Menu.Item>
+                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => { setEditingBatch(batch); form.setValues({ name: batch.name }); open(); }}>
+                        Edit
+                      </Menu.Item>
+                      <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => handleDelete(batch.id)}>
+                        Hapus
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Box>
+              )
+            }
+          ]}
+        />
       </Paper>
-    </>
+    </Stack>
   );
 }
+function openEditModal(batch: Batch): void {
+  throw new Error("Function not implemented.");
+}
+

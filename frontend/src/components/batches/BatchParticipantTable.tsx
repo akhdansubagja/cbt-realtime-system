@@ -17,10 +17,19 @@ import {
   ScrollArea,
   Tooltip,
 } from "@mantine/core";
+import { Box, Group, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconAlertCircle, IconUserSearch } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconSearch,
+  IconUserSearch,
+} from "@tabler/icons-react";
+import { DataTable, DataTableSortStatus } from "mantine-datatable"; // Import Library Modern
+import sortBy from "lodash/sortBy"; // Helper untuk sorting
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
+type ParticipantScore = BatchParticipantReportData["participantScores"][number];
 
 interface BatchParticipantTableProps {
   batchId: number;
@@ -33,6 +42,64 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10; // Bisa dibuat dinamis jika mau
+  const [query, setQuery] = useState(""); // Untuk fitur search
+
+  const [sortStatus, setSortStatus] = useState<
+    DataTableSortStatus<ParticipantScore>
+  >({
+    columnAccessor: "examinee.name", // Sekarang TS tahu properti ini valid
+    direction: "asc",
+  });
+
+  const records = useMemo(() => {
+    if (!data || !data.participantScores) return [];
+
+    let filtered = data.participantScores;
+
+    // 1. Filtering (Search)
+    if (query) {
+      const lowerQuery = query.toLowerCase();
+      filtered = filtered.filter((item) =>
+        item.examinee.name.toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    // 2. Sorting
+    // Kita handle sorting nested object (examinee.name) dan angka
+    filtered = sortBy(filtered, (item) => {
+      if (sortStatus.columnAccessor === "examinee.name")
+        return item.examinee.name.toLowerCase();
+      // @ts-ignore - Akses dinamis aman karena kita kontrol accessornya
+      return item[sortStatus.columnAccessor];
+    });
+
+    // Reverse jika descending
+    if (sortStatus.direction === "desc") {
+      filtered = filtered.reverse();
+    }
+
+    // 3. Pagination
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE;
+    return filtered.slice(from, to);
+  }, [data, query, sortStatus, page]);
+
+  // Hitung total record setelah difilter (untuk pagination)
+  const totalRecords = useMemo(() => {
+    if (!data || !data.participantScores) return 0;
+    if (!query) return data.participantScores.length;
+    return data.participantScores.filter((i) =>
+      i.examinee.name.toLowerCase().includes(query.toLowerCase())
+    ).length;
+  }, [data, query]);
+
+  // Reset halaman ke 1 jika user melakukan search
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   const handleAvatarClick = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -84,7 +151,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
 
   return (
     <Paper shadow="sm" p="lg" withBorder>
-      {/* V V V PINDAHKAN MODAL KE SINI V V V */}
+      {/* Modal Avatar (Tetap Sama) */}
       <Modal
         opened={imageModalOpened}
         onClose={closeImageModal}
@@ -94,93 +161,100 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
       >
         <Image src={selectedImage} alt="Avatar Peserta" />
       </Modal>
-      {/* ^ ^ ^ BATAS PEMINDAHAN ^ ^ ^ */}
 
-      <Title order={4} mb="md">
-        Daftar Peserta
-      </Title>
-      <ScrollArea>
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Avatar</Table.Th>
-              <Table.Th>Nama Peserta</Table.Th>
+      {/* Header & Search Bar Modern */}
+      <Group justify="space-between" mb="md">
+        <Title order={4}>Laporan Peserta</Title>
+        <TextInput
+          placeholder="Cari nama peserta..."
+          leftSection={<IconSearch size={16} />}
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+          w={300}
+        />
+      </Group>
 
-              {/* Kolom Ujian Dinamis */}
-              {data.uniqueExams.map((exam) => (
-                <Table.Th key={exam.id} align="center" miw={100}>
-                  <Tooltip label={exam.title} withArrow multiline w={220}>
-                    <Text span truncate>
-                      {exam.shortTitle}
-                    </Text>
-                  </Tooltip>
-                </Table.Th>
-              ))}
+      {/* TABEL MODERN */}
+      <DataTable<ParticipantScore>
+        idAccessor={(record) => String(record.examinee.id)}
+        minHeight={200}
+        withTableBorder
+        borderRadius="sm"
+        withColumnBorders={false}
+        striped
+        highlightOnHover
+        records={records}
+        totalRecords={totalRecords}
+        recordsPerPage={PAGE_SIZE}
+        page={page}
+        onPageChange={(p) => setPage(p)}
+        sortStatus={sortStatus}
+        onSortStatusChange={setSortStatus}
+        columns={[
+          {
+            accessor: "id", // Dummy accessor untuk avatar, bisa pakai apa saja yang unik
+            title: "Avatar",
+            width: 70,
+            render: (record) => (
+              <Avatar
+                // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
+                src={
+                  record.examinee.avatar
+                    ? `http://localhost:3000/${record.examinee.avatar}`
+                    : null
+                }
+                size="md"
+                radius="xl"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleAvatarClick(record.examinee.avatar)}
+              >
+                {record.examinee.name.charAt(0)}
+              </Avatar>
+            ),
+          },
+          {
+            accessor: "examinee.name",
+            title: "Nama Peserta",
+            sortable: true,
+          },
+          ...data.uniqueExams.map((exam) => ({
+            accessor: `exam_${exam.id}`,
+            title: (
+              <Tooltip label={exam.title} multiline w={200}>
+                <Text span size="sm" fw={500}>
+                  {exam.shortTitle}
+                </Text>
+              </Tooltip>
+            ),
 
-              <Table.Th align="center">Jml. Ujian</Table.Th>
-              <Table.Th align="center">Total Skor</Table.Th>
-              <Table.Th align="center">Rata-rata</Table.Th>
-              {/* Kolom Aksi dihapus */}
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {data.participantScores.map((participant) => {
-              // Buat lookup map untuk skor peserta ini agar pencarian cepat
-              const scoreMap = new Map(
-                participant.scores.map((s) => [s.examId, s.score])
-              );
+            render: (record: ParticipantScore) => {
+              // Explicit type di sini juga membantu
+              const scoreData = record.scores.find((s) => s.examId === exam.id);
+              return scoreData ? scoreData.score : "-";
+            },
+          })),
+          {
+            accessor: "examCount",
+            title: "Jml Ujian",
+            sortable: false,
 
-              return (
-                <Table.Tr key={participant.examinee.id}>
-                  {/* KolLOM AVATAR */}
-                  <Table.Td>
-                    <Avatar
-                      src={
-                        participant.examinee.avatar
-                          ? `http://localhost:3000/${participant.examinee.avatar}`
-                          : null
-                      }
-                      radius="xl"
-                      onClick={() =>
-                        handleAvatarClick(participant.examinee.avatar)
-                      }
-                      style={{
-                        cursor: participant.examinee.avatar
-                          ? "pointer"
-                          : "default",
-                      }}
-                    >
-                      {participant.examinee.name.charAt(0)}
-                    </Avatar>
-                  </Table.Td>
-
-                  {/* Kolom NAMA */}
-                  <Table.Td>{participant.examinee.name}</Table.Td>
-
-                  {/* Kolom NILAI DINAMIS */}
-                  {data.uniqueExams.map((exam) => {
-                    const score = scoreMap.get(exam.id);
-                    return (
-                      <Table.Td key={exam.id}>
-                        {score !== null && score !== undefined ? score : "-"}
-                      </Table.Td>
-                    );
-                  })}
-
-                  {/* Kolom AGREGAT BARU */}
-                  <Table.Td align="center">{participant.examCount}</Table.Td>
-                  <Table.Td align="center">{participant.totalScore}</Table.Td>
-                  <Table.Td align="center">
-                    {participant.averageScore.toFixed(2)}
-                  </Table.Td>
-
-                  {/* Kolom Aksi (Button) dihapus */}
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
-      </ScrollArea>
+            width: 100,
+          },
+          {
+            accessor: "totalScore",
+            title: "Total",
+            sortable: true,
+            width: 100,
+          },
+          {
+            accessor: "averageScore",
+            title: "Rata-rata",
+            sortable: true,
+            width: 100,
+            render: (record) => record.averageScore.toFixed(2),
+          },
+        ]}
+      />
     </Paper>
   );
 }
