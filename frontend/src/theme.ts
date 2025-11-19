@@ -1,42 +1,54 @@
 // frontend/src/theme.ts
 
-import { createTheme } from '@mantine/core';
+import { createTheme } from "@mantine/core";
 
 export const theme = createTheme({
-  fontFamily: 'Inter, sans-serif',
-  primaryColor: 'blue',
+  fontFamily: "Inter, sans-serif",
+  primaryColor: "indigo",
 
-  colors: {
-    blue: [
-      '#e7f5ff',
-      '#d0ebff',
-      '#a5d8ff',
-      '#74c0fc',
-      '#4dabf7',
-      '#339af0',
-      '#228be6', // Warna utama
-      '#1c7ed6',
-      '#1971c2',
-      '#1864ab',
-    ],
-  },
+  defaultRadius: "md",
 
   components: {
     Button: {
       defaultProps: {
-        radius: 'md',
+        radius: "md",
       },
     },
     TextInput: {
       defaultProps: {
-        radius: 'md',
+        radius: "md",
+        variant: "filled",
+      },
+    },
+    Select: {
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
       },
     },
     Paper: {
       defaultProps: {
-        shadow: 'sm',
-        p: 'md',
-        radius: 'md',
+        shadow: "xs",
+        p: "xl",
+        radius: "lg",
+        withBorder: true,
+      },
+    },
+    Card: {
+      defaultProps: {
+        shadow: "xs",
+        p: "xl",
+        radius: "lg",
+        withBorder: true,
+      },
+    },
+    Modal: {
+      defaultProps: {
+        radius: "lg",
+        overlayProps: {
+          backgroundOpacity: 0.55,
+          blur: 3,
+        },
       },
     },
   },

@@ -27,6 +27,7 @@ import {
   Menu,
   Indicator,
   Tooltip,
+  Skeleton,
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
 import "dayjs/locale/id"; // Import locale untuk bahasa Indonesia
@@ -51,6 +52,7 @@ import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Definisikan tipe data yang kita butuhkan
 interface Exam {
@@ -620,30 +622,36 @@ export default function ExamsPage() {
       </Modal>
 
       <Stack>
-        <Flex justify="space-between" align="center">
-          <Title order={2}>Manajemen Ujian</Title>
-          <Group>
-            {selectedRecords.length > 0 && (
+        <PageHeader
+          title="Manajemen Ujian"
+          breadcrumbs={[
+            { label: "Admin", href: "/admin/dashboard" },
+            { label: "Ujian", href: "/admin/exams" },
+          ]}
+          actions={
+            <Group>
+              {selectedRecords.length > 0 && (
+                <Button
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  onClick={handleBulkDelete}
+                >
+                  Hapus ({selectedRecords.length})
+                </Button>
+              )}
               <Button
-                color="red"
-                leftSection={<IconTrash size={16} />}
-                onClick={handleBulkDelete}
+                leftSection={<IconPlus size={16} />}
+                onClick={() => {
+                  setEditingExam(null);
+                  form.reset();
+                  open();
+                }}
               >
-                Hapus ({selectedRecords.length})
+                Buat Ujian Baru
               </Button>
-            )}
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={() => {
-                setEditingExam(null);
-                form.reset();
-                open();
-              }}
-            >
-              Buat Ujian Baru
-            </Button>
-          </Group>
-        </Flex>
+            </Group>
+          }
+        />
 
         <TextInput
           placeholder="Cari ujian berdasarkan judul atau kode..."
@@ -653,91 +661,104 @@ export default function ExamsPage() {
         />
 
         <Box>
-          <DataTable<Exam>
-            withTableBorder={true}
-            withColumnBorders={false}
-            borderRadius="md"
-            shadow="sm"
-            striped
-            highlightOnHover
-            rowStyle={() => ({ cursor: "pointer" })}
-            onRowClick={({ record: exam }) => {
-              router.push(`/admin/monitoring/${exam.id}`);
-            }}
-            minHeight={200}
-            records={sortedAndFilteredRecords}
-            selectedRecords={selectedRecords}
-            onSelectedRecordsChange={setSelectedRecords}
-            isRecordSelectable={(record) => true}
-            idAccessor="id"
-            columns={[
-              { accessor: "title", title: "Judul Ujian", sortable: true },
-              { accessor: "code", title: "Kode", sortable: false },
-              {
-                accessor: "duration_minutes",
-                title: "Durasi",
-                sortable: false,
-                render: (exam) => `${exam.duration_minutes} Menit`,
-              },
-              {
-                accessor: "created_at",
-                title: "Tanggal Dibuat",
-                sortable: true,
-                render: (exam) => dayjs(exam.created_at).format("DD MMM YYYY"),
-              },
-              {
-                accessor: "status",
-                title: "Status Ujian",
-                textAlign: "center",
-                render: (exam) => getStatus(exam.start_time, exam.end_time),
-              },
-              {
-                accessor: "actions",
-                title: "",
-                textAlign: "right",
-                render: (exam) => (
-                  <Box onClick={(e) => e.stopPropagation()}>
-                    <Menu shadow="md" width={200}>
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray">
-                          <IconDotsVertical size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
+          {loading ? (
+            <Stack>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={50} radius="sm" />
+              ))}
+            </Stack>
+          ) : error ? (
+            <Alert color="red" title="Error">
+              {error}
+            </Alert>
+          ) : (
+            <DataTable<Exam>
+              withTableBorder={true}
+              withColumnBorders={false}
+              borderRadius="md"
+              shadow="sm"
+              striped
+              highlightOnHover
+              rowStyle={() => ({ cursor: "pointer" })}
+              onRowClick={({ record: exam }) => {
+                router.push(`/admin/monitoring/${exam.id}`);
+              }}
+              minHeight={200}
+              records={sortedAndFilteredRecords}
+              selectedRecords={selectedRecords}
+              onSelectedRecordsChange={setSelectedRecords}
+              isRecordSelectable={(record) => true}
+              idAccessor="id"
+              columns={[
+                { accessor: "title", title: "Judul Ujian", sortable: true },
+                { accessor: "code", title: "Kode", sortable: false },
+                {
+                  accessor: "duration_minutes",
+                  title: "Durasi",
+                  sortable: false,
+                  render: (exam) => `${exam.duration_minutes} Menit`,
+                },
+                {
+                  accessor: "created_at",
+                  title: "Tanggal Dibuat",
+                  sortable: true,
+                  render: (exam) =>
+                    dayjs(exam.created_at).format("DD MMM YYYY"),
+                },
+                {
+                  accessor: "status",
+                  title: "Status Ujian",
+                  textAlign: "center",
+                  render: (exam) => getStatus(exam.start_time, exam.end_time),
+                },
+                {
+                  accessor: "actions",
+                  title: "",
+                  textAlign: "right",
+                  render: (exam) => (
+                    <Box onClick={(e) => e.stopPropagation()}>
+                      <Menu shadow="md" width={200}>
+                        <Menu.Target>
+                          <ActionIcon variant="subtle" color="gray">
+                            <IconDotsVertical size={16} />
+                          </ActionIcon>
+                        </Menu.Target>
 
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          leftSection={<IconEye size={14} />}
-                          color="teal"
-                          onClick={() =>
-                            router.push(`/admin/monitoring/${exam.id}`)
-                          }
-                        >
-                          Monitor Ujian
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconPencil size={14} />}
-                          color="yellow"
-                          onClick={() => openEditModal(exam)}
-                        >
-                          Edit Ujian
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconTrash size={14} />}
-                          color="red"
-                          onClick={() => handleDeleteExam(exam.id)}
-                        >
-                          Hapus Ujian
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Box>
-                ),
-              },
-            ]}
-            sortStatus={sortStatus}
-            onSortStatusChange={setSortStatus}
-            noRecordsText="Tidak ada ujian yang dibuat"
-          />
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            leftSection={<IconEye size={14} />}
+                            color="teal"
+                            onClick={() =>
+                              router.push(`/admin/monitoring/${exam.id}`)
+                            }
+                          >
+                            Monitor Ujian
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconPencil size={14} />}
+                            color="yellow"
+                            onClick={() => openEditModal(exam)}
+                          >
+                            Edit Ujian
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconTrash size={14} />}
+                            color="red"
+                            onClick={() => handleDeleteExam(exam.id)}
+                          >
+                            Hapus Ujian
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Box>
+                  ),
+                },
+              ]}
+              sortStatus={sortStatus}
+              onSortStatusChange={setSortStatus}
+              noRecordsText="Tidak ada ujian yang dibuat"
+            />
+          )}
         </Box>
       </Stack>
     </>

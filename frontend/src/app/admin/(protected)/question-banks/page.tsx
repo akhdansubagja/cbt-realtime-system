@@ -20,7 +20,7 @@ import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
 import Link from "next/link";
 import { useMemo } from "react";
-import { Stack, ActionIcon, Text, Flex, Box } from "@mantine/core";
+import { Stack, ActionIcon, Text, Flex, Box, Skeleton } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconEdit,
@@ -36,6 +36,7 @@ import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface QuestionBank {
   id: number;
@@ -210,18 +211,7 @@ export default function QuestionBanksPage() {
     }
   };
 
-  if (loading)
-    return (
-      <Center>
-        <Loader />
-      </Center>
-    );
-  if (error)
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
+
 
   const rows = banks.map((bank) => (
     <Table.Tr key={bank.id}>
@@ -303,19 +293,25 @@ export default function QuestionBanksPage() {
 
       {/* --- BAGIAN BARU DIMULAI DARI SINI --- */}
       <Stack>
-        <Flex justify="space-between" align="center">
-          <Title order={2}>Manajemen Bank Soal</Title>
-          <Group>
-            {selectedRecords.length > 0 && (
-              <Button color="red" onClick={handleBulkDelete}>
-                Hapus ({selectedRecords.length})
+        <PageHeader
+          title="Manajemen Bank Soal"
+          breadcrumbs={[
+            { label: "Admin", href: "/admin/dashboard" },
+            { label: "Bank Soal", href: "/admin/question-banks" },
+          ]}
+          actions={
+            <Group>
+              {selectedRecords.length > 0 && (
+                <Button color="red" onClick={handleBulkDelete}>
+                  Hapus ({selectedRecords.length})
+                </Button>
+              )}
+              <Button leftSection={<IconPlus size={16} />} onClick={open}>
+                Tambah Baru
               </Button>
-            )}
-            <Button leftSection={<IconPlus size={16} />} onClick={open}>
-              Tambah Baru
-            </Button>
-          </Group>
-        </Flex>
+            </Group>
+          }
+        />
 
         <TextInput
           placeholder="Cari bank soal berdasarkan nama atau deskripsi..."
@@ -325,117 +321,129 @@ export default function QuestionBanksPage() {
         />
 
         <Box>
-          <DataTable<QuestionBank>
-            withTableBorder
-            withColumnBorders={false}
-            borderRadius="md"
-            shadow="sm"
-            striped
-            highlightOnHover
-            rowStyle={() => ({ cursor: "pointer" })}
-            onRowClick={({ record: bank }) => {
-              router.push(`/admin/question-banks/${bank.id}`);
-            }}
-            minHeight={200}
-            records={paginatedRecords} // <-- Menggunakan data yang sudah difilter & diurutkan
-            selectedRecords={selectedRecords}
-            onSelectedRecordsChange={setSelectedRecords}
-            idAccessor="id"
-            columns={[
-              { accessor: "name", title: "Nama Bank Soal", sortable: true },
-              {
-                accessor: "description",
-                title: "Deskripsi",
-                width: 150, // Beri lebar tetap agar rapi
-                render: (bank) => {
-                  // Jika tidak ada deskripsi, jangan tampilkan tombol
-                  if (!bank.description) {
+          {loading ? (
+            <Stack>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={50} radius="sm" />
+              ))}
+            </Stack>
+          ) : error ? (
+            <Alert color="red" title="Error">
+              {error}
+            </Alert>
+          ) : (
+            <DataTable<QuestionBank>
+              withTableBorder
+              withColumnBorders={false}
+              borderRadius="md"
+              shadow="sm"
+              striped
+              highlightOnHover
+              rowStyle={() => ({ cursor: "pointer" })}
+              onRowClick={({ record: bank }) => {
+                router.push(`/admin/question-banks/${bank.id}`);
+              }}
+              minHeight={200}
+              records={paginatedRecords} // <-- Menggunakan data yang sudah difilter & diurutkan
+              selectedRecords={selectedRecords}
+              onSelectedRecordsChange={setSelectedRecords}
+              idAccessor="id"
+              columns={[
+                { accessor: "name", title: "Nama Bank Soal", sortable: true },
+                {
+                  accessor: "description",
+                  title: "Deskripsi",
+                  width: 150, // Beri lebar tetap agar rapi
+                  render: (bank) => {
+                    // Jika tidak ada deskripsi, jangan tampilkan tombol
+                    if (!bank.description) {
+                      return (
+                        <Text c="dimmed" fs="italic" size="xs">
+                          -
+                        </Text>
+                      );
+                    }
+
+                    // Tampilkan tombol "Lihat" yang akan memicu modal
                     return (
-                      <Text c="dimmed" fs="italic" size="xs">
-                        -
-                      </Text>
+                      <Button
+                        size="compact-sm"
+                        variant="outline"
+                        leftSection={<IconFileText size={14} />}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Mencegah event lain terpicu
+                          setSelectedDescription(bank.description);
+                          openDescModal();
+                        }}
+                      >
+                        Lihat Detail
+                      </Button>
                     );
-                  }
-
-                  // Tampilkan tombol "Lihat" yang akan memicu modal
-                  return (
-                    <Button
-                      size="compact-sm"
-                      variant="outline"
-                      leftSection={<IconFileText size={14} />}
-                      onClick={(e) => {
-                        e.stopPropagation(); // Mencegah event lain terpicu
-                        setSelectedDescription(bank.description);
-                        openDescModal();
-                      }}
-                    >
-                      Lihat Detail
-                    </Button>
-                  );
+                  },
                 },
-              },
-              {
-                accessor: "created_at",
-                title: "Tanggal Dibuat",
-                sortable: true,
-                render: (record) =>
-                  dayjs(record.created_at).format("DD MMM YYYY"),
-              },
-              {
-                accessor: "actions",
-                title: "",
-                textAlign: "right", // <-- Buat rata kanan
-                render: (bank) => (
-                  <Box onClick={(e) => e.stopPropagation()}>
-                    <Menu shadow="md" width={200}>
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray">
-                          <IconDotsVertical size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
+                {
+                  accessor: "created_at",
+                  title: "Tanggal Dibuat",
+                  sortable: true,
+                  render: (record) =>
+                    dayjs(record.created_at).format("DD MMM YYYY"),
+                },
+                {
+                  accessor: "actions",
+                  title: "",
+                  textAlign: "right", // <-- Buat rata kanan
+                  render: (bank) => (
+                    <Box onClick={(e) => e.stopPropagation()}>
+                      <Menu shadow="md" width={200}>
+                        <Menu.Target>
+                          <ActionIcon variant="subtle" color="gray">
+                            <IconDotsVertical size={16} />
+                          </ActionIcon>
+                        </Menu.Target>
 
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            router.push(`/admin/question-banks/${bank.id}`)
-                          }
-                        >
-                          Lihat Detail Soal
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconPencil size={14} />}
-                          color="yellow"
-                          onClick={() => openEditModal(bank)}
-                        >
-                          Edit Nama/Deskripsi
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconTrash size={14} />}
-                          color="red"
-                          onClick={() => handleDeleteBank(bank.id)}
-                        >
-                          Hapus
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Box>
-                ),
-              },
-            ]}
-            sortStatus={sortStatus}
-            onSortStatusChange={setSortStatus}
-            totalRecords={query ? paginatedRecords.length : banks.length}
-            recordsPerPage={pageSize}
-            page={page}
-            onPageChange={(p) => setPage(p)}
-            recordsPerPageOptions={PAGE_SIZES}
-            onRecordsPerPageChange={setPageSize}
-            noRecordsText="Tidak ada data untuk ditampilkan"
-            paginationText={({ from, to, totalRecords }) =>
-              `${from} - ${to} dari ${totalRecords}`
-            }
-          />
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            leftSection={<IconEye size={14} />}
+                            onClick={() =>
+                              router.push(`/admin/question-banks/${bank.id}`)
+                            }
+                          >
+                            Lihat Detail Soal
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconPencil size={14} />}
+                            color="yellow"
+                            onClick={() => openEditModal(bank)}
+                          >
+                            Edit Nama/Deskripsi
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconTrash size={14} />}
+                            color="red"
+                            onClick={() => handleDeleteBank(bank.id)}
+                          >
+                            Hapus
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Box>
+                  ),
+                },
+              ]}
+              sortStatus={sortStatus}
+              onSortStatusChange={setSortStatus}
+              totalRecords={query ? paginatedRecords.length : banks.length}
+              recordsPerPage={pageSize}
+              page={page}
+              onPageChange={(p) => setPage(p)}
+              recordsPerPageOptions={PAGE_SIZES}
+              onRecordsPerPageChange={setPageSize}
+              noRecordsText="Tidak ada data untuk ditampilkan"
+              paginationText={({ from, to, totalRecords }) =>
+                `${from} - ${to} dari ${totalRecords}`
+              }
+            />
+          )}
         </Box>
       </Stack>
     </>

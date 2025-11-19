@@ -19,6 +19,7 @@ import {
   Image,
   rem,
   Menu,
+  Skeleton,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
@@ -43,6 +44,7 @@ import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
 import { Batch } from "@/types/batch";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface Examinee {
   id: number;
@@ -287,18 +289,7 @@ export default function ExamineesPage() {
     }
   };
 
-  if (loading)
-    return (
-      <Center>
-        <Loader />
-      </Center>
-    );
-  if (error)
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
+
 
   const rows = examinees.map((examinee) => (
     <Table.Tr key={examinee.id}>
@@ -424,31 +415,37 @@ export default function ExamineesPage() {
 
       {/* --- BAGIAN BARU DIMULAI DARI SINI --- */}
       <Stack>
-        <Flex justify="space-between" align="center">
-          <Title order={2}>Manajemen Peserta</Title>
-          <Group>
-            {selectedRecords.length > 0 && (
+        <PageHeader
+          title="Manajemen Peserta"
+          breadcrumbs={[
+            { label: "Admin", href: "/admin/dashboard" },
+            { label: "Peserta", href: "/admin/examinees" },
+          ]}
+          actions={
+            <Group>
+              {selectedRecords.length > 0 && (
+                <Button
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  onClick={handleBulkDelete}
+                >
+                  Hapus ({selectedRecords.length})
+                </Button>
+              )}
               <Button
-                color="red"
-                leftSection={<IconTrash size={16} />}
-                onClick={handleBulkDelete}
+                leftSection={<IconPlus size={16} />}
+                onClick={() => {
+                  setEditingExaminee(null);
+                  setCurrentAvatarPreview(null);
+                  form.reset();
+                  open();
+                }}
               >
-                Hapus ({selectedRecords.length})
+                Tambah Baru
               </Button>
-            )}
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={() => {
-                setEditingExaminee(null);
-                setCurrentAvatarPreview(null);
-                form.reset();
-                open();
-              }}
-            >
-              Tambah Baru
-            </Button>
-          </Group>
-        </Flex>
+            </Group>
+          }
+        />
 
         {/* --- AREA FILTER --- */}
         <Group align="end" grow>
@@ -478,117 +475,129 @@ export default function ExamineesPage() {
         </Group>
 
         <Box>
-          <DataTable<Examinee>
-            withTableBorder
-            withColumnBorders={false}
-            borderRadius="md"
-            shadow="sm"
-            striped
-            highlightOnHover
-            rowStyle={() => ({ cursor: "pointer" })}
-            onRowClick={({ record: examinee }) => {
-              router.push(`/admin/examinees/${examinee.id}`);
-            }}
-            minHeight={200}
-            records={examinees}
-            selectedRecords={selectedRecords}
-            onSelectedRecordsChange={setSelectedRecords}
-            isRecordSelectable={(record) => true} // Semua bisa dipilih
-            idAccessor="id"
-            columns={[
-              {
-                accessor: "avatar_url",
-                title: "Avatar",
-                width: 80,
-                render: (examinee) => (
-                  <Box onClick={(e) => e.stopPropagation()}>
-                    <Avatar
-                      src={
-                        examinee.avatar_url
-                          ? `http://localhost:3000/${examinee.avatar_url}`
-                          : null
-                      }
-                      radius="xl"
-                      onClick={() => handleAvatarClick(examinee.avatar_url)}
-                      style={{
-                        cursor: examinee.avatar_url ? "pointer" : "default",
-                      }}
-                    >
-                      {examinee.name.charAt(0)}
-                    </Avatar>
-                  </Box>
-                ),
-              },
-              { accessor: "name", title: "Nama Peserta", sortable: true },
-              {
-                accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)
-                title: "Batch",
-                sortable: false,
-                render: (examinee) =>
-                  examinee.batch?.name || <Text c="dimmed">N/A</Text>, // <-- GANTI LOGIKA INI
-              },
-              {
-                accessor: "created_at",
-                title: "Tanggal Didaftarkan",
-                sortable: false,
-                render: (record) =>
-                  dayjs(record.created_at).format("DD MMM YYYY"),
-              },
-              {
-                accessor: "actions",
-                title: "",
-                textAlign: "right",
-                render: (examinee) => (
-                  <Box onClick={(e) => e.stopPropagation()}>
-                    <Menu shadow="md" width={200}>
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray">
-                          <IconDotsVertical size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
+          {loading ? (
+            <Stack>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={50} radius="sm" />
+              ))}
+            </Stack>
+          ) : error ? (
+            <Alert color="red" title="Error">
+              {error}
+            </Alert>
+          ) : (
+            <DataTable<Examinee>
+              withTableBorder
+              withColumnBorders={false}
+              borderRadius="md"
+              shadow="sm"
+              striped
+              highlightOnHover
+              rowStyle={() => ({ cursor: "pointer" })}
+              onRowClick={({ record: examinee }) => {
+                router.push(`/admin/examinees/${examinee.id}`);
+              }}
+              minHeight={200}
+              records={examinees}
+              selectedRecords={selectedRecords}
+              onSelectedRecordsChange={setSelectedRecords}
+              isRecordSelectable={(record) => true} // Semua bisa dipilih
+              idAccessor="id"
+              columns={[
+                {
+                  accessor: "avatar_url",
+                  title: "Avatar",
+                  width: 80,
+                  render: (examinee) => (
+                    <Box onClick={(e) => e.stopPropagation()}>
+                      <Avatar
+                        src={
+                          examinee.avatar_url
+                            ? `http://localhost:3000/${examinee.avatar_url}`
+                            : null
+                        }
+                        radius="xl"
+                        onClick={() => handleAvatarClick(examinee.avatar_url)}
+                        style={{
+                          cursor: examinee.avatar_url ? "pointer" : "default",
+                        }}
+                      >
+                        {examinee.name.charAt(0)}
+                      </Avatar>
+                    </Box>
+                  ),
+                },
+                { accessor: "name", title: "Nama Peserta", sortable: true },
+                {
+                  accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)
+                  title: "Batch",
+                  sortable: false,
+                  render: (examinee) =>
+                    examinee.batch?.name || <Text c="dimmed">N/A</Text>, // <-- GANTI LOGIKA INI
+                },
+                {
+                  accessor: "created_at",
+                  title: "Tanggal Didaftarkan",
+                  sortable: false,
+                  render: (record) =>
+                    dayjs(record.created_at).format("DD MMM YYYY"),
+                },
+                {
+                  accessor: "actions",
+                  title: "",
+                  textAlign: "right",
+                  render: (examinee) => (
+                    <Box onClick={(e) => e.stopPropagation()}>
+                      <Menu shadow="md" width={200}>
+                        <Menu.Target>
+                          <ActionIcon variant="subtle" color="gray">
+                            <IconDotsVertical size={16} />
+                          </ActionIcon>
+                        </Menu.Target>
 
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            router.push(`/admin/examinees/${examinee.id}`)
-                          }
-                        >
-                          Lihat Riwayat
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconPencil size={14} />}
-                          color="yellow"
-                          onClick={() => openEditModal(examinee)}
-                        >
-                          Edit
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconTrash size={14} />}
-                          color="red"
-                          onClick={() => handleDeleteExaminee(examinee.id)}
-                        >
-                          Hapus
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Box>
-                ),
-              },
-            ]}
-            sortStatus={sortStatus}
-            onSortStatusChange={setSortStatus}
-            totalRecords={totalPages * pageSize} // Total data dari server
-            recordsPerPage={pageSize}
-            page={activePage}
-            onPageChange={(p) => setPage(p)}
-            recordsPerPageOptions={PAGE_SIZES}
-            onRecordsPerPageChange={setPageSize}
-            paginationText={({ from, to, totalRecords }) =>
-              `${from} - ${to} dari ${totalRecords}`
-            }
-            noRecordsText="Tidak ada data untuk ditampilkan"
-          />
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            leftSection={<IconEye size={14} />}
+                            onClick={() =>
+                              router.push(`/admin/examinees/${examinee.id}`)
+                            }
+                          >
+                            Lihat Riwayat
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconPencil size={14} />}
+                            color="yellow"
+                            onClick={() => openEditModal(examinee)}
+                          >
+                            Edit
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconTrash size={14} />}
+                            color="red"
+                            onClick={() => handleDeleteExaminee(examinee.id)}
+                          >
+                            Hapus
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Box>
+                  ),
+                },
+              ]}
+              sortStatus={sortStatus}
+              onSortStatusChange={setSortStatus}
+              totalRecords={totalPages * pageSize} // Total data dari server
+              recordsPerPage={pageSize}
+              page={activePage}
+              onPageChange={(p) => setPage(p)}
+              recordsPerPageOptions={PAGE_SIZES}
+              onRecordsPerPageChange={setPageSize}
+              paginationText={({ from, to, totalRecords }) =>
+                `${from} - ${to} dari ${totalRecords}`
+              }
+              noRecordsText="Tidak ada data untuk ditampilkan"
+            />
+          )}
         </Box>
       </Stack>
     </>

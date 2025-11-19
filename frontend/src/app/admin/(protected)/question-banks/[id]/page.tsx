@@ -27,7 +27,7 @@ import { notifications } from "@mantine/notifications";
 import { IconTrash } from "@tabler/icons-react";
 import api from "@/lib/axios";
 import { useMemo } from "react";
-import { Flex, Box, Stack, Badge, Paper, Image } from "@mantine/core";
+import { Flex, Box, Stack, Badge, Paper, Image, Skeleton } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconEdit,
@@ -41,6 +41,7 @@ import {
 import dayjs from "dayjs";
 import sortBy from "lodash/sortBy";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Definisikan tipe data
 interface Question {
@@ -325,18 +326,7 @@ export default function SingleQuestionBankPage() {
     }
   };
 
-  if (loading)
-    return (
-      <Center>
-        <Loader />
-      </Center>
-    );
-  if (error)
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
+
 
   const optionFields = form.values.options.map((item, index) => (
     <Group key={index} mt="xs">
@@ -539,54 +529,57 @@ export default function SingleQuestionBankPage() {
       </Modal>
 
       <Stack>
-        {/* --- HEADER BARU --- */}
-        <Flex justify="space-between" align="center">
-          <Group>
-            <ActionIcon
-              variant="default"
-              onClick={() => router.back()}
-              size="lg"
-            >
-              <IconArrowLeft />
-            </ActionIcon>
-            <Box>
-              <Text c="dimmed" size="xs">
-                Bank Soal
-              </Text>
-              <Title order={3}>{bankData?.name}</Title>
-            </Box>
-          </Group>
-          <Group>
-            {selectedRecords.length > 0 && (
-              <Button
-                color="red"
-                leftSection={<IconTrash size={16} />}
-                onClick={handleBulkDelete}
-              >
-                Hapus ({selectedRecords.length})
+        <PageHeader
+          title={bankData?.name || "Detail Bank Soal"}
+          breadcrumbs={[
+            { label: "Admin", href: "/admin/dashboard" },
+            { label: "Bank Soal", href: "/admin/question-banks" },
+            { label: bankData?.name || "Detail", href: "#" },
+          ]}
+          actions={
+            <Group>
+              {selectedRecords.length > 0 && (
+                <Button
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  onClick={handleBulkDelete}
+                >
+                  Hapus ({selectedRecords.length})
+                </Button>
+              )}
+              <Button leftSection={<IconPlus size={16} />} onClick={open}>
+                Tambah Soal Baru
               </Button>
-            )}
-            <Button leftSection={<IconPlus size={16} />} onClick={open}>
-              Tambah Soal Baru
-            </Button>
-          </Group>
-        </Flex>
+            </Group>
+          }
+        />
 
         {/* --- TABEL SOAL BARU --- */}
         <Box>
-          <DataTable<Question>
-            withTableBorder={false}
-            withColumnBorders={false}
-            borderRadius="md"
-            shadow="sm"
-            striped
-            highlightOnHover
-            minHeight={200}
-            records={sortedRecords}
-            selectedRecords={selectedRecords}
-            onSelectedRecordsChange={setSelectedRecords}
-            isRecordSelectable={(record) => true}
-            idAccessor="id"
+          {loading ? (
+            <Stack>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={50} radius="sm" />
+              ))}
+            </Stack>
+          ) : error ? (
+            <Alert color="red" title="Error">
+              {error}
+            </Alert>
+          ) : (
+            <DataTable<Question>
+              withTableBorder={false}
+              withColumnBorders={false}
+              borderRadius="md"
+              shadow="sm"
+              striped
+              highlightOnHover
+              minHeight={200}
+              records={sortedRecords}
+              selectedRecords={selectedRecords}
+              onSelectedRecordsChange={setSelectedRecords}
+              isRecordSelectable={(record) => true}
+              idAccessor="id"
             columns={[
               { accessor: "question_text", title: "Teks Soal", ellipsis: true },
               {
@@ -627,6 +620,7 @@ export default function SingleQuestionBankPage() {
             onRecordsPerPageChange={setPageSize}
             noRecordsText="Belum ada soal di bank soal ini."
           />
+          )}
         </Box>
       </Stack>
     </>

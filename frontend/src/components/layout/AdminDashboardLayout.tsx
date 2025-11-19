@@ -12,6 +12,9 @@ import {
   useMantineTheme,
   ActionIcon,
   useMantineColorScheme,
+  useComputedColorScheme,
+  Text as MantineText,
+  Box,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -66,34 +69,61 @@ export function AdminDashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const theme = useMantineTheme();
+  const computedColorScheme = useComputedColorScheme("light", {
+    getInitialValueInEffect: true,
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     router.replace("/admin/login");
   };
 
-  const mainLinks = navLinks.map((link) => (
-    <NavLink
-      key={link.label}
-      href={link.href}
-      label={link.label}
-      leftSection={<link.icon size="1rem" stroke={1.5} />}
-      onClick={(e) => {
-        e.preventDefault();
-        router.push(link.href);
-      }}
-      active={pathname.startsWith(link.href)}
-      variant="filled"
-    />
-  ));
+  const mainLinks = navLinks.map((link) => {
+    const isActive = pathname.startsWith(link.href);
+    return (
+      <NavLink
+        key={link.label}
+        href={link.href}
+        label={
+          <MantineText fw={isActive ? 600 : 400} size="sm">
+            {link.label}
+          </MantineText>
+        }
+        leftSection={
+          <link.icon
+            size="1.2rem"
+            stroke={1.5}
+            color={isActive ? theme.colors.indigo[6] : "currentColor"}
+          />
+        }
+        onClick={(e) => {
+          e.preventDefault();
+          router.push(link.href);
+        }}
+        active={isActive}
+        variant="light"
+        color="indigo"
+        style={{ borderRadius: theme.radius.md, marginBottom: 4 }}
+      />
+    );
+  });
 
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 250, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      navbar={{ width: 260, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
+      bg={computedColorScheme === "dark" ? "dark.8" : "gray.0"}
     >
-      <AppShell.Header>
+      <AppShell.Header
+        style={{
+          backdropFilter: "blur(10px)",
+          backgroundColor:
+            computedColorScheme === "dark"
+              ? "rgba(36, 36, 36, 0.8)"
+              : "rgba(255, 255, 255, 0.8)",
+        }}
+      >
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger
@@ -102,30 +132,61 @@ export function AdminDashboardLayout({
               hiddenFrom="sm"
               size="sm"
             />
-            <Title order={4}>CBT Admin</Title>
+            <Group gap="xs">
+              <ThemeToggle />
+              <Title order={4} c="indigo">
+                CBT Realtime
+              </Title>
+            </Group>
           </Group>
-          <ThemeToggle />
+          {/* Bisa tambah user profile di sini nanti */}
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar p="md" style={{ backgroundColor: "transparent" }}>
         <Flex
           direction="column"
           justify="space-between"
           style={{ height: "100%" }}
         >
-          <Stack>{mainLinks}</Stack>
-          <NavLink
-            href="#"
-            label="Logout"
-            leftSection={<IconLogout size="1rem" stroke={1.5} />}
-            onClick={handleLogout}
-            color="red"
-            variant="filled"
-          />
+          <Stack gap="xs">
+            <MantineText
+              size="xs"
+              fw={500}
+              c="dimmed"
+              mb="xs"
+              style={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+            >
+              Menu Utama
+            </MantineText>
+            {mainLinks}
+          </Stack>
+
+          <Box
+            pt="md"
+            style={{
+              borderTop: `1px solid ${
+                computedColorScheme === "dark"
+                  ? "var(--mantine-color-dark-4)"
+                  : "var(--mantine-color-gray-2)"
+              }`,
+            }}
+          >
+            <NavLink
+              href="#"
+              label="Logout"
+              leftSection={<IconLogout size="1.2rem" stroke={1.5} />}
+              onClick={handleLogout}
+              color="red"
+              variant="subtle"
+              style={{ borderRadius: theme.radius.md }}
+            />
+          </Box>
         </Flex>
       </AppShell.Navbar>
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main bg={computedColorScheme === "dark" ? "dark.8" : "gray.0"}>
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 }

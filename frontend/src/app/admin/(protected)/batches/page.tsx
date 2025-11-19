@@ -15,6 +15,7 @@ import {
   ActionIcon,
   Menu,
   Box,
+  Skeleton,
 } from "@mantine/core";
 import {
   IconAlertCircle,
@@ -35,6 +36,7 @@ import { notifications } from "@mantine/notifications"; // <-- Tambahkan ini
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { DataTable, DataTableSortStatus } from "mantine-datatable";
 import sortBy from "lodash/sortBy";
 
@@ -247,23 +249,36 @@ export default function BatchesPage() {
       </Modal>
 
       {/* Header Halaman */}
-      <Group justify="space-between">
-        <Title order={2}>Manajemen Batch</Title>
-        <Group>
-          {selectedRecords.length > 0 && (
+      <PageHeader
+        title="Manajemen Batch"
+        breadcrumbs={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Batch", href: "/admin/batches" },
+        ]}
+        actions={
+          <Group>
+            {selectedRecords.length > 0 && (
+              <Button
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={handleBulkDelete}
+              >
+                Hapus ({selectedRecords.length})
+              </Button>
+            )}
             <Button
-              color="red"
-              leftSection={<IconTrash size={16} />}
-              onClick={handleBulkDelete}
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditingBatch(null);
+                form.reset();
+                open();
+              }}
             >
-              Hapus ({selectedRecords.length})
+              Tambah Batch
             </Button>
-          )}
-          <Button leftSection={<IconPlus size={16} />} onClick={() => { setEditingBatch(null); form.reset(); open(); }}>
-            Tambah Batch
-          </Button>
-        </Group>
-      </Group>
+          </Group>
+        }
+      />
 
       {/* Kolom Pencarian */}
       <TextInput
@@ -274,65 +289,98 @@ export default function BatchesPage() {
       />
 
       {/* TABEL MODERN */}
-      <Paper shadow="xs" withBorder p={0}>
-        <DataTable<Batch>
-          minHeight={150}
-          withTableBorder={false}
-          borderRadius="sm"
-          striped
-          highlightOnHover
-          // Data & Pagination
-          records={records}
-          totalRecords={totalRecords}
-          recordsPerPage={PAGE_SIZE}
-          page={page}
-          onPageChange={setPage}
-          selectedRecords={selectedRecords}
-          onSelectedRecordsChange={setSelectedRecords}
-          isRecordSelectable={(record) => true}
-          // Sorting
-          sortStatus={sortStatus}
-          onSortStatusChange={setSortStatus}
-          // Interaksi
-          onRowClick={({ record }) => router.push(`/admin/batches/${record.id}`)}
-          rowStyle={() => ({ cursor: "pointer" })}
-          // Definisi Kolom
-          columns={[
-            { accessor: 'name', title: 'Nama Batch', sortable: true },
-            { 
-              accessor: 'createdAt', 
-              title: 'Tanggal Dibuat', 
-              sortable: true,
-              render: ({ createdAt }) => dayjs(createdAt).format("DD MMM YYYY HH:mm")
-            },
-            {
-              accessor: 'actions',
-              title: '',
-              textAlign: 'right',
-              render: (batch) => (
-                <Box onClick={(e) => e.stopPropagation()}>
-                  <Menu shadow="md" width={200} position="bottom-end">
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray"><IconDotsVertical size={16} /></ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item leftSection={<IconEye size={14} />} onClick={() => router.push(`/admin/batches/${batch.id}`)}>
-                        Lihat Detail
-                      </Menu.Item>
-                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => { setEditingBatch(batch); form.setValues({ name: batch.name }); open(); }}>
-                        Edit
-                      </Menu.Item>
-                      <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => handleDelete(batch.id)}>
-                        Hapus
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                </Box>
-              )
+      {loading ? (
+        <Stack>
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} height={50} radius="sm" />
+          ))}
+        </Stack>
+      ) : error ? (
+        <Alert color="red" title="Error">
+          {error}
+        </Alert>
+      ) : (
+        <Paper shadow="xs" withBorder p={0}>
+          <DataTable<Batch>
+            minHeight={150}
+            withTableBorder={false}
+            borderRadius="sm"
+            striped
+            highlightOnHover
+            // Data & Pagination
+            records={records}
+            totalRecords={totalRecords}
+            recordsPerPage={PAGE_SIZE}
+            page={page}
+            onPageChange={setPage}
+            selectedRecords={selectedRecords}
+            onSelectedRecordsChange={setSelectedRecords}
+            isRecordSelectable={(record) => true}
+            // Sorting
+            sortStatus={sortStatus}
+            onSortStatusChange={setSortStatus}
+            // Interaksi
+            onRowClick={({ record }) =>
+              router.push(`/admin/batches/${record.id}`)
             }
-          ]}
-        />
-      </Paper>
+            rowStyle={() => ({ cursor: "pointer" })}
+            // Definisi Kolom
+            columns={[
+              { accessor: "name", title: "Nama Batch", sortable: true },
+              {
+                accessor: "createdAt",
+                title: "Tanggal Dibuat",
+                sortable: true,
+                render: ({ createdAt }) =>
+                  dayjs(createdAt).format("DD MMM YYYY HH:mm"),
+              },
+              {
+                accessor: "actions",
+                title: "",
+                textAlign: "right",
+                render: (batch) => (
+                  <Box onClick={(e) => e.stopPropagation()}>
+                    <Menu shadow="md" width={200} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray">
+                          <IconDotsVertical size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            router.push(`/admin/batches/${batch.id}`)
+                          }
+                        >
+                          Lihat Detail
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconPencil size={14} />}
+                          onClick={() => {
+                            setEditingBatch(batch);
+                            form.setValues({ name: batch.name });
+                            open();
+                          }}
+                        >
+                          Edit
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleDelete(batch.id)}
+                        >
+                          Hapus
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Box>
+                ),
+              },
+            ]}
+          />
+        </Paper>
+      )}
     </Stack>
   );
 }
