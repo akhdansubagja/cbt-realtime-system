@@ -89,11 +89,20 @@ export default function ExamsPage() {
   const [pickerBankId, setPickerBankId] = useState<string | null>(null); // Untuk dropdown di modal
   const [questionsInPicker, setQuestionsInPicker] = useState<Question[]>([]); // Untuk daftar soal di modal
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZES = [10, 20, 50];
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Exam>>({
     columnAccessor: "title",
     direction: "asc",
   });
   const router = useRouter();
+
+  // Reset page to 1 when pageSize changes
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize]);
 
   const form = useForm({
     initialValues: {
@@ -170,8 +179,13 @@ export default function ExamsPage() {
       );
     }
     const sorted = sortBy(filtered, sortStatus.columnAccessor);
-    return sortStatus.direction === "desc" ? sorted.reverse() : sorted;
-  }, [exams, query, sortStatus]);
+    const reversed = sortStatus.direction === "desc" ? sorted.reverse() : sorted;
+
+    // Pagination logic
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize;
+    return reversed.slice(from, to);
+  }, [exams, query, sortStatus, page, pageSize]);
 
   // State untuk Multi-Select
   const [selectedRecords, setSelectedRecords] = useState<Exam[]>([]);
@@ -757,6 +771,16 @@ export default function ExamsPage() {
               sortStatus={sortStatus}
               onSortStatusChange={setSortStatus}
               noRecordsText="Tidak ada ujian yang dibuat"
+              // Pagination props
+              totalRecords={query ? sortedAndFilteredRecords.length : exams.length}
+              recordsPerPage={pageSize}
+              page={page}
+              onPageChange={(p) => setPage(p)}
+              recordsPerPageOptions={PAGE_SIZES}
+              onRecordsPerPageChange={setPageSize}
+              paginationText={({ from, to, totalRecords }) =>
+                `${from} - ${to} dari ${totalRecords}`
+              }
             />
           )}
         </Box>
