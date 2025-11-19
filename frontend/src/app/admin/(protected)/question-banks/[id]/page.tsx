@@ -40,6 +40,7 @@ import {
 } from "@tabler/icons-react"; // IconTrash sudah ada
 import dayjs from "dayjs";
 import sortBy from "lodash/sortBy";
+import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 
 // Definisikan tipe data
 interface Question {
@@ -70,7 +71,8 @@ export default function SingleQuestionBankPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 10;
+  const PAGE_SIZES = [10, 25, 50, 100];
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [
     deleteModalOpened,
@@ -83,6 +85,36 @@ export default function SingleQuestionBankPage() {
     columnAccessor: "id",
     direction: "asc",
   });
+
+  // State untuk Multi-Select
+  const [selectedRecords, setSelectedRecords] = useState<Question[]>([]);
+
+  const handleBulkDelete = async () => {
+    const count = selectedRecords.length;
+    const result = await confirmDelete(
+      `Hapus ${count} Soal?`,
+      "Soal yang dipilih akan dihapus permanen."
+    );
+
+    if (result.isConfirmed) {
+      try {
+        const deletePromises = selectedRecords.map((item) =>
+          api.delete(`/questions/${item.id}`)
+        );
+        await Promise.all(deletePromises);
+
+        await showSuccessAlert("Berhasil!", `${count} soal telah dihapus.`);
+        setSelectedRecords([]);
+        fetchQuestionsForPage(activePage);
+      } catch (err) {
+        notifications.show({
+          title: "Gagal",
+          message: "Terjadi kesalahan saat menghapus beberapa soal.",
+          color: "red",
+        });
+      }
+    }
+  };
 
   const handleImageUpload = (files: File[]) => {
     if (files.length === 0) return;
@@ -161,7 +193,7 @@ export default function SingleQuestionBankPage() {
   const fetchQuestionsForPage = (page: number) => {
     setLoading(true);
     api
-      .get(`/question-banks/${bankId}/questions?page=${page}&limit=${limit}`)
+      .get(`/question-banks/${bankId}/questions?page=${page}&limit=${pageSize}`)
       .then((questionsRes) => {
         setQuestions(questionsRes.data.data);
         setTotalPages(questionsRes.data.last_page);
@@ -179,7 +211,11 @@ export default function SingleQuestionBankPage() {
 
     // Panggil fungsi terpusat untuk mengambil soal
     fetchQuestionsForPage(activePage);
-  }, [bankId, activePage]);
+  }, [bankId, activePage, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize]);
 
   const sortedRecords = useMemo(() => {
     const sorted = sortBy(questions, sortStatus.columnAccessor);
@@ -520,9 +556,20 @@ export default function SingleQuestionBankPage() {
               <Title order={3}>{bankData?.name}</Title>
             </Box>
           </Group>
-          <Button leftSection={<IconPlus size={16} />} onClick={open}>
-            Tambah Soal Baru
-          </Button>
+          <Group>
+            {selectedRecords.length > 0 && (
+              <Button
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={handleBulkDelete}
+              >
+                Hapus ({selectedRecords.length})
+              </Button>
+            )}
+            <Button leftSection={<IconPlus size={16} />} onClick={open}>
+              Tambah Soal Baru
+            </Button>
+          </Group>
         </Flex>
 
         {/* --- TABEL SOAL BARU --- */}
@@ -536,6 +583,9 @@ export default function SingleQuestionBankPage() {
             highlightOnHover
             minHeight={200}
             records={sortedRecords}
+            selectedRecords={selectedRecords}
+            onSelectedRecordsChange={setSelectedRecords}
+            isRecordSelectable={(record) => true}
             idAccessor="id"
             columns={[
               { accessor: "question_text", title: "Teks Soal", ellipsis: true },
@@ -569,10 +619,12 @@ export default function SingleQuestionBankPage() {
             ]}
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
-            totalRecords={totalPages * limit}
-            recordsPerPage={limit}
+            totalRecords={totalPages * pageSize}
+            recordsPerPage={pageSize}
             page={activePage}
             onPageChange={(p) => setPage(p)}
+            recordsPerPageOptions={PAGE_SIZES}
+            onRecordsPerPageChange={setPageSize}
             noRecordsText="Belum ada soal di bank soal ini."
           />
         </Box>

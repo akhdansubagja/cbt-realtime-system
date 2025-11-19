@@ -36,6 +36,7 @@ import {
   IconEye,
   IconDotsVertical,
   IconPencil,
+  IconFilter,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
@@ -69,6 +70,13 @@ export default function ExamineesPage() {
   });
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedBatchFilter, setSelectedBatchFilter] = useState<string | null>(
+    null
+  );
+
+  // --- STATE BARU 2: MULTI-SELECT ---
+  const [selectedRecords, setSelectedRecords] = useState<Examinee[]>([]);
 
   const router = useRouter();
 
@@ -104,13 +112,20 @@ export default function ExamineesPage() {
     }
   };
 
-  const fetchExaminees = async (page = activePage, search = debouncedQuery) => {
+  const fetchExaminees = async (
+    page = activePage,
+    search = debouncedQuery,
+    batchId = selectedBatchFilter
+  ) => {
     try {
       setLoading(true);
-      const response = await api.get(
-        // Ganti 'limit' dengan 'pageSize'
-        `/examinees?page=${page}&limit=${pageSize}&search=${search}`
-      );
+      // Bangun URL dengan parameter filter
+      let url = `/examinees?page=${page}&limit=${pageSize}&search=${search}`;
+      if (batchId) {
+        url += `&batch_id=${batchId}`;
+      }
+
+      const response = await api.get(url);
       setExaminees(response.data.data);
       setTotalPages(response.data.last_page);
     } catch (err) {
@@ -124,7 +139,7 @@ export default function ExamineesPage() {
     // Panggil fungsi yang sudah dideklarasikan di atas
     fetchExaminees();
     // --- PERUBAHAN 2 DI SINI ---
-  }, [activePage, debouncedQuery, pageSize]);
+  }, [activePage, debouncedQuery, pageSize, selectedBatchFilter]);
 
   useEffect(() => {
     setPage(1);
@@ -160,6 +175,37 @@ export default function ExamineesPage() {
       avatar: null, // Selalu reset input file saat edit
     });
     open();
+  };
+
+  const handleBulkDelete = async () => {
+    const count = selectedRecords.length;
+    const result = await confirmDelete(
+      `Hapus ${count} Peserta?`,
+      "Data yang dipilih akan dihapus permanen beserta avatarnya."
+    );
+
+    if (result.isConfirmed) {
+      try {
+        // Karena backend belum ada endpoint deleteBulk, kita loop (Promise.all)
+        // Ini solusi cepat tanpa ubah backend besar-besaran
+        const deletePromises = selectedRecords.map((item) =>
+          api.delete(`/examinees/${item.id}`)
+        );
+
+        await Promise.all(deletePromises);
+
+        await showSuccessAlert("Berhasil!", `${count} peserta telah dihapus.`);
+
+        setSelectedRecords([]); // Reset checklist
+        fetchExaminees(); // Refresh data
+      } catch (err) {
+        notifications.show({
+          title: "Gagal",
+          message: "Terjadi kesalahan saat menghapus beberapa data.",
+          color: "red",
+        });
+      }
+    }
   };
 
   const handleDeleteExaminee = async (examineeId: number) => {
@@ -380,27 +426,56 @@ export default function ExamineesPage() {
       <Stack>
         <Flex justify="space-between" align="center">
           <Title order={2}>Manajemen Peserta</Title>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              setEditingExaminee(null);
-              setCurrentAvatarPreview(null);
-              form.reset();
-              open();
-            }}
-          >
-            Tambah Baru
-          </Button>
+          <Group>
+            {selectedRecords.length > 0 && (
+              <Button
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={handleBulkDelete}
+              >
+                Hapus ({selectedRecords.length})
+              </Button>
+            )}
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditingExaminee(null);
+                setCurrentAvatarPreview(null);
+                form.reset();
+                open();
+              }}
+            >
+              Tambah Baru
+            </Button>
+          </Group>
         </Flex>
 
-        <TextInput
-          ref={searchInputRef}
-          placeholder="Cari peserta berdasarkan nama..."
-          leftSection={<IconSearch size={16} />}
-          rightSection={<Kbd>/</Kbd>}
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-        />
+        {/* --- AREA FILTER --- */}
+        <Group align="end" grow>
+          {/* Search Input */}
+          <TextInput
+            style={{ flex: 2 }}
+            ref={searchInputRef}
+            placeholder="Cari nama peserta..."
+            leftSection={<IconSearch size={16} />}
+            rightSection={<Kbd>/</Kbd>}
+            value={query}
+            onChange={(e) => setQuery(e.currentTarget.value)}
+            label="Pencarian"
+          />
+
+          {/* Filter Batch Dropdown */}
+          <Select
+            style={{ flex: 1 }}
+            label="Filter berdasarkan Batch"
+            placeholder="Semua Batch"
+            data={batches.map((b) => ({ value: String(b.id), label: b.name }))}
+            value={selectedBatchFilter}
+            onChange={setSelectedBatchFilter}
+            clearable
+            leftSection={<IconFilter size={16} />}
+          />
+        </Group>
 
         <Box>
           <DataTable<Examinee>
@@ -416,6 +491,9 @@ export default function ExamineesPage() {
             }}
             minHeight={200}
             records={examinees}
+            selectedRecords={selectedRecords}
+            onSelectedRecordsChange={setSelectedRecords}
+            isRecordSelectable={(record) => true} // Semua bisa dipilih
             idAccessor="id"
             columns={[
               {

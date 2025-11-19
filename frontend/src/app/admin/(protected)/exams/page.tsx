@@ -171,6 +171,38 @@ export default function ExamsPage() {
     return sortStatus.direction === "desc" ? sorted.reverse() : sorted;
   }, [exams, query, sortStatus]);
 
+  // State untuk Multi-Select
+  const [selectedRecords, setSelectedRecords] = useState<Exam[]>([]);
+
+  const handleBulkDelete = async () => {
+    const count = selectedRecords.length;
+    const result = await confirmDelete(
+      `Hapus ${count} Ujian?`,
+      "Data ujian yang dipilih akan dihapus permanen."
+    );
+
+    if (result.isConfirmed) {
+      try {
+        const deletePromises = selectedRecords.map((item) =>
+          api.delete(`/exams/${item.id}`)
+        );
+        await Promise.all(deletePromises);
+
+        await showSuccessAlert("Berhasil!", `${count} ujian telah dihapus.`);
+        setSelectedRecords([]);
+        // Refresh data
+        const response = await api.get("/exams");
+        setExams(response.data);
+      } catch (err) {
+        notifications.show({
+          title: "Gagal",
+          message: "Terjadi kesalahan saat menghapus beberapa ujian.",
+          color: "red",
+        });
+      }
+    }
+  };
+
   const handleDeleteExam = async (examId: number) => {
     const result = await confirmDelete(
       'Hapus Peserta?',
@@ -590,16 +622,27 @@ export default function ExamsPage() {
       <Stack>
         <Flex justify="space-between" align="center">
           <Title order={2}>Manajemen Ujian</Title>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              setEditingExam(null);
-              form.reset();
-              open();
-            }}
-          >
-            Buat Ujian Baru
-          </Button>
+          <Group>
+            {selectedRecords.length > 0 && (
+              <Button
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={handleBulkDelete}
+              >
+                Hapus ({selectedRecords.length})
+              </Button>
+            )}
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditingExam(null);
+                form.reset();
+                open();
+              }}
+            >
+              Buat Ujian Baru
+            </Button>
+          </Group>
         </Flex>
 
         <TextInput
@@ -623,6 +666,9 @@ export default function ExamsPage() {
             }}
             minHeight={200}
             records={sortedAndFilteredRecords}
+            selectedRecords={selectedRecords}
+            onSelectedRecordsChange={setSelectedRecords}
+            isRecordSelectable={(record) => true}
             idAccessor="id"
             columns={[
               { accessor: "title", title: "Judul Ujian", sortable: true },

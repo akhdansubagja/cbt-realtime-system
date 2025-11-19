@@ -49,22 +49,30 @@ export class ExamineesService {
     return this.examineeRepository.save(examinee);
   }
 
-  async findAll(options: PaginationOptions, search?: string) {
+  async findAll(options: PaginationOptions, search?: string, batchId?: number) {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
-    const whereCondition = search ? { name: ILike(`%${search}%`) } : {};
+    // Buat object kondisi pencarian yang dinamis
+    const whereCondition: any = {};
+
+    if (search) {
+      whereCondition.name = ILike(`%${search}%`);
+    }
+
+    // TAMBAHAN: Filter by Batch ID
+    if (batchId) {
+      whereCondition.batch = { id: batchId };
+    }
 
     const [data, total] = await this.examineeRepository.findAndCount({
       where: whereCondition,
       order: { name: 'ASC' },
       take: limit,
       skip: skip,
-      // V V V TAMBAHKAN INI V V V
       relations: {
-        batch: true, // Ini akan melakukan JOIN ke tabel batch
+        batch: true,
       },
-      // ^ ^ ^ BATAS PENAMBAHAN ^ ^ ^
     });
 
     return {

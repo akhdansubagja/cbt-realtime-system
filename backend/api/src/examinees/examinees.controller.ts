@@ -52,14 +52,16 @@ export class ExamineesController {
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
-    @Query('search') search: string, // <-- Tambahkan ini
+    @Query('search') search: string,
+    @Query('batch_id') batch_id?: string, // <-- TAMBAHKAN INI
   ) {
     return this.examineesService.findAll(
       {
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
       },
-      search, // <-- Kirimkan search ke service
+      search,
+      batch_id ? parseInt(batch_id, 10) : undefined, // <-- Teruskan ke service
     );
   }
 

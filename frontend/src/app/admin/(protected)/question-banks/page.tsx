@@ -67,6 +67,33 @@ export default function QuestionBanksPage() {
   const PAGE_SIZES = [10, 20, 50];
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
+  const [selectedRecords, setSelectedRecords] = useState<QuestionBank[]>([]);
+
+  // fungsi delete secara banyak
+  const handleBulkDelete = async () => {
+    const count = selectedRecords.length;
+    const result = await confirmDelete(
+      `Hapus ${count} Bank Soal?`,
+      "Data ini akan dihapus selamanya."
+    );
+    if (result.isConfirmed) {
+      try {
+        // Loop delete
+        await Promise.all(
+          selectedRecords.map((item) =>
+            api.delete(`/question-banks/${item.id}`)
+          )
+        );
+
+        await showSuccessAlert("Berhasil", "Data terpilih dihapus.");
+        setSelectedRecords([]);
+        // fetch ulang data bank soal di sini (misal: fetchQuestionBanks())
+      } catch (e) {
+        /* handle error */
+      }
+    }
+  };
+
   // Fungsi untuk membuka modal dalam mode 'edit'
   const openEditModal = (bank: QuestionBank) => {
     setEditingBank(bank); // Simpan data bank yang akan diedit
@@ -77,8 +104,8 @@ export default function QuestionBanksPage() {
   // Fungsi untuk menangani penghapusan
   const handleDeleteBank = async (bankId: number) => {
     const result = await confirmDelete(
-      'Hapus Peserta?',
-      'Peserta ini akan dihapus permanen dari sistem.'
+      "Hapus Peserta?",
+      "Peserta ini akan dihapus permanen dari sistem."
     );
 
     if (result.isConfirmed) {
@@ -278,9 +305,16 @@ export default function QuestionBanksPage() {
       <Stack>
         <Flex justify="space-between" align="center">
           <Title order={2}>Manajemen Bank Soal</Title>
-          <Button leftSection={<IconPlus size={16} />} onClick={open}>
-            Tambah Baru
-          </Button>
+          <Group>
+            {selectedRecords.length > 0 && (
+              <Button color="red" onClick={handleBulkDelete}>
+                Hapus ({selectedRecords.length})
+              </Button>
+            )}
+            <Button leftSection={<IconPlus size={16} />} onClick={open}>
+              Tambah Baru
+            </Button>
+          </Group>
         </Flex>
 
         <TextInput
@@ -304,6 +338,8 @@ export default function QuestionBanksPage() {
             }}
             minHeight={200}
             records={paginatedRecords} // <-- Menggunakan data yang sudah difilter & diurutkan
+            selectedRecords={selectedRecords}
+            onSelectedRecordsChange={setSelectedRecords}
             idAccessor="id"
             columns={[
               { accessor: "name", title: "Nama Bank Soal", sortable: true },

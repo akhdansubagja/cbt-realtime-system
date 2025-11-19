@@ -127,6 +127,38 @@ export default function BatchesPage() {
   };
 
   // Handler Delete dengan SweetAlert Baru
+  // Handler Delete dengan SweetAlert Baru
+
+  // State untuk Multi-Select
+  const [selectedRecords, setSelectedRecords] = useState<Batch[]>([]);
+
+  const handleBulkDelete = async () => {
+    const count = selectedRecords.length;
+    const result = await confirmDelete(
+      `Hapus ${count} Batch?`,
+      "Data peserta di dalamnya mungkin ikut terhapus!"
+    );
+
+    if (result.isConfirmed) {
+      try {
+        const deletePromises = selectedRecords.map((item) =>
+          api.delete(`/batches/${item.id}`)
+        );
+        await Promise.all(deletePromises);
+
+        await showSuccessAlert("Berhasil!", `${count} batch telah dihapus.`);
+        setSelectedRecords([]);
+        fetchBatches();
+      } catch (err) {
+        notifications.show({
+          title: "Gagal",
+          message: "Terjadi kesalahan saat menghapus beberapa batch.",
+          color: "red",
+        });
+      }
+    }
+  };
+
   const handleDelete = async (id: number) => {
     const result = await confirmDelete("Hapus Batch?", "Data peserta di dalamnya mungkin ikut terhapus!");
     if (result.isConfirmed) {
@@ -217,9 +249,20 @@ export default function BatchesPage() {
       {/* Header Halaman */}
       <Group justify="space-between">
         <Title order={2}>Manajemen Batch</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => { setEditingBatch(null); form.reset(); open(); }}>
-          Tambah Batch
-        </Button>
+        <Group>
+          {selectedRecords.length > 0 && (
+            <Button
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              onClick={handleBulkDelete}
+            >
+              Hapus ({selectedRecords.length})
+            </Button>
+          )}
+          <Button leftSection={<IconPlus size={16} />} onClick={() => { setEditingBatch(null); form.reset(); open(); }}>
+            Tambah Batch
+          </Button>
+        </Group>
       </Group>
 
       {/* Kolom Pencarian */}
@@ -244,6 +287,9 @@ export default function BatchesPage() {
           recordsPerPage={PAGE_SIZE}
           page={page}
           onPageChange={setPage}
+          selectedRecords={selectedRecords}
+          onSelectedRecordsChange={setSelectedRecords}
+          isRecordSelectable={(record) => true}
           // Sorting
           sortStatus={sortStatus}
           onSortStatusChange={setSortStatus}
