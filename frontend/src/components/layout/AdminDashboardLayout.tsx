@@ -85,7 +85,7 @@ export function AdminDashboardLayout({
         key={link.label}
         href={link.href}
         label={
-          <MantineText fw={isActive ? 600 : 400} size="sm">
+          <MantineText fw={isActive ? 600 : 500} size="sm">
             {link.label}
           </MantineText>
         }
@@ -93,7 +93,7 @@ export function AdminDashboardLayout({
           <link.icon
             size="1.2rem"
             stroke={1.5}
-            color={isActive ? theme.colors.indigo[6] : "currentColor"}
+            color={isActive ? theme.colors.violet[6] : "currentColor"}
           />
         }
         onClick={(e) => {
@@ -102,29 +102,38 @@ export function AdminDashboardLayout({
         }}
         active={isActive}
         variant="light"
-        color="indigo"
-        style={{ borderRadius: theme.radius.md, marginBottom: 4 }}
+        color="violet"
+        style={{
+          borderRadius: theme.radius.md,
+          marginBottom: 4,
+          transition: "all 0.2s ease",
+        }}
       />
     );
   });
 
   return (
     <AppShell
-      header={{ height: 60 }}
-      navbar={{ width: 260, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      header={{ height: 70 }}
+      navbar={{ width: 280, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
       bg={computedColorScheme === "dark" ? "dark.8" : "gray.0"}
     >
       <AppShell.Header
         style={{
-          backdropFilter: "blur(10px)",
+          backdropFilter: "blur(12px)",
           backgroundColor:
             computedColorScheme === "dark"
-              ? "rgba(36, 36, 36, 0.8)"
-              : "rgba(255, 255, 255, 0.8)",
+              ? "rgba(36, 36, 36, 0.7)"
+              : "rgba(255, 255, 255, 0.7)",
+          borderBottom: `1px solid ${
+            computedColorScheme === "dark"
+              ? "var(--mantine-color-dark-4)"
+              : "var(--mantine-color-gray-2)"
+          }`,
         }}
       >
-        <Group h="100%" px="md" justify="space-between">
+        <Group h="100%" px="xl" justify="space-between">
           <Group>
             <Burger
               opened={opened}
@@ -132,18 +141,43 @@ export function AdminDashboardLayout({
               hiddenFrom="sm"
               size="sm"
             />
-            <Group gap="xs">
+            <Group gap="xs" align="center">
               <ThemeToggle />
-              <Title order={4} c="indigo">
-                CBT Realtime
-              </Title>
+              <Box
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: "8px",
+                  background:
+                    computedColorScheme === "dark"
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.03)",
+                }}
+              >
+                <Title order={4} c="violet" style={{ letterSpacing: "-0.5px" }}>
+                  CBT Realtime
+                </Title>
+              </Box>
             </Group>
           </Group>
           {/* Bisa tambah user profile di sini nanti */}
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md" style={{ backgroundColor: "transparent" }}>
+      <AppShell.Navbar
+        p="md"
+        style={{
+          backgroundColor:
+            computedColorScheme === "dark"
+              ? "rgba(36, 36, 36, 0.5)"
+              : "rgba(255, 255, 255, 0.5)",
+          backdropFilter: "blur(12px)",
+          borderRight: `1px solid ${
+            computedColorScheme === "dark"
+              ? "var(--mantine-color-dark-4)"
+              : "var(--mantine-color-gray-2)"
+          }`,
+        }}
+      >
         <Flex
           direction="column"
           justify="space-between"
@@ -152,9 +186,10 @@ export function AdminDashboardLayout({
           <Stack gap="xs">
             <MantineText
               size="xs"
-              fw={500}
+              fw={600}
               c="dimmed"
-              mb="xs"
+              mb="sm"
+              pl="xs"
               style={{ textTransform: "uppercase", letterSpacing: 0.5 }}
             >
               Menu Utama
@@ -179,13 +214,29 @@ export function AdminDashboardLayout({
               onClick={handleLogout}
               color="red"
               variant="subtle"
-              style={{ borderRadius: theme.radius.md }}
+              style={{
+                borderRadius: theme.radius.md,
+                transition: "background-color 0.2s",
+              }}
             />
           </Box>
         </Flex>
       </AppShell.Navbar>
-      <AppShell.Main bg={computedColorScheme === "dark" ? "dark.8" : "gray.0"}>
-        {children}
+      <AppShell.Main
+        bg={computedColorScheme === "dark" ? "dark.8" : "gray.0"}
+        style={{
+          transition: "padding-left 0.2s ease",
+        }}
+      >
+        <Box
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+            width: "100%",
+          }}
+        >
+          {children}
+        </Box>
       </AppShell.Main>
     </AppShell>
   );

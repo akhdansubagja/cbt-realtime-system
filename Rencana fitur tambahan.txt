@@ -25,7 +25,7 @@ DONE9. fitur export ke excel pada halaman detail batch, yang dapat mengexport ke
 
 11. buat agar jumlah menit ujian pada peserta agar ditampilkan, maksudnya misalkan Freya mengerjakan ujian Informatika dengan waktu berapa menit berapa detik.
 
-12. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur checklist)
+DONE12. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur checklist)
 
 DONE13. buat agar sistem bisa secara otomatis menghapus gambar atau foto yang ada, contohnya jika data peserta yang mempunyai foto dihapus, maka fotonya pun harus ikut terhapus.
 

@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Title,
   Table,
@@ -15,6 +15,15 @@ import {
   Group,
   Button,
   SegmentedControl,
+  Stack,
+  Flex,
+  Box,
+  ActionIcon,
+  Avatar,
+  Tooltip,
+  RingProgress,
+  ThemeIcon,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
@@ -22,16 +31,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DatePickerInput } from "@mantine/dates";
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
-import { Stack, Flex, Box, ActionIcon } from "@mantine/core";
-import { IconArrowLeft, IconFileExport } from "@tabler/icons-react";
-import { useRouter } from "next/navigation";
+import {
+  IconArrowLeft,
+  IconFileExport,
+  IconTrophy,
+  IconUser,
+  IconClock,
+  IconCheck,
+} from "@tabler/icons-react";
 
 interface ParticipantScore {
   id: number;
   name: string;
   score: number | null;
   status: "started" | "finished" | "pending";
-  start_time?: string; // <-- TAMBAHKAN BARIS INI
+  start_time?: string;
 }
 
 interface ExamInfo {
@@ -42,6 +56,7 @@ interface ExamInfo {
 export default function MonitoringPage() {
   const params = useParams();
   const router = useRouter();
+  const { colorScheme } = useMantineColorScheme(); // Hook untuk deteksi tema
   const examId = params.examId as string;
   const [participants, setParticipants] = useState<ParticipantScore[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,8 +290,8 @@ export default function MonitoringPage() {
 
   if (loading)
     return (
-      <Center>
-        <Loader />
+      <Center h={400}>
+        <Loader type="dots" size="xl" color="violet" />
       </Center>
     );
   if (error)
@@ -286,36 +301,42 @@ export default function MonitoringPage() {
       </Alert>
     );
 
-  const rows = participants.map((p) => (
-    <Table.Tr key={p.id}>
-      <Table.Td>{p.id}</Table.Td>
-      <Table.Td>{p.name}</Table.Td>
-      <Table.Td fw={700}>{p.score ?? "Belum ada"}</Table.Td>
-    </Table.Tr>
-  ));
-
   return (
-    <>
-      <Stack>
+    <Stack gap="lg">
       {/* --- HEADER BARU --- */}
       <Flex justify="space-between" align="center">
-          <Group>
-              <ActionIcon variant="default" onClick={() => router.back()} size="lg">
-                  <IconArrowLeft />
-              </ActionIcon>
-              <Box>
-                  <Title order={3}>Monitoring Ujian: {examInfo?.title}</Title>
-                  <Text c="dimmed" size="sm">Skor diperbarui dan diurutkan secara real-time.</Text>
-              </Box>
-          </Group>
+        <Group>
+          <ActionIcon
+            variant="light"
+            color="gray"
+            onClick={() => router.back()}
+            size="xl"
+            radius="md"
+          >
+            <IconArrowLeft size={20} />
+          </ActionIcon>
+          <Box>
+            <Title order={3} fw={800} style={{ letterSpacing: -0.5 }}>
+              Monitoring: {examInfo?.title}
+            </Title>
+            <Group gap="xs">
+              <Badge variant="dot" color="green" size="sm">
+                Live Update
+              </Badge>
+              <Text c="dimmed" size="sm">
+                {filteredParticipants.length} Peserta Aktif
+              </Text>
+            </Group>
+          </Box>
+        </Group>
       </Flex>
-      
+
       {/* --- KONTROL FILTER & EKSPOR BARU --- */}
-      <Paper withBorder p="md" radius="md">
+      <Paper withBorder p="md" radius="md" shadow="sm">
         <Flex justify="space-between" align="flex-end" gap="md">
           <DatePickerInput
             type="range"
-            label="Filter Berdasarkan Tanggal Mulai"
+            label="Filter Tanggal"
             placeholder="Pilih rentang tanggal"
             value={dateRange}
             onChange={(value) =>
@@ -325,63 +346,128 @@ export default function MonitoringPage() {
               ])
             }
             clearable
-            style={{ flex: 1 }}
+            style={{ flex: 1, maxWidth: 300 }}
+            radius="md"
           />
           <Button
             leftSection={<IconFileExport size={16} />}
             onClick={handleExport}
             disabled={filteredParticipants.length === 0}
+            variant="light"
+            color="violet"
+            radius="md"
           >
-            Ekspor ke Excel
+            Ekspor Excel
           </Button>
         </Flex>
       </Paper>
 
       {/* --- LEADERBOARD REAL-TIME BARU --- */}
-      <AnimatePresence>
-        <Stack gap="xs" mt="md">
-          {filteredParticipants.map((p, index) => (
-            <motion.div
-              key={p.id}
-              layout // Ini adalah kunci animasi framer-motion
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            >
-              <Paper withBorder shadow="xs" p="sm" radius="md">
-                <Flex align="center" justify="space-between" gap="md">
-                  <Group>
-                    <Text fw={700} fz={20} w={40} ta="center" c="dimmed">
-                      #{index + 1}
-                    </Text>
-                    <Text fw={500}>{p.name}</Text>
-                  </Group>
-                  <Group>
-                    <Badge
-                        color={p.status === 'finished' ? 'gray' : 'green'}
-                        variant="light"
-                        size="lg"
+      <AnimatePresence mode="popLayout">
+        <Stack gap="sm">
+          {filteredParticipants.map((p, index) => {
+            // Logic warna untuk dark mode
+            const isDark = colorScheme === 'dark';
+            
+            // Default colors for everyone
+            const iconBg = isDark ? "var(--mantine-color-dark-6)" : "var(--mantine-color-gray-1)";
+            const iconColor = isDark ? "var(--mantine-color-gray-4)" : "var(--mantine-color-gray-6)";
+
+            return (
+              <motion.div
+                key={p.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                <Paper
+                  withBorder
+                  shadow="xs"
+                  p="md"
+                  radius="md"
+                >
+                  <Flex align="center" justify="space-between" gap="md">
+                    <Group style={{ flex: 1 }}>
+                      <Flex
+                        align="center"
+                        justify="center"
+                        w={40}
+                        h={40}
+                        style={{
+                          borderRadius: "50%",
+                          background: iconBg,
+                          color: iconColor,
+                          fontWeight: 700,
+                        }}
                       >
-                        {p.status === 'finished' ? 'Selesai' : 'Mengerjakan'}
-                      </Badge>
-                    <Text fz={24} fw={700} w={80} ta="right">
-                      {p.score ?? '-'}
-                    </Text>
-                  </Group>
-                </Flex>
-              </Paper>
-            </motion.div>
-          ))}
+                        #{index + 1}
+                      </Flex>
+                      
+                      <Box>
+                        <Text fw={600} size="lg">
+                          {p.name}
+                        </Text>
+                        <Group gap={6}>
+                          <Badge
+                            size="sm"
+                            variant="light"
+                            color={p.status === "finished" ? "gray" : "green"}
+                            leftSection={
+                              p.status === "finished" ? (
+                                <IconCheck size={10} />
+                              ) : (
+                                <IconClock size={10} />
+                              )
+                            }
+                          >
+                            {p.status === "finished"
+                              ? "Selesai"
+                              : "Mengerjakan"}
+                          </Badge>
+                          <Text size="xs" c="dimmed">
+                            ID: {p.id}
+                          </Text>
+                        </Group>
+                      </Box>
+                    </Group>
+
+                    <Group>
+                      <Box ta="right">
+                        <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+                          Skor Saat Ini
+                        </Text>
+                        <Text
+                          fz={28}
+                          fw={800}
+                          c={p.score !== null ? "violet" : "dimmed"}
+                          style={{ lineHeight: 1 }}
+                        >
+                          {p.score ?? "-"}
+                        </Text>
+                      </Box>
+                    </Group>
+                  </Flex>
+                </Paper>
+              </motion.div>
+            );
+          })}
         </Stack>
       </AnimatePresence>
 
       {!loading && filteredParticipants.length === 0 && (
-        <Center mt="xl">
-          <Text c="dimmed">Belum ada peserta yang memulai ujian atau sesuai dengan filter.</Text>
+        <Center mt="xl" p="xl">
+          <Stack align="center" gap="xs">
+            <ThemeIcon size={60} radius="xl" variant="light" color="gray">
+              <IconUser size={32} />
+            </ThemeIcon>
+            <Text c="dimmed" fw={500}>
+              Belum ada peserta yang memulai ujian.
+            </Text>
+          </Stack>
         </Center>
       )}
     </Stack>
-    </>
   );
 }

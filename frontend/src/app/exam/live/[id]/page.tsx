@@ -20,11 +20,6 @@ import {
   Box,
   Modal,
   useMantineColorScheme,
-} from "@mantine/core";
-import axios from "axios";
-import { io, Socket } from "socket.io-client";
-import api from "@/lib/axios";
-import {
   AppShell,
   Progress,
   Drawer,
@@ -32,15 +27,24 @@ import {
   ActionIcon,
   Flex,
   Image,
+  Badge,
+  ThemeIcon,
+  RingProgress,
 } from "@mantine/core";
+import axios from "axios";
+import { io, Socket } from "socket.io-client";
+import api from "@/lib/axios";
 import {
   IconGripVertical,
   IconClock,
   IconArrowLeft,
   IconArrowRight,
+  IconCheck,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Definisikan tipe data yang lebih detail
 interface QuestionDetail {
@@ -269,7 +273,7 @@ export default function LiveExamPage() {
   if (loading) {
     return (
       <Center style={{ height: "100vh" }}>
-        <Loader />
+        <Loader type="dots" size="xl" color="violet" />
       </Center>
     );
   }
@@ -277,7 +281,14 @@ export default function LiveExamPage() {
   if (error || !examData) {
     return (
       <Center style={{ height: "100vh" }}>
-        <Alert color="red">{error || "Data ujian tidak ditemukan."}</Alert>
+        <Alert
+          variant="light"
+          color="red"
+          title="Terjadi Kesalahan"
+          icon={<IconAlertTriangle />}
+        >
+          {error || "Data ujian tidak ditemukan."}
+        </Alert>
       </Center>
     );
   }
@@ -287,182 +298,277 @@ export default function LiveExamPage() {
 
   return (
     <Box>
-      {/* --- Tambahkan tombol di pojok --- */}
-      <Box style={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}>
-        <ThemeToggle />
-      </Box>
-      <AppShell header={{ height: 70 }} padding="md">
+      <AppShell
+        header={{ height: 80 }}
+        padding="md"
+        bg={colorScheme === "dark" ? "dark.8" : "gray.0"}
+      >
         {/* --- HEADER UJIAN BARU --- */}
-        <AppShell.Header>
-          <Flex h="100%" px="md" align="center" justify="space-between">
-            <Box>
-              <Title order={5}>{examData.exam.title}</Title>
-              <Text size="sm" c="dimmed">
-                Peserta: {examData.examinee.name}
-              </Text>
-            </Box>
-            <Group>
-              <Box w={120}>
-                <Group>
-                  <IconClock size={18} />
-                  <Text fw={700} fz="lg" c={timeLeft < 60 ? "red" : "inherit"}>
-                    {Math.floor(timeLeft / 60)}:
-                    {("0" + (timeLeft % 60)).slice(-2)}
+        <AppShell.Header
+          style={{
+            backdropFilter: "blur(12px)",
+            backgroundColor:
+              colorScheme === "dark"
+                ? "rgba(36, 36, 36, 0.8)"
+                : "rgba(255, 255, 255, 0.8)",
+            borderBottom: `1px solid ${
+              colorScheme === "dark"
+                ? "var(--mantine-color-dark-4)"
+                : "var(--mantine-color-gray-2)"
+            }`,
+          }}
+        >
+          <Container size="xl" h="100%">
+            <Flex h="100%" align="center" justify="space-between">
+              <Group>
+                <ThemeIcon
+                  size="lg"
+                  radius="md"
+                  variant="gradient"
+                  gradient={{ from: "violet", to: "indigo" }}
+                >
+                  <IconCheck size={20} />
+                </ThemeIcon>
+                <Box>
+                  <Title order={4} style={{ lineHeight: 1.2 }}>
+                    {examData.exam.title}
+                  </Title>
+                  <Text size="xs" c="dimmed" fw={500}>
+                    Peserta: {examData.examinee.name}
                   </Text>
+                </Box>
+              </Group>
+
+              <Group gap="xl">
+                <Group gap="xs">
+                  <RingProgress
+                    size={48}
+                    thickness={4}
+                    roundCaps
+                    sections={[
+                      {
+                        value:
+                          (timeLeft / (examData.exam.duration_minutes * 60)) *
+                          100,
+                        color: timeLeft < 300 ? "red" : "violet",
+                      },
+                    ]}
+                    label={
+                      <Center>
+                        <IconClock
+                          size={16}
+                          color={timeLeft < 300 ? "var(--mantine-color-red-6)" : "inherit"}
+                        />
+                      </Center>
+                    }
+                  />
+                  <Box>
+                    <Text size="xs" c="dimmed" fw={700} tt="uppercase">
+                      Sisa Waktu
+                    </Text>
+                    <Text
+                      fw={700}
+                      fz="lg"
+                      c={timeLeft < 300 ? "red" : "inherit"}
+                      style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {Math.floor(timeLeft / 60)}:
+                      {("0" + (timeLeft % 60)).slice(-2)}
+                    </Text>
+                  </Box>
                 </Group>
-                <Progress
-                  value={
-                    (timeLeft / (examData.exam.duration_minutes * 60)) * 100
-                  }
-                  color={timeLeft < 60 ? "red" : "blue"}
-                  size="xs"
-                />
-              </Box>
-              <ThemeToggle />
-              <Button color="red" onClick={() => setIsModalOpen(true)}>
-                Selesai
-              </Button>
-            </Group>
-          </Flex>
+
+                <Group>
+                  <ThemeToggle />
+                  <Button
+                    color="red"
+                    variant="light"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    Selesai Ujian
+                  </Button>
+                </Group>
+              </Group>
+            </Flex>
+          </Container>
         </AppShell.Header>
 
         {/* --- KONTEN UTAMA (SOAL) --- */}
         <AppShell.Main>
-          <Container>
+          <Container size="md" py="xl">
+            <motion.div
+              key={currentQuestionIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Paper
+                withBorder
+                p={40}
+                radius="lg"
+                shadow="sm"
+                style={{
+                  WebkitUserSelect: "none",
+                  msUserSelect: "none",
+                  userSelect: "none",
+                  minHeight: 400,
+                }}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <Group justify="space-between" mb="xl">
+                  <Badge size="lg" variant="light" color="violet">
+                    Soal No. {currentQuestionIndex + 1}
+                  </Badge>
+                  <Text size="sm" c="dimmed">
+                    Bobot: {currentExamQuestion.point} Poin
+                  </Text>
+                </Group>
+
+                <Text size="xl" style={{ lineHeight: 1.6 }}>
+                  {currentExamQuestion.question.question_text}
+                </Text>
+
+                {currentExamQuestion.question.image_url && (
+                  <Box mt="lg" mb="xl">
+                    <Image
+                      radius="md"
+                      mah={400}
+                      w="auto"
+                      fit="contain"
+                      src={`${process.env.NEXT_PUBLIC_API_URL}${currentExamQuestion.question.image_url}`}
+                      alt={`Gambar soal no. ${currentQuestionIndex + 1}`}
+                      style={{ border: "1px solid var(--mantine-color-gray-2)" }}
+                    />
+                  </Box>
+                )}
+
+                <Stack mt={40} gap="md">
+                  {currentExamQuestion.question.options.map((option) => {
+                    const isSelected =
+                      answers[currentExamQuestion.id] === option.key;
+                    return (
+                      <Paper
+                        key={option.key}
+                        withBorder
+                        p="md"
+                        radius="md"
+                        onClick={() =>
+                          handleAnswerChange(currentExamQuestion.id, option.key)
+                        }
+                        style={{
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          borderColor: isSelected
+                            ? "var(--mantine-color-violet-6)"
+                            : undefined,
+                          backgroundColor: isSelected
+                            ? "var(--mantine-color-violet-0)"
+                            : undefined,
+                        }}
+                      >
+                        <Group>
+                          <ThemeIcon
+                            variant={isSelected ? "filled" : "light"}
+                            color={isSelected ? "violet" : "gray"}
+                            radius="xl"
+                            size="md"
+                          >
+                            <Text size="xs" fw={700}>
+                              {option.key}
+                            </Text>
+                          </ThemeIcon>
+                          <Text
+                            fw={isSelected ? 500 : 400}
+                            c={isSelected ? "violet.9" : undefined}
+                          >
+                            {option.text}
+                          </Text>
+                        </Group>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              </Paper>
+            </motion.div>
+
+            {/* --- TOMBOL NAVIGASI --- */}
             <Paper
               withBorder
-              p="xl"
+              p="md"
               radius="md"
-              shadow="sm"
-              style={{
-                WebkitUserSelect: 'none', // Safari
-                msUserSelect: 'none',     // IE10+
-                userSelect: 'none',       // Standar
-              }}
-              onContextMenu={(e) => e.preventDefault()}
+              mt="lg"
+              style={{ position: "sticky", bottom: 20, zIndex: 10 }}
+              shadow="md"
             >
-              <Text fw={500}>Soal No. {currentQuestionIndex + 1}</Text>
-              <Text mt="lg" mb="xl" size="lg">
-                {currentExamQuestion.question.question_text}
-              </Text>
+              <Flex justify="space-between">
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<IconArrowLeft size={18} />}
+                  onClick={() => setCurrentQuestionIndex((p) => p - 1)}
+                  disabled={currentQuestionIndex === 0}
+                >
+                  Sebelumnya
+                </Button>
 
-              {currentExamQuestion.question.image_url && (
-                <Image
-                  mt="md"
-                  radius="sm"
-                  mah={300} // Batasi tinggi maksimal gambar agar tidak terlalu besar
-                  w="auto"
-                  fit="contain"
-                  src={`${process.env.NEXT_PUBLIC_API_URL}${currentExamQuestion.question.image_url}`}
-                  alt={`Gambar untuk soal no. ${currentQuestionIndex + 1}`}
-                />
-              )}
+                <Button
+                  variant="light"
+                  color="violet"
+                  leftSection={<IconGripVertical size={18} />}
+                  onClick={openNav}
+                >
+                  Daftar Soal
+                </Button>
 
-              <Radio.Group
-                value={answers[currentExamQuestion.id] || null}
-                onChange={(value) =>
-                  handleAnswerChange(currentExamQuestion.id, value)
-                }
-              >
-                <Stack>
-                  {currentExamQuestion.question.options.map((option) => (
-                    // 1. KITA KEMBALIKAN <Paper> ANDA
-                    <Paper
-                      key={option.key}
-                      withBorder
-                      p="md"
-                      radius="sm"
-                      // 2. TAMBAHKAN onClick UNTUK MEMICU PERUBAHAN
-                      onClick={() =>
-                        handleAnswerChange(currentExamQuestion.id, option.key)
-                      }
-                      // 3. TAMBAHKAN STYLING UNTUK CURSOR & HOVER
-                      styles={(theme) => ({
-                        root: {
-                          cursor: "pointer",
-                          transition: "background-color 150ms ease",
-                          "&:hover": {
-                            backgroundColor:
-                              colorScheme === "dark"
-                                ? theme.colors.dark[6]
-                                : theme.colors.gray[0],
-                          },
-                          WebkitUserSelect: 'none',
-                          msUserSelect: 'none',
-                          userSelect: 'none',
-                        },
-                      })}
-                    >
-                      <Radio
-                        value={option.key}
-                        label={`${option.key}. ${option.text}`}
-                        // 4. BUAT RADIO INTERNAL TIDAK BISA DIKLIK
-                        // AGAR TIDAK KONFLIK DENGAN onClick DARI <Paper>
-                        styles={{
-                          label: { cursor: "pointer" },
-                          radio: { pointerEvents: "none" },
-                        }}
-                      />
-                    </Paper>
-                  ))}
-                </Stack>
-              </Radio.Group>
+                <Button
+                  variant="filled"
+                  color="violet"
+                  rightSection={<IconArrowRight size={18} />}
+                  onClick={() => setCurrentQuestionIndex((p) => p + 1)}
+                  disabled={
+                    currentQuestionIndex ===
+                    examData.exam.exam_questions.length - 1
+                  }
+                >
+                  Selanjutnya
+                </Button>
+              </Flex>
             </Paper>
-
-            {/* --- TOMBOL NAVIGASI & DAFTAR SOAL --- */}
-            <Flex justify="space-between" mt="xl">
-              <Button
-                variant="default"
-                leftSection={<IconArrowLeft size={16} />}
-                onClick={() => setCurrentQuestionIndex((p) => p - 1)}
-                disabled={currentQuestionIndex === 0}
-              >
-                Sebelumnya
-              </Button>
-              <Button
-                variant="outline"
-                leftSection={<IconGripVertical size={16} />}
-                onClick={openNav}
-              >
-                Daftar Soal
-              </Button>
-              <Button
-                rightSection={<IconArrowRight size={16} />}
-                onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-                disabled={
-                  currentQuestionIndex ===
-                  examData.exam.exam_questions.length - 1
-                }
-              >
-                Selanjutnya
-              </Button>
-            </Flex>
           </Container>
         </AppShell.Main>
 
-        {/* --- DRAWER UNTUK NAVIGASI SOAL --- */}
+        {/* --- DRAWER NAVIGASI --- */}
         <Drawer
           opened={navOpened}
           onClose={closeNav}
           title="Navigasi Soal"
           position="right"
+          padding="md"
+          size="md"
         >
+          <Text size="sm" c="dimmed" mb="lg">
+            Klik nomor untuk melompat ke soal tersebut.
+          </Text>
           <SimpleGrid cols={5} spacing="sm">
             {examData.exam.exam_questions.map((q, index) => {
-              // Deklarasi variabel yang hilang ada di sini
               const isCurrent = index === currentQuestionIndex;
               const isAnswered = !!answers[q.id];
 
               return (
                 <Button
                   key={q.id}
-                  variant={
-                    isCurrent ? "filled" : isAnswered ? "light" : "outline"
-                  }
-                  color={isAnswered || isCurrent ? "blue" : "gray"}
+                  variant={isCurrent ? "filled" : isAnswered ? "light" : "default"}
+                  color={isCurrent ? "violet" : isAnswered ? "violet" : "gray"}
                   onClick={() => {
                     setCurrentQuestionIndex(index);
                     closeNav();
+                  }}
+                  h={50}
+                  radius="md"
+                  style={{
+                    border: isCurrent
+                      ? "2px solid var(--mantine-color-violet-8)"
+                      : undefined,
                   }}
                 >
                   {index + 1}
@@ -470,17 +576,43 @@ export default function LiveExamPage() {
               );
             })}
           </SimpleGrid>
+
+          <Group mt="xl" justify="center">
+            <Group gap="xs">
+              <Box w={16} h={16} bg="violet.1" style={{ borderRadius: 4 }} />
+              <Text size="xs">Dijawab</Text>
+            </Group>
+            <Group gap="xs">
+              <Box
+                w={16}
+                h={16}
+                style={{
+                  border: "1px solid var(--mantine-color-gray-4)",
+                  borderRadius: 4,
+                }}
+              />
+              <Text size="xs">Belum</Text>
+            </Group>
+            <Group gap="xs">
+              <Box w={16} h={16} bg="violet.6" style={{ borderRadius: 4 }} />
+              <Text size="xs">Aktif</Text>
+            </Group>
+          </Group>
         </Drawer>
 
-        {/* --- MODAL KONFIRMASI (Tidak ada perubahan) --- */}
+        {/* --- MODAL KONFIRMASI --- */}
         <Modal
           opened={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title="Konfirmasi Selesai Ujian"
           centered
+          radius="lg"
         >
-          <Text>Apakah Anda yakin ingin menyelesaikan sesi ujian ini?</Text>
-          <Group justify="flex-end" mt="md">
+          <Text size="sm" mb="lg">
+            Apakah Anda yakin ingin menyelesaikan sesi ujian ini? Pastikan semua
+            jawaban sudah terisi dengan benar.
+          </Text>
+          <Group justify="flex-end">
             <Button variant="default" onClick={() => setIsModalOpen(false)}>
               Batal
             </Button>

@@ -1,8 +1,8 @@
 // frontend/src/app/admin/login/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Paper,
   TextInput,
@@ -13,25 +13,36 @@ import {
   Text,
   Stack,
   Container,
-} from '@mantine/core';
-import { IconAt, IconLock, IconAlertCircle } from '@tabler/icons-react';
-import axios from 'axios';
+  Box,
+  Flex,
+  BackgroundImage,
+  Overlay,
+  ThemeIcon,
+} from "@mantine/core";
+import {
+  IconAt,
+  IconLock,
+  IconAlertCircle,
+  IconSchool,
+} from "@tabler/icons-react";
+import axios from "axios";
+import { motion } from "framer-motion";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Mencegah refresh halaman standar
+    event.preventDefault();
     if (!username || !password) {
-      setError('Username dan password harus diisi.');
+      setError("Username dan password harus diisi.");
       return;
     }
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const response = await axios.post(
@@ -40,13 +51,13 @@ export default function AdminLoginPage() {
       );
 
       const { access_token } = response.data;
-      localStorage.setItem('access_token', access_token);
-      router.replace('/admin/dashboard'); // Gunakan replace agar tidak bisa kembali ke login
+      localStorage.setItem("access_token", access_token);
+      router.replace("/admin/dashboard");
     } catch (err: any) {
       if (err.response && err.response.status === 401) {
-        setError('Username atau password salah.');
+        setError("Username atau password salah.");
       } else {
-        setError('Terjadi kesalahan. Tidak dapat terhubung ke server.');
+        setError("Terjadi kesalahan. Tidak dapat terhubung ke server.");
       }
     } finally {
       setLoading(false);
@@ -54,52 +65,149 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <Container fluid style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--mantine-color-gray-0)' }}>
-      <Stack w={420}>
-        <Title ta="center">CBT Realtime System</Title>
-        <Text c="dimmed" size="sm" ta="center" mb={20}>
-          Silakan masuk untuk mengakses dashboard admin
-        </Text>
+    <Flex h="100vh" style={{ overflow: "hidden" }}>
+      {/* Left Side - Decorative */}
+      <Box
+        visibleFrom="sm"
+        style={{
+          flex: 1,
+          position: "relative",
+          background:
+            "linear-gradient(135deg, var(--mantine-color-violet-9) 0%, var(--mantine-color-indigo-9) 100%)",
+        }}
+      >
+        <Overlay
+          gradient="linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, .65) 40%)"
+          opacity={1}
+          zIndex={1}
+        />
+        <Stack
+          h="100%"
+          justify="center"
+          p={80}
+          style={{ position: "relative", zIndex: 2, color: "white" }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <ThemeIcon
+              size={60}
+              radius="md"
+              variant="gradient"
+              gradient={{ from: "violet.4", to: "indigo.4" }}
+              mb="xl"
+            >
+              <IconSchool size={32} stroke={1.5} color="white" />
+            </ThemeIcon>
+            <Title order={1} size={48} fw={900} style={{ lineHeight: 1.1 }}>
+              CBT Realtime
+              <br />
+              System
+            </Title>
+            <Text size="xl" mt="md" c="gray.3" maw={500}>
+              Platform ujian online modern dengan pemantauan real-time dan
+              analisis hasil yang akurat.
+            </Text>
+          </motion.div>
+        </Stack>
 
-        <Paper withBorder shadow="md" p={30} radius="md">
-          <form onSubmit={handleLogin}>
-            <Stack gap="md">
-              <TextInput
-                leftSection={<IconAt size={16} />}
-                label="Username"
-                placeholder="username_admin"
-                value={username}
-                onChange={(event) => setUsername(event.currentTarget.value)}
-                required
-              />
-              <PasswordInput
-                leftSection={<IconLock size={16} />}
-                label="Password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => setPassword(event.currentTarget.value)}
-                required
-              />
+        {/* Abstract Shapes */}
+        <Box
+          style={{
+            position: "absolute",
+            bottom: -100,
+            right: -100,
+            width: 500,
+            height: 500,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)",
+            zIndex: 1,
+          }}
+        />
+      </Box>
 
-              {error && (
-                <Alert
-                  color="red"
-                  title="Login Gagal"
-                  icon={<IconAlertCircle />}
-                  withCloseButton
-                  onClose={() => setError('')}
-                >
-                  {error}
-                </Alert>
-              )}
+      {/* Right Side - Login Form */}
+      <Flex
+        flex={1}
+        align="center"
+        justify="center"
+        bg="gray.0"
+        style={{ position: "relative" }}
+      >
+        <Container size="xs" w="100%" p="xl">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Stack gap="lg">
+              <Box>
+                <Title order={2} fw={800}>
+                  Selamat Datang Kembali
+                </Title>
+                <Text c="dimmed" size="sm">
+                  Masuk ke akun administrator Anda
+                </Text>
+              </Box>
 
-              <Button type="submit" fullWidth mt="md" loading={loading}>
-                Login
-              </Button>
+              <form onSubmit={handleLogin}>
+                <Stack gap="md">
+                  <TextInput
+                    label="Username"
+                    placeholder="Masukkan username"
+                    size="md"
+                    leftSection={<IconAt size={18} />}
+                    value={username}
+                    onChange={(event) => setUsername(event.currentTarget.value)}
+                    required
+                  />
+                  <PasswordInput
+                    label="Password"
+                    placeholder="Masukkan password"
+                    size="md"
+                    leftSection={<IconLock size={18} />}
+                    value={password}
+                    onChange={(event) => setPassword(event.currentTarget.value)}
+                    required
+                  />
+
+                  {error && (
+                    <Alert
+                      variant="light"
+                      color="red"
+                      title="Login Gagal"
+                      icon={<IconAlertCircle />}
+                      withCloseButton
+                      onClose={() => setError("")}
+                    >
+                      {error}
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    mt="md"
+                    size="md"
+                    loading={loading}
+                    variant="gradient"
+                    gradient={{ from: "violet", to: "indigo" }}
+                  >
+                    Masuk Dashboard
+                  </Button>
+                </Stack>
+              </form>
+
+              <Text c="dimmed" size="xs" ta="center">
+                &copy; {new Date().getFullYear()} CBT Realtime System. All
+                rights reserved.
+              </Text>
             </Stack>
-          </form>
-        </Paper>
-      </Stack>
-    </Container>
+          </motion.div>
+        </Container>
+      </Flex>
+    </Flex>
   );
 }
