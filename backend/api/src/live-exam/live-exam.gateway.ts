@@ -89,6 +89,7 @@ export class LiveExamGateway implements OnModuleInit {
     examId: number,
     participantId: number,
     participantName: string,
+    batchName?: string, // Tambahkan parameter batchName
   ) {
     const roomName = `exam-${examId}-monitoring`;
 
@@ -97,22 +98,33 @@ export class LiveExamGateway implements OnModuleInit {
       id: participantId,
       name: participantName,
       score: null, // Peserta baru belum punya skor
+      examinee: {
+        batch: {
+          name: batchName || 'Umum',
+        },
+      },
     });
 
     console.log(
-      `Menyiarkan peserta baru ke ruangan ${roomName}: ${participantName} (ID: ${participantId})`,
+      `Menyiarkan peserta baru ke ruangan ${roomName}: ${participantName} (Batch: ${batchName})`,
     );
   }
 
-  broadcastStatusUpdate(examId: number, participantId: number, newStatus: ParticipantStatus) {
-  const roomName = `exam-${examId}-monitoring`;
-  
-  // Siarkan event 'status-update' ke ruangan monitoring
-  this.server.to(roomName).emit('status-update', {
-    participantId,
-    newStatus,
-  });
+  broadcastStatusUpdate(
+    examId: number,
+    participantId: number,
+    newStatus: ParticipantStatus,
+  ) {
+    const roomName = `exam-${examId}-monitoring`;
 
-  console.log(`Menyiarkan update status ke ruangan ${roomName}: Peserta ${participantId} status baru ${newStatus}`);
-}
+    // Siarkan event 'status-update' ke ruangan monitoring
+    this.server.to(roomName).emit('status-update', {
+      participantId,
+      newStatus,
+    });
+
+    console.log(
+      `Menyiarkan update status ke ruangan ${roomName}: Peserta ${participantId} status baru ${newStatus}`,
+    );
+  }
 }

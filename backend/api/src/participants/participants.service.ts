@@ -139,7 +139,7 @@ export class ParticipantsService {
     // Ambil data participant LENGKAP dengan relasi exam dan examinee
     const participant = await this.participantRepository.findOne({
       where: { id: participantId },
-      relations: ['exam', 'examinee'], // <-- Pastikan relasi ini diambil
+      relations: ['exam', 'examinee', 'examinee.batch'], // <-- Pastikan relasi batch diambil
     });
 
     if (!participant) {
@@ -161,6 +161,7 @@ export class ParticipantsService {
           savedParticipant.exam.id,
           savedParticipant.id,
           savedParticipant.examinee.name,
+          savedParticipant.examinee.batch?.name, // Kirim nama batch
         );
       }
       // --- AKHIR LOGIKA BARU ---
@@ -453,18 +454,18 @@ export class ParticipantsService {
   }
 
   async findAllByExaminee(examineeId: number) {
-  return this.participantRepository.find({
-    where: { 
-      examinee: { id: examineeId }
-    },
-    relations: {
-      exam: true,
-    },
-    order: {
-      id: 'DESC', // or use 'start_time' if you want to order by exam start time
-    },
-  });
-}
+    return this.participantRepository.find({
+      where: {
+        examinee: { id: examineeId },
+      },
+      relations: {
+        exam: true,
+      },
+      order: {
+        id: 'DESC', // or use 'start_time' if you want to order by exam start time
+      },
+    });
+  }
 
   private async recalculateAndBroadcastScore(participantId: number) {
     const correctAnswers = await this.answerRepository.find({

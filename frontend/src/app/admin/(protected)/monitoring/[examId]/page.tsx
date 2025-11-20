@@ -24,6 +24,7 @@ import {
   RingProgress,
   ThemeIcon,
   useMantineColorScheme,
+  Select,
 } from "@mantine/core";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
@@ -38,6 +39,7 @@ import {
   IconUser,
   IconClock,
   IconCheck,
+  IconFilter,
 } from "@tabler/icons-react";
 
 interface ParticipantScore {
@@ -46,6 +48,7 @@ interface ParticipantScore {
   score: number | null;
   status: "started" | "finished" | "pending";
   start_time?: string;
+  batch?: string; // Tambahkan field batch
 }
 
 interface ExamInfo {
@@ -72,9 +75,10 @@ export default function MonitoringPage() {
     null,
     null,
   ]);
-  const [quickFilter, setQuickFilter] = useState<string | null>(null);
+  const [selectedBatch, setSelectedBatch] = useState<string | null>(null); // State untuk filter batch
+  const [batchOptions, setBatchOptions] = useState<string[]>([]); // Opsi batch yang tersedia
   const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
-
+  
   // 1. Ambil data awal peserta
   useEffect(() => {
     if (!examId) return;
@@ -82,22 +86,35 @@ export default function MonitoringPage() {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
+        // Fetch participants and exam info
         const [participantsRes, examRes] = await Promise.all([
           api.get(`/exams/${examId}/participants`),
           api.get(`/exams/${examId}`),
         ]);
 
-        const initialScores = participantsRes.data.map((p: any) => ({
-          id: p.id,
-          name: p.examinee.name,
-          score: p.current_score,
-          status: p.status,
-          start_time: p.start_time,
-        }));
+        const initialScores = participantsRes.data.map((p: any) => {
+            return {
+              id: p.id,
+              name: p.examinee.name,
+              score: p.current_score,
+              status: p.status,
+              start_time: p.start_time,
+              // Sekarang backend sudah mengirimkan data batch!
+              batch: p.examinee.batch?.name || "Umum",
+            };
+        });
 
         setAllParticipants(initialScores);
         setExamInfo({ title: examRes.data.title, code: examRes.data.code });
+
+        // Ekstrak daftar batch unik untuk filter dari data peserta yang ada
+        const uniqueBatches = Array.from(
+          new Set(initialScores.map((p: ParticipantScore) => p.batch || "Umum"))
+        ).filter(Boolean) as string[];
+        setBatchOptions(uniqueBatches.sort());
+
       } catch (err) {
+        console.error(err);
         setError("Gagal mengambil data awal.");
       } finally {
         setLoading(false);
@@ -152,12 +169,15 @@ export default function MonitoringPage() {
 
     socket.on("new-participant", (newParticipantData: any) => {
       console.log("Peserta baru bergabung:", newParticipantData);
-      // --- PERBAIKAN #3: Pastikan 'status' ada untuk peserta baru ---
+      
       const newParticipant: ParticipantScore = {
         id: newParticipantData.id,
         name: newParticipantData.name,
         score: newParticipantData.score ?? null,
         status: "started", // Asumsikan baru bergabung = started
+        // Pastikan data batch juga diambil untuk peserta baru (jika tersedia di event)
+        // Note: Backend socket event mungkin perlu diupdate juga jika belum mengirim batch
+        batch: newParticipantData.examinee?.batch?.name || "Umum", 
       };
 
       setAllParticipants((currentParticipants) => {
@@ -166,6 +186,16 @@ export default function MonitoringPage() {
         }
         const newList = [...currentParticipants, newParticipant];
         newList.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+        
+        // Update opsi batch jika ada batch baru yang belum ada di list
+        const batchName = newParticipant.batch || "Umum";
+        setBatchOptions(prev => {
+            if (!prev.includes(batchName)) {
+                return [...prev, batchName].sort();
+            }
+            return prev;
+        });
+
         return newList;
       });
     });
@@ -192,7 +222,7 @@ export default function MonitoringPage() {
     };
   }, [examId]);
 
-  // Efek ini berjalan setiap kali data master atau filter tanggal berubah
+  // Efek ini berjalan setiap kali data master, filter tanggal, atau filter batch berubah
   useEffect(() => {
     let filtered = [...allParticipants]; // Salin data master
 
@@ -214,12 +244,17 @@ export default function MonitoringPage() {
       });
     }
 
+    // Filter Batch
+    if (selectedBatch) {
+      filtered = filtered.filter((p) => p.batch === selectedBatch);
+    }
+
     // Urutkan ulang hasil filter (ini juga menangani pengurutan awal!)
     filtered.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
 
     // Simpan hasil filter ke state yang akan ditampilkan
     setFilteredParticipants(filtered);
-  }, [allParticipants, dateRange]);
+  }, [allParticipants, dateRange, selectedBatch]);
 
   const handleExport = () => {
     // --- 1. MEMBUAT NAMA FILE DINAMIS ---
@@ -238,6 +273,7 @@ export default function MonitoringPage() {
     const dataToExport = filteredParticipants.map((p) => ({
       "ID Peserta": p.id,
       "Nama Peserta": p.name,
+      "Batch/Kelas": p.batch || "-",
       Skor: p.score ?? "N/A",
       Status: p.status === "finished" ? "Selesai" : "Mengerjakan",
     }));
@@ -260,6 +296,11 @@ export default function MonitoringPage() {
     } else {
       headerData.push(["Tanggal Ekspor:", dayjs().format("DD MMM YYYY")]);
     }
+    
+    if (selectedBatch) {
+        headerData.push(["Filter Batch:", selectedBatch]);
+    }
+
     headerData.push([]); // Baris kosong sebelum tabel
 
     // --- 4. MEMBUAT WORKSHEET ---
@@ -278,6 +319,7 @@ export default function MonitoringPage() {
     worksheet["!cols"] = [
       { wch: 10 }, // ID Peserta
       { wch: 30 }, // Nama Peserta
+      { wch: 20 }, // Batch/Kelas
       { wch: 10 }, // Skor
       { wch: 15 }, // Status
     ];
@@ -333,22 +375,36 @@ export default function MonitoringPage() {
 
       {/* --- KONTROL FILTER & EKSPOR BARU --- */}
       <Paper withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="flex-end" gap="md">
-          <DatePickerInput
-            type="range"
-            label="Filter Tanggal"
-            placeholder="Pilih rentang tanggal"
-            value={dateRange}
-            onChange={(value) =>
-              setDateRange([
-                value[0] ? new Date(value[0]) : null,
-                value[1] ? new Date(value[1]) : null,
-              ])
-            }
-            clearable
-            style={{ flex: 1, maxWidth: 300 }}
-            radius="md"
-          />
+        <Flex justify="space-between" align="flex-end" gap="md" wrap="wrap">
+          <Group style={{ flex: 1 }}>
+            <DatePickerInput
+              type="range"
+              label="Filter Tanggal"
+              placeholder="Pilih rentang tanggal"
+              value={dateRange}
+              onChange={(value) =>
+                setDateRange([
+                  value[0] ? new Date(value[0]) : null,
+                  value[1] ? new Date(value[1]) : null,
+                ])
+              }
+              clearable
+              style={{ flex: 1, minWidth: 200 }}
+              radius="md"
+            />
+            <Select
+                label="Filter Batch"
+                placeholder="Semua Batch"
+                data={batchOptions}
+                value={selectedBatch}
+                onChange={setSelectedBatch}
+                clearable
+                searchable
+                style={{ flex: 1, minWidth: 150 }}
+                radius="md"
+                leftSection={<IconFilter size={16} />}
+            />
+          </Group>
           <Button
             leftSection={<IconFileExport size={16} />}
             onClick={handleExport}
@@ -426,9 +482,9 @@ export default function MonitoringPage() {
                               ? "Selesai"
                               : "Mengerjakan"}
                           </Badge>
-                          <Text size="xs" c="dimmed">
-                            ID: {p.id}
-                          </Text>
+                          <Badge size="sm" variant="outline" color="gray">
+                            {p.batch || "Umum"}
+                          </Badge>
                         </Group>
                       </Box>
                     </Group>
@@ -463,7 +519,7 @@ export default function MonitoringPage() {
               <IconUser size={32} />
             </ThemeIcon>
             <Text c="dimmed" fw={500}>
-              Belum ada peserta yang memulai ujian.
+              Belum ada peserta yang memulai ujian atau sesuai dengan filter.
             </Text>
           </Stack>
         </Center>

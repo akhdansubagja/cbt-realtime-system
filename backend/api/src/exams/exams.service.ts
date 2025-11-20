@@ -147,7 +147,7 @@ export class ExamsService {
     // 1. Ambil semua peserta, termasuk 'start_time' dan 'exam' untuk kalkulasi
     const participants = await this.participantRepository.find({
       where: { exam: { id: examId } },
-      relations: ['examinee', 'exam'], // <-- Ambil relasi 'exam'
+      relations: ['examinee', 'examinee.batch', 'exam'], // <-- Ambil relasi 'exam' dan 'batch'
       select: ['id', 'examinee', 'final_score', 'status', 'start_time', 'exam'], // <-- Ambil 'exam'
     });
 
