@@ -20,6 +20,8 @@ import {
   rem,
   Menu,
   Skeleton,
+  Switch,
+  Badge,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
@@ -38,6 +40,8 @@ import {
   IconDotsVertical,
   IconPencil,
   IconFilter,
+  IconCheck,
+  IconX,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
@@ -50,8 +54,9 @@ interface Examinee {
   id: number;
   name: string;
   created_at: string;
-  batch: Batch | null; // <-- GANTI dari batch_id?: number
+  batch: Batch | null;
   avatar_url: string | null;
+  is_active: boolean; // <-- TAMBAHAN
 }
 
 export default function ExamineesPage() {
@@ -77,7 +82,6 @@ export default function ExamineesPage() {
     null
   );
 
-  // --- STATE BARU 2: MULTI-SELECT ---
   const [selectedRecords, setSelectedRecords] = useState<Examinee[]>([]);
 
   const router = useRouter();
@@ -86,7 +90,6 @@ export default function ExamineesPage() {
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // const untuk preiview avatar
   const [currentAvatarPreview, setCurrentAvatarPreview] = useState<
     string | null
   >(null);
@@ -106,8 +109,6 @@ export default function ExamineesPage() {
   const fetchBatches = async () => {
     try {
       const response = await api.get("/batches");
-
-      // PERBAIKAN: Endpoint ini mengembalikan array secara langsung
       setBatches(response.data);
     } catch (err) {
       console.error("Gagal mengambil data batch untuk dropdown");
@@ -121,7 +122,6 @@ export default function ExamineesPage() {
   ) => {
     try {
       setLoading(true);
-      // Bangun URL dengan parameter filter
       let url = `/examinees?page=${page}&limit=${pageSize}&search=${search}`;
       if (batchId) {
         url += `&batch_id=${batchId}`;
@@ -138,9 +138,7 @@ export default function ExamineesPage() {
   };
 
   useEffect(() => {
-    // Panggil fungsi yang sudah dideklarasikan di atas
     fetchExaminees();
-    // --- PERUBAHAN 2 DI SINI ---
   }, [activePage, debouncedQuery, pageSize, selectedBatchFilter]);
 
   useEffect(() => {
@@ -156,7 +154,7 @@ export default function ExamineesPage() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
-    }, 500); // 500ms delay
+    }, 500);
 
     return () => {
       clearTimeout(handler);
@@ -166,7 +164,6 @@ export default function ExamineesPage() {
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
     if (examinee.avatar_url) {
-      // Pastikan URL ini sesuai dengan cara Anda menampilkan gambar di tabel
       setCurrentAvatarPreview(`http://localhost:3000/${examinee.avatar_url}`);
     } else {
       setCurrentAvatarPreview(null);
@@ -174,9 +171,85 @@ export default function ExamineesPage() {
     form.setValues({
       name: examinee.name,
       batch_id: examinee.batch?.id ? String(examinee.batch.id) : null,
-      avatar: null, // Selalu reset input file saat edit
+      avatar: null,
     });
     open();
+  };
+
+  // --- LOGIKA BARU: TOGGLE STATUS ---
+  const handleStatusToggle = async (examinee: Examinee) => {
+    // Optimistic update
+    const newStatus = !examinee.is_active;
+    setExaminees((current) =>
+      current.map((e) =>
+        e.id === examinee.id ? { ...e, is_active: newStatus } : e
+      )
+    );
+
+    try {
+      // Kita gunakan endpoint bulk untuk update satu item juga, atau endpoint update biasa
+      // Tapi karena kita belum update endpoint update biasa untuk handle is_active secara eksplisit (walaupun DTO mungkin handle),
+      // lebih aman pakai bulk endpoint yang baru kita buat.
+      await api.patch("/examinees/bulk/status", {
+        ids: [examinee.id],
+        is_active: newStatus,
+      });
+      
+      notifications.show({
+        title: "Status Diperbarui",
+        message: `Peserta ${examinee.name} sekarang ${newStatus ? "Aktif" : "Tidak Aktif"}`,
+        color: "teal",
+        position: "bottom-center",
+      });
+    } catch (err) {
+      // Revert jika gagal
+      setExaminees((current) =>
+        current.map((e) =>
+          e.id === examinee.id ? { ...e, is_active: !newStatus } : e
+        )
+      );
+      notifications.show({
+        title: "Gagal",
+        message: "Gagal memperbarui status.",
+        color: "red",
+      });
+    }
+  };
+
+  // --- LOGIKA BARU: BULK STATUS ---
+  const handleBulkStatusUpdate = async (isActive: boolean) => {
+    const count = selectedRecords.length;
+    if (count === 0) return;
+
+    try {
+      await api.patch("/examinees/bulk/status", {
+        ids: selectedRecords.map((r) => r.id),
+        is_active: isActive,
+      });
+
+      // Update local state
+      setExaminees((current) =>
+        current.map((e) =>
+          selectedRecords.some((r) => r.id === e.id)
+            ? { ...e, is_active: isActive }
+            : e
+        )
+      );
+      
+      setSelectedRecords([]); // Clear selection
+
+      notifications.show({
+        title: "Berhasil",
+        message: `${count} peserta berhasil di-${isActive ? "aktifkan" : "nonaktifkan"}.`,
+        color: "teal",
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Gagal",
+        message: "Gagal memperbarui status massal.",
+        color: "red",
+      });
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -188,8 +261,6 @@ export default function ExamineesPage() {
 
     if (result.isConfirmed) {
       try {
-        // Karena backend belum ada endpoint deleteBulk, kita loop (Promise.all)
-        // Ini solusi cepat tanpa ubah backend besar-besaran
         const deletePromises = selectedRecords.map((item) =>
           api.delete(`/examinees/${item.id}`)
         );
@@ -198,8 +269,8 @@ export default function ExamineesPage() {
 
         await showSuccessAlert("Berhasil!", `${count} peserta telah dihapus.`);
 
-        setSelectedRecords([]); // Reset checklist
-        fetchExaminees(); // Refresh data
+        setSelectedRecords([]);
+        fetchExaminees();
       } catch (err) {
         notifications.show({
           title: "Gagal",
@@ -219,10 +290,7 @@ export default function ExamineesPage() {
     if (result.isConfirmed) {
       try {
         await api.delete(`/examinees/${examineeId}`);
-
-        // Update state tabel
         setExaminees((current) => current.filter((e) => e.id !== examineeId));
-        // 2. Panggil Alert Sukses di sini
         await showSuccessAlert("Terhapus!", "Data peserta berhasil dihapus.");
       } catch (err) {
         notifications.show({
@@ -236,7 +304,6 @@ export default function ExamineesPage() {
 
   const handleSubmit = async (values: typeof form.values) => {
     try {
-      // 1. Buat FormData
       const formData = new FormData();
       formData.append("name", values.name);
 
@@ -248,19 +315,16 @@ export default function ExamineesPage() {
       }
 
       if (editingExaminee) {
-        // 2. Kirim sebagai PATCH (catatan: beberapa backend butuh _method='PATCH')
         await api.patch(`/examinees/${editingExaminee.id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        // 3. Kirim sebagai POST
         await api.post("/examinees", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
 
-      // 4. Logika sisanya sama
-      await fetchExaminees(); // Panggil fetchExaminees yang sudah di-await
+      await fetchExaminees();
 
       notifications.show({
         title: "Berhasil!",
@@ -289,49 +353,13 @@ export default function ExamineesPage() {
     }
   };
 
-
-
-  const rows = examinees.map((examinee) => (
-    <Table.Tr key={examinee.id}>
-      <Table.Td>{examinee.id}</Table.Td>
-      <Table.Td>
-        <Link
-          href={`/admin/examinees/${examinee.id}`}
-          style={{ textDecoration: "none", color: "inherit" }}
-        >
-          {examinee.name}
-        </Link>
-      </Table.Td>
-      <Table.Td>{new Date(examinee.created_at).toLocaleDateString()}</Table.Td>
-      <Table.Td>
-        <Group>
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => openEditModal(examinee)}
-          >
-            Edit
-          </Button>
-          <Button
-            size="xs"
-            color="red"
-            onClick={() => handleDeleteExaminee(examinee.id)}
-          >
-            Hapus
-          </Button>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
-
   const batchOptions = batches.map((batch) => ({
-    value: String(batch.id), // Select butuh value string
+    value: String(batch.id),
     label: batch.name,
   }));
 
   return (
     <>
-      {/* --- MODAL UNTUK GAMBAR --- */}
       <Modal
         opened={imageModalOpened}
         onClose={closeImageModal}
@@ -342,7 +370,6 @@ export default function ExamineesPage() {
         <Image src={selectedImage} alt="Avatar Peserta" />
       </Modal>
 
-      {/* Modal untuk Tambah/Edit */}
       <Modal
         opened={opened}
         onClose={() => {
@@ -361,7 +388,6 @@ export default function ExamineesPage() {
               placeholder="Contoh: Budi Santoso"
               {...form.getInputProps("name")}
             />
-            {/* 1. Preview Avatar Lama (Hanya muncul saat Edit dan user BELUM pilih file baru) */}
             {editingExaminee && currentAvatarPreview && !form.values.avatar && (
               <Center>
                 <Stack align="center" gap="xs">
@@ -373,7 +399,6 @@ export default function ExamineesPage() {
               </Center>
             )}
 
-            {/* 2. Preview Avatar Baru (Muncul jika user BARU SAJA memilih file dari komputer) */}
             {form.values.avatar && (
               <Center>
                 <Stack align="center" gap="xs">
@@ -398,7 +423,6 @@ export default function ExamineesPage() {
               label="Batch"
               placeholder="Pilih batch (Opsional)"
               data={batchOptions}
-              // Konversi nilai form (number) ke string, dan sebaliknya
               value={form.values.batch_id ? String(form.values.batch_id) : null}
               {...form.getInputProps("batch_id")}
               clearable
@@ -413,7 +437,6 @@ export default function ExamineesPage() {
         </form>
       </Modal>
 
-      {/* --- BAGIAN BARU DIMULAI DARI SINI --- */}
       <Stack>
         <PageHeader
           title="Manajemen Peserta"
@@ -424,13 +447,29 @@ export default function ExamineesPage() {
           actions={
             <Group>
               {selectedRecords.length > 0 && (
-                <Button
-                  color="red"
-                  leftSection={<IconTrash size={16} />}
-                  onClick={handleBulkDelete}
-                >
-                  Hapus ({selectedRecords.length})
-                </Button>
+                <>
+                  <Button
+                    color="green"
+                    leftSection={<IconCheck size={16} />}
+                    onClick={() => handleBulkStatusUpdate(true)}
+                  >
+                    Aktifkan ({selectedRecords.length})
+                  </Button>
+                  <Button
+                    color="orange"
+                    leftSection={<IconX size={16} />}
+                    onClick={() => handleBulkStatusUpdate(false)}
+                  >
+                    Nonaktifkan ({selectedRecords.length})
+                  </Button>
+                  <Button
+                    color="red"
+                    leftSection={<IconTrash size={16} />}
+                    onClick={handleBulkDelete}
+                  >
+                    Hapus ({selectedRecords.length})
+                  </Button>
+                </>
               )}
               <Button
                 leftSection={<IconPlus size={16} />}
@@ -447,9 +486,7 @@ export default function ExamineesPage() {
           }
         />
 
-        {/* --- AREA FILTER --- */}
         <Group align="end" grow>
-          {/* Search Input */}
           <TextInput
             style={{ flex: 2 }}
             ref={searchInputRef}
@@ -461,7 +498,6 @@ export default function ExamineesPage() {
             label="Pencarian"
           />
 
-          {/* Filter Batch Dropdown */}
           <Select
             style={{ flex: 1 }}
             label="Filter berdasarkan Batch"
@@ -501,7 +537,7 @@ export default function ExamineesPage() {
               records={examinees}
               selectedRecords={selectedRecords}
               onSelectedRecordsChange={setSelectedRecords}
-              isRecordSelectable={(record) => true} // Semua bisa dipilih
+              isRecordSelectable={(record) => true}
               idAccessor="id"
               columns={[
                 {
@@ -529,11 +565,29 @@ export default function ExamineesPage() {
                 },
                 { accessor: "name", title: "Nama Peserta", sortable: true },
                 {
-                  accessor: "batch", // <-- Ganti accessor ke 'batch' (lebih akurat)
+                  accessor: "batch",
                   title: "Batch",
                   sortable: false,
                   render: (examinee) =>
-                    examinee.batch?.name || <Text c="dimmed">N/A</Text>, // <-- GANTI LOGIKA INI
+                    examinee.batch?.name || <Text c="dimmed">N/A</Text>,
+                },
+                {
+                  accessor: "is_active",
+                  title: "Status",
+                  sortable: false,
+                  width: 100,
+                  render: (examinee) => (
+                    <Box onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                        checked={examinee.is_active}
+                        onChange={() => handleStatusToggle(examinee)}
+                        color="teal"
+                        size="md"
+                        onLabel="ON"
+                        offLabel="OFF"
+                      />
+                    </Box>
+                  ),
                 },
                 {
                   accessor: "created_at",
@@ -586,7 +640,7 @@ export default function ExamineesPage() {
               ]}
               sortStatus={sortStatus}
               onSortStatusChange={setSortStatus}
-              totalRecords={totalPages * pageSize} // Total data dari server
+              totalRecords={totalPages * pageSize}
               recordsPerPage={pageSize}
               page={activePage}
               onPageChange={(p) => setPage(p)}

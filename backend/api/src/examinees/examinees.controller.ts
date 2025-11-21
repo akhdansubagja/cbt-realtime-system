@@ -65,9 +65,19 @@ export class ExamineesController {
     );
   }
 
+  @Patch('bulk/status')
+  updateBulkStatus(@Body() body: { ids: number[]; is_active: boolean }) {
+    return this.examineesService.updateBulkStatus(body.ids, body.is_active);
+  }
+
   @Get('all/simple')
   findAllSimple() {
-    return this.examineesService.findAllSimple();
+    // Filter hanya yang aktif untuk dropdown login
+    return this.examineesService.examineeRepository.find({
+      where: { is_active: true },
+      select: ['id', 'name'],
+      order: { name: 'ASC' },
+    });
   }
 
   @Get(':id')

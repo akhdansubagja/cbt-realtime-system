@@ -17,5 +17,6 @@ import { MulterModule } from '@nestjs/platform-express';
   ],
   controllers: [ExamineesController],
   providers: [ExamineesService],
+  exports: [ExamineesService],
 })
 export class ExamineesModule {}

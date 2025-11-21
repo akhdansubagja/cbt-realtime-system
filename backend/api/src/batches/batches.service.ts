@@ -52,10 +52,7 @@ export class BatchesService {
   }
 
   async remove(id: number) {
-    const batch = await this.batchRepository.findOneBy({ id });
-    if (!batch) {
-      throw new NotFoundException(`Batch with ID ${id} not found`);
-    }
+    const batch = await this.findOne(id);
     await this.batchRepository.remove(batch);
     return { message: `Batch with ID ${id} deleted` };
   }

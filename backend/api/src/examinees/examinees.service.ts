@@ -19,7 +19,7 @@ interface PaginationOptions {
 export class ExamineesService {
   constructor(
     @InjectRepository(Examinee)
-    private readonly examineeRepository: Repository<Examinee>,
+    public readonly examineeRepository: Repository<Examinee>,
     @InjectRepository(Batch)
     private readonly batchRepository: Repository<Batch>,
   ) {}
@@ -210,5 +210,29 @@ export class ExamineesService {
     });
 
     return this.examineeRepository.save(newExaminees);
+  }
+
+  async updateBulkStatus(ids: number[], isActive: boolean) {
+    if (!ids.length) return;
+
+    await this.examineeRepository
+      .createQueryBuilder()
+      .update(Examinee)
+      .set({ is_active: isActive })
+      .where('id IN (:...ids)', { ids })
+      .execute();
+
+    return { message: 'Status updated successfully' };
+  }
+
+  async updateBulkStatusByBatch(batchId: number, isActive: boolean) {
+    await this.examineeRepository
+      .createQueryBuilder()
+      .update(Examinee)
+      .set({ is_active: isActive })
+      .where('batch_id = :batchId', { batchId })
+      .execute();
+
+    return { message: 'Batch status updated successfully' };
   }
 }

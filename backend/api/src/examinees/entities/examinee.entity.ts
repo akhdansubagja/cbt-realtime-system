@@ -23,6 +23,9 @@ export class Examinee {
   @Column({ nullable: true })
   avatar_url: string;
 
+  @Column({ default: true })
+  is_active: boolean;
+
   @OneToMany(() => Participant, (participant) => participant.examinee)
   participants: Participant[];
 
