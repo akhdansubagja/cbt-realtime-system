@@ -81,6 +81,9 @@ export default function ExamineesPage() {
   const [selectedBatchFilter, setSelectedBatchFilter] = useState<string | null>(
     null
   );
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string | null>(
+    null
+  );
 
   const [selectedRecords, setSelectedRecords] = useState<Examinee[]>([]);
 
@@ -118,13 +121,17 @@ export default function ExamineesPage() {
   const fetchExaminees = async (
     page = activePage,
     search = debouncedQuery,
-    batchId = selectedBatchFilter
+    batchId = selectedBatchFilter,
+    status = selectedStatusFilter
   ) => {
     try {
       setLoading(true);
       let url = `/examinees?page=${page}&limit=${pageSize}&search=${search}`;
       if (batchId) {
         url += `&batch_id=${batchId}`;
+      }
+      if (status) {
+        url += `&is_active=${status}`;
       }
 
       const response = await api.get(url);
@@ -139,7 +146,7 @@ export default function ExamineesPage() {
 
   useEffect(() => {
     fetchExaminees();
-  }, [activePage, debouncedQuery, pageSize, selectedBatchFilter]);
+  }, [activePage, debouncedQuery, pageSize, selectedBatchFilter, selectedStatusFilter]);
 
   useEffect(() => {
     setPage(1);
@@ -508,6 +515,20 @@ export default function ExamineesPage() {
             clearable
             leftSection={<IconFilter size={16} />}
           />
+
+          <Select
+            style={{ flex: 1 }}
+            label="Filter Status"
+            placeholder="Semua Status"
+            data={[
+              { value: "true", label: "Aktif" },
+              { value: "false", label: "Tidak Aktif" },
+            ]}
+            value={selectedStatusFilter}
+            onChange={setSelectedStatusFilter}
+            clearable
+            leftSection={<IconFilter size={16} />}
+          />
         </Group>
 
         <Box>
@@ -583,8 +604,8 @@ export default function ExamineesPage() {
                         onChange={() => handleStatusToggle(examinee)}
                         color="teal"
                         size="md"
-                        onLabel="ON"
-                        offLabel="OFF"
+                        onLabel="AKTIF"
+                        offLabel="NONAKTIF"
                       />
                     </Box>
                   ),

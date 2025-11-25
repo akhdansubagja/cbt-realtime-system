@@ -47,6 +47,8 @@ import {
   IconPlus,
   IconDotsVertical,
   IconPencil,
+  IconPlayerPlay,
+  IconPlayerStop,
 } from "@tabler/icons-react"; // IconPlus sudah ada
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
@@ -240,6 +242,57 @@ export default function ExamsPage() {
     }
   };
 
+  const handleAlwaysActivate = async (exam: Exam) => {
+    try {
+      // Set start_time and end_time to null for "Always Active"
+      const response = await api.patch(`/exams/${exam.id}`, {
+        start_time: null,
+        end_time: null,
+      });
+      
+      setExams((current) =>
+        current.map((e) => (e.id === exam.id ? response.data : e))
+      );
+      
+      notifications.show({
+        title: "Berhasil",
+        message: "Ujian diatur menjadi Selalu Aktif.",
+        color: "teal",
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Gagal",
+        message: "Gagal memperbarui status ujian.",
+        color: "red",
+      });
+    }
+  };
+
+  const handleFinishExam = async (exam: Exam) => {
+    try {
+      // Set end_time to now to finish the exam
+      const response = await api.patch(`/exams/${exam.id}`, {
+        end_time: new Date().toISOString(),
+      });
+
+      setExams((current) =>
+        current.map((e) => (e.id === exam.id ? response.data : e))
+      );
+
+      notifications.show({
+        title: "Berhasil",
+        message: "Ujian telah diselesaikan.",
+        color: "teal",
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Gagal",
+        message: "Gagal menyelesaikan ujian.",
+        color: "red",
+      });
+    }
+  };
+
   const handleSubmit = async (values: typeof form.values) => {
     const payload = {
       ...values,
@@ -347,26 +400,31 @@ export default function ExamsPage() {
 
     let color: string;
     let text: string;
+    let variant: string = "light";
 
     if (end && now > end) {
       color = "gray";
       text = "Selesai";
+      variant = "outline";
     } else if (start && now >= start) {
       color = "green";
       text = "Berlangsung";
+      variant = "filled";
     } else if (start && now < start) {
       color = "blue";
       text = "Terjadwal";
+      variant = "light";
     } else {
       color = "cyan";
       text = "Selalu Aktif";
+      variant = "dot";
     }
 
     return (
       <Group justify="center">
-        <Tooltip label={text} withArrow position="top">
-          <Indicator color={color} size={15} processing={color === "green"} />
-        </Tooltip>
+        <Badge color={color} variant={variant} size="md">
+          {text}
+        </Badge>
       </Group>
     );
   };
@@ -747,6 +805,20 @@ export default function ExamsPage() {
                             }
                           >
                             Monitor Ujian
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconPlayerPlay size={14} />}
+                            color="blue"
+                            onClick={() => handleAlwaysActivate(exam)}
+                          >
+                            Selalu Aktif
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconPlayerStop size={14} />}
+                            color="orange"
+                            onClick={() => handleFinishExam(exam)}
+                          >
+                            Selesaikan Ujian
                           </Menu.Item>
                           <Menu.Item
                             leftSection={<IconPencil size={14} />}

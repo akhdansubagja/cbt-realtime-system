@@ -21,7 +21,7 @@ DONE8. buat agar grafik pada halaman detail batch agar lebih bagus dan lebih fun
 
 DONE9. fitur export ke excel pada halaman detail batch, yang dapat mengexport keseluruhan informasi yang ada, baik informasi tiap peserta ujian, maupun informasi tiap grafik yang ada
 
-10. buat agar pada halaman utama pada saat ingin ujian, yaitu pada halaman peserta harus memasukkan nama dan kelas, hanya peserta yang sudah dipilih dan ditentukan oleh admin, dapat menginputkan namanya, jadi tidak keseluruhan peserta akan ditampilkan di dalam suatu form tersebut
+DONE10. buat agar pada halaman utama pada saat ingin ujian, yaitu pada halaman peserta harus memasukkan nama dan kelas, hanya peserta yang sudah dipilih dan ditentukan oleh admin, dapat menginputkan namanya, jadi tidak keseluruhan peserta akan ditampilkan di dalam suatu form tersebut
 
 11. buat agar jumlah menit ujian pada peserta agar ditampilkan, maksudnya misalkan Freya mengerjakan ujian Informatika dengan waktu berapa menit berapa detik.
 

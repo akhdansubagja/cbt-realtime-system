@@ -53,7 +53,8 @@ export class ExamineesController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('search') search: string,
-    @Query('batch_id') batch_id?: string, // <-- TAMBAHKAN INI
+    @Query('batch_id') batch_id?: string,
+    @Query('is_active') is_active?: string, // <-- TAMBAHAN
   ) {
     return this.examineesService.findAll(
       {
@@ -61,7 +62,8 @@ export class ExamineesController {
         limit: parseInt(limit, 10),
       },
       search,
-      batch_id ? parseInt(batch_id, 10) : undefined, // <-- Teruskan ke service
+      batch_id ? parseInt(batch_id, 10) : undefined,
+      is_active, // <-- Teruskan ke service
     );
   }
 

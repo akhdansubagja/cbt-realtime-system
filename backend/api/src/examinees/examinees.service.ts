@@ -49,7 +49,12 @@ export class ExamineesService {
     return this.examineeRepository.save(examinee);
   }
 
-  async findAll(options: PaginationOptions, search?: string, batchId?: number) {
+  async findAll(
+    options: PaginationOptions,
+    search?: string,
+    batchId?: number,
+    isActive?: string,
+  ) {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
@@ -63,6 +68,11 @@ export class ExamineesService {
     // TAMBAHAN: Filter by Batch ID
     if (batchId) {
       whereCondition.batch = { id: batchId };
+    }
+
+    // TAMBAHAN: Filter by Status
+    if (isActive !== undefined && isActive !== null && isActive !== '') {
+      whereCondition.is_active = isActive === 'true';
     }
 
     const [data, total] = await this.examineeRepository.findAndCount({

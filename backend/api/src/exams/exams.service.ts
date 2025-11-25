@@ -81,37 +81,42 @@ export class ExamsService {
       end_time: updateExamDto.end_time,
     });
 
-    // 2. Hapus semua soal manual dan aturan acak yang lama
-    await this.examQuestionRepository.delete({ exam: { id } });
-    await this.examRuleRepository.delete({ exam: { id } });
-
     const exam = { id }; // Objek referensi
 
-    // 3. Masukkan kembali soal manual yang baru (jika ada)
-    if (
-      updateExamDto.manual_questions &&
-      updateExamDto.manual_questions.length > 0
-    ) {
-      const manualQuestions = updateExamDto.manual_questions.map((q) =>
-        this.examQuestionRepository.create({
-          exam,
-          question: { id: q.question_id },
-          point: q.point,
-        }),
-      );
-      await this.examQuestionRepository.save(manualQuestions);
+    // 2. Update soal manual (HANYA JIKA DIKIRIM DI DTO)
+    if (updateExamDto.manual_questions !== undefined) {
+      // Hapus yang lama
+      await this.examQuestionRepository.delete({ exam: { id } });
+
+      // Masukkan yang baru jika array tidak kosong
+      if (updateExamDto.manual_questions.length > 0) {
+        const manualQuestions = updateExamDto.manual_questions.map((q) =>
+          this.examQuestionRepository.create({
+            exam,
+            question: { id: q.question_id },
+            point: q.point,
+          }),
+        );
+        await this.examQuestionRepository.save(manualQuestions);
+      }
     }
 
-    // 4. Masukkan kembali aturan acak yang baru (jika ada)
-    if (updateExamDto.random_rules && updateExamDto.random_rules.length > 0) {
-      const randomRules = updateExamDto.random_rules.map((r) =>
-        this.examRuleRepository.create({
-          exam,
-          question_bank: { id: r.question_bank_id },
-          ...r,
-        }),
-      );
-      await this.examRuleRepository.save(randomRules);
+    // 3. Update aturan acak (HANYA JIKA DIKIRIM DI DTO)
+    if (updateExamDto.random_rules !== undefined) {
+      // Hapus yang lama
+      await this.examRuleRepository.delete({ exam: { id } });
+
+      // Masukkan yang baru jika array tidak kosong
+      if (updateExamDto.random_rules.length > 0) {
+        const randomRules = updateExamDto.random_rules.map((r) =>
+          this.examRuleRepository.create({
+            exam,
+            question_bank: { id: r.question_bank_id },
+            ...r,
+          }),
+        );
+        await this.examRuleRepository.save(randomRules);
+      }
     }
 
     return this.findOne(id);
