@@ -90,6 +90,7 @@ export class LiveExamGateway implements OnModuleInit {
     participantId: number,
     participantName: string,
     batchName?: string, // Tambahkan parameter batchName
+    startTime?: Date, // Tambahkan parameter startTime
   ) {
     const roomName = `exam-${examId}-monitoring`;
 
@@ -98,6 +99,7 @@ export class LiveExamGateway implements OnModuleInit {
       id: participantId,
       name: participantName,
       score: null, // Peserta baru belum punya skor
+      start_time: startTime, // Kirim waktu mulai
       examinee: {
         batch: {
           name: batchName || 'Umum',
@@ -114,6 +116,7 @@ export class LiveExamGateway implements OnModuleInit {
     examId: number,
     participantId: number,
     newStatus: ParticipantStatus,
+    finishedAt?: Date, // Tambahkan parameter finishedAt
   ) {
     const roomName = `exam-${examId}-monitoring`;
 
@@ -121,6 +124,7 @@ export class LiveExamGateway implements OnModuleInit {
     this.server.to(roomName).emit('status-update', {
       participantId,
       newStatus,
+      finished_at: finishedAt, // Kirim waktu selesai
     });
 
     console.log(

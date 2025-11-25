@@ -162,6 +162,7 @@ export class ParticipantsService {
           savedParticipant.id,
           savedParticipant.examinee.name,
           savedParticipant.examinee.batch?.name, // Kirim nama batch
+          savedParticipant.start_time, // Kirim waktu mulai
         );
       }
       // --- AKHIR LOGIKA BARU ---
@@ -223,6 +224,7 @@ export class ParticipantsService {
 
     participant.status = ParticipantStatus.FINISHED;
     participant.final_score = totalScore;
+    participant.finished_at = new Date(); // Set waktu selesai
     const savedParticipant = await this.participantRepository.save(participant); // Simpan perubahan
 
     console.log(
@@ -236,6 +238,7 @@ export class ParticipantsService {
         savedParticipant.exam.id,
         savedParticipant.id,
         ParticipantStatus.FINISHED, // Kirim status baru
+        savedParticipant.finished_at, // Kirim waktu selesai
       );
     }
     // --- AKHIR LOGIKA BARU ---

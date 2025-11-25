@@ -48,6 +48,7 @@ interface ParticipantScore {
   score: number | null;
   status: "started" | "finished" | "pending";
   start_time?: string;
+  finished_at?: string; // Tambahkan field finished_at
   batch?: string; // Tambahkan field batch
 }
 
@@ -55,6 +56,40 @@ interface ExamInfo {
   title: string;
   code: string;
 }
+
+// Komponen Timer untuk menghitung durasi secara real-time
+const DurationTimer = ({ startTime, status, finishedAt }: { startTime?: string; status: string; finishedAt?: string }) => {
+  const [duration, setDuration] = useState<string>("-");
+
+  useEffect(() => {
+    if (!startTime) return;
+
+    const calculateDuration = () => {
+      const start = new Date(startTime).getTime();
+      const end = status === 'finished' && finishedAt ? new Date(finishedAt).getTime() : Date.now();
+      const diff = Math.max(0, Math.floor((end - start) / 1000));
+
+      const hours = Math.floor(diff / 3600);
+      const minutes = Math.floor((diff % 3600) / 60);
+      const seconds = diff % 60;
+
+      if (hours > 0) {
+        setDuration(`${hours}j ${minutes}m ${seconds}d`);
+      } else {
+        setDuration(`${minutes}m ${seconds}d`);
+      }
+    };
+
+    calculateDuration(); // Hitung langsung
+
+    if (status === 'started') {
+      const interval = setInterval(calculateDuration, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [startTime, status, finishedAt]);
+
+  return <Text size="sm" fw={500}>{duration}</Text>;
+};
 
 export default function MonitoringPage() {
   const params = useParams();
@@ -99,6 +134,7 @@ export default function MonitoringPage() {
               score: p.current_score,
               status: p.status,
               start_time: p.start_time,
+              finished_at: p.finished_at, // Map finished_at
               // Sekarang backend sudah mengirimkan data batch!
               batch: p.examinee.batch?.name || "Umum",
             };
@@ -175,6 +211,7 @@ export default function MonitoringPage() {
         name: newParticipantData.name,
         score: newParticipantData.score ?? null,
         status: "started", // Asumsikan baru bergabung = started
+        start_time: newParticipantData.start_time, // Ambil waktu mulai dari event
         // Pastikan data batch juga diambil untuk peserta baru (jika tersedia di event)
         // Note: Backend socket event mungkin perlu diupdate juga jika belum mengirim batch
         batch: newParticipantData.examinee?.batch?.name || "Umum", 
@@ -202,13 +239,19 @@ export default function MonitoringPage() {
 
     socket.on(
       "status-update",
-      (data: { participantId: number; newStatus: "started" | "finished" }) => {
+      (data: { participantId: number; newStatus: "started" | "finished"; finished_at?: string }) => {
         console.log("Menerima update status:", data);
 
         // Perbarui state 'master' (allParticipants)
         setAllParticipants((currentParticipants) =>
           currentParticipants.map((p) =>
-            p.id === data.participantId ? { ...p, status: data.newStatus } : p
+            p.id === data.participantId
+              ? {
+                  ...p,
+                  status: data.newStatus,
+                  finished_at: data.finished_at, // Update waktu selesai
+                }
+              : p
           )
         );
       }
@@ -366,7 +409,7 @@ export default function MonitoringPage() {
                 Live Update
               </Badge>
               <Text c="dimmed" size="sm">
-                {filteredParticipants.length} Peserta Aktif
+                {filteredParticipants.length} Peserta
               </Text>
             </Group>
           </Box>
@@ -490,9 +533,37 @@ export default function MonitoringPage() {
                     </Group>
 
                     <Group>
+                      <Box ta="right" mr="md">
+                        <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">
+                          Mulai
+                        </Text>
+                        <Text size="sm" fw={500}>
+                          {p.start_time
+                            ? dayjs(p.start_time).format("D MMM YYYY, HH:mm:ss")
+                            : "-"}
+                        </Text>
+                      </Box>
+                      <Box ta="right" mr="md">
+                        <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">
+                          Selesai
+                        </Text>
+                        <Text size="sm" fw={500}>
+                          {p.finished_at
+                            ? dayjs(p.finished_at).format("D MMM YYYY, HH:mm:ss")
+                            : "-"}
+                        </Text>
+                      </Box>
+                      <Box ta="right" mr="md">
+                         <Text size="xs" c="dimmed" fw={600} tt="uppercase">Durasi</Text>
+                         <DurationTimer 
+                            startTime={p.start_time} 
+                            status={p.status} 
+                            finishedAt={p.finished_at} 
+                         />
+                      </Box>
                       <Box ta="right">
                         <Text size="xs" c="dimmed" fw={600} tt="uppercase">
-                          Skor Saat Ini
+                          Skor
                         </Text>
                         <Text
                           fz={28}

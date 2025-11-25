@@ -28,7 +28,7 @@ export class Participant {
   @ManyToOne(() => Exam, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'exam_id' })
   exam: Exam;
-  
+
   // --- TAMBAHKAN RELASI BARU INI ---
   @OneToMany(() => ParticipantExamQuestion, (peq) => peq.participant)
   generated_questions: ParticipantExamQuestion[];
@@ -46,6 +46,9 @@ export class Participant {
 
   @Column({ type: 'timestamptz', nullable: true })
   start_time: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  finished_at: Date;
 
   @UpdateDateColumn()
   updated_at: Date;

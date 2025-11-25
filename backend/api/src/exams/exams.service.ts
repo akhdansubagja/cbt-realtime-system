@@ -153,7 +153,15 @@ export class ExamsService {
     const participants = await this.participantRepository.find({
       where: { exam: { id: examId } },
       relations: ['examinee', 'examinee.batch', 'exam'], // <-- Ambil relasi 'exam' dan 'batch'
-      select: ['id', 'examinee', 'final_score', 'status', 'start_time', 'exam'], // <-- Ambil 'exam'
+      select: [
+        'id',
+        'examinee',
+        'final_score',
+        'status',
+        'start_time',
+        'finished_at',
+        'exam',
+      ], // <-- Ambil 'finished_at'
     });
 
     // 2. Untuk setiap peserta, hitung skor dan tentukan status aktualnya
@@ -210,10 +218,34 @@ export class ExamsService {
       }),
     );
 
-    // Urutkan berdasarkan skor
-    participantsWithDetails.sort(
-      (a, b) => (b.current_score ?? -Infinity) - (a.current_score ?? -Infinity),
-    );
+    // Urutkan berdasarkan skor (DESC), lalu durasi (ASC)
+    participantsWithDetails.sort((a, b) => {
+      const scoreDiff = (b.current_score ?? 0) - (a.current_score ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+
+      // Tie-breaker: Duration (shorter is better)
+      let durationA = Infinity;
+      if (
+        a.status === ParticipantStatus.FINISHED &&
+        a.finished_at &&
+        a.start_time
+      ) {
+        durationA =
+          new Date(a.finished_at).getTime() - new Date(a.start_time).getTime();
+      }
+
+      let durationB = Infinity;
+      if (
+        b.status === ParticipantStatus.FINISHED &&
+        b.finished_at &&
+        b.start_time
+      ) {
+        durationB =
+          new Date(b.finished_at).getTime() - new Date(b.start_time).getTime();
+      }
+
+      return durationA - durationB;
+    });
 
     return participantsWithDetails;
   }
