@@ -23,6 +23,7 @@ import {
 import { IconAlertCircle } from "@tabler/icons-react";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { toPng } from "html-to-image";
+import { useRouter } from "next/navigation"; // <-- Import useRouter
 
 // Hapus semua impor 'recharts' KECUALI untuk yang vertikal
 import {
@@ -77,6 +78,7 @@ export function InteractiveBatchChart({
   batchId,
   batchName,
 }: InteractiveBatchChartProps) {
+  const router = useRouter(); // <-- Initialize router
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -109,8 +111,6 @@ export function InteractiveBatchChart({
       })
       .catch(() => console.error("Gagal memuat daftar ujian."));
   }, [batchId]);
-
-  // 2. Ambil data grafik - TIDAK BERUBAH
   useEffect(() => {
     if (view === "specific_exam" && !selectedExamId) {
       setLoading(false);
@@ -131,6 +131,7 @@ export function InteractiveBatchChart({
             data = response.data.map((item) => ({
               name: item.examTitle,
               "Nilai Rata-rata": parseFloat(item.averageScore),
+              examId: item.examId, // <-- Tambahkan examId
             }));
             setChartData(data);
             break;
@@ -359,13 +360,44 @@ export function InteractiveBatchChart({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis domain={[0, 100]} />
-                <RechartsTooltip />
+                <RechartsTooltip
+                  cursor={{ fill: 'transparent' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <Paper p="xs" shadow="xs" withBorder>
+                          <Text fw={500}>{label}</Text>
+                          <Text size="sm">
+                            {payload[0].name}: {payload[0].value}
+                          </Text>
+                          <Text size="xs" c="dimmed" mt={4}>
+                            Klik untuk monitor ujian
+                          </Text>
+                        </Paper>
+                      );
+                    }
+                    return null;
+                  }}
+                />
                 <Legend />
-                <Bar dataKey={dataKey}>
+                <Bar
+                  dataKey={dataKey}
+                  onClick={(data: any) => {
+                    if (data.examId) {
+                      router.push(
+                        `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(
+                          batchName
+                        )}`
+                      );
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
+                      style={{ cursor: "pointer" }} // Pastikan kursor berubah
                     />
                   ))}
                 </Bar>

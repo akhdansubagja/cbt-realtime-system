@@ -291,7 +291,7 @@ export default function BatchesPage() {
               title: "Tanggal Dibuat",
               sortable: true,
               render: ({ createdAt }) =>
-                dayjs(createdAt).format("DD MMM YYYY HH:mm"),
+                dayjs(createdAt).format("DD MMM YYYY"),
             },
             {
               accessor: "actions",

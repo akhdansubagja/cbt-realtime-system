@@ -131,7 +131,8 @@ export class ReportsService {
       .innerJoin('participant.exam', 'exam')
       .where('examinee.batch_id = :batchId', { batchId })
       .andWhere('participant.status = :status', { status: 'finished' })
-      .select('exam.title', 'examTitle')
+      .select('exam.id', 'examId') // <-- Tambahkan ID ujian
+      .addSelect('exam.title', 'examTitle')
       .addSelect('ROUND(AVG(participant.final_score), 2)', 'averageScore')
       .groupBy('exam.id')
       .addGroupBy('exam.title')

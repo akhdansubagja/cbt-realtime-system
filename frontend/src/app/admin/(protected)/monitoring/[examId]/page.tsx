@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Title,
   Table,
@@ -113,6 +113,15 @@ export default function MonitoringPage() {
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null); // State untuk filter batch
   const [batchOptions, setBatchOptions] = useState<string[]>([]); // Opsi batch yang tersedia
   const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
+  
+  const searchParams = useSearchParams();
+  const batchParam = searchParams.get("batch");
+
+  useEffect(() => {
+    if (batchParam) {
+      setSelectedBatch(batchParam);
+    }
+  }, [batchParam]);
   
   // 1. Ambil data awal peserta
   useEffect(() => {
