@@ -313,13 +313,30 @@ export default function MonitoringPage() {
     const filename = `Laporan Ujian_${examId}_${dateString}.xlsx`;
 
     // --- 2. MEMBUAT DATA UNTUK TABEL ---
-    const dataToExport = filteredParticipants.map((p) => ({
-      "ID Peserta": p.id,
-      "Nama Peserta": p.name,
-      "Batch/Kelas": p.batch || "-",
-      Skor: p.score ?? "N/A",
-      Status: p.status === "finished" ? "Selesai" : "Mengerjakan",
-    }));
+    const dataToExport = filteredParticipants.map((p) => {
+      // Hitung durasi untuk export
+      let durationStr = "-";
+      if (p.start_time) {
+        const start = new Date(p.start_time).getTime();
+        const end = p.status === 'finished' && p.finished_at ? new Date(p.finished_at).getTime() : Date.now();
+        const diff = Math.max(0, Math.floor((end - start) / 1000));
+        const hours = Math.floor(diff / 3600);
+        const minutes = Math.floor((diff % 3600) / 60);
+        const seconds = diff % 60;
+        durationStr = hours > 0 ? `${hours}j ${minutes}m ${seconds}d` : `${minutes}m ${seconds}d`;
+      }
+
+      return {
+        "ID Peserta": p.id,
+        "Nama Peserta": p.name,
+        "Batch/Kelas": p.batch || "-",
+        "Waktu Mulai": p.start_time ? dayjs(p.start_time).format("D MMM YYYY, HH:mm:ss") : "-",
+        "Waktu Selesai": p.finished_at ? dayjs(p.finished_at).format("D MMM YYYY, HH:mm:ss") : "-",
+        "Durasi": durationStr,
+        Skor: p.score ?? "N/A",
+        Status: p.status === "finished" ? "Selesai" : "Mengerjakan",
+      };
+    });
 
     // --- 3. MEMBUAT JUDUL/HEADER UNTUK EXCEL ---
     // Kita akan membuat header kustom sebagai array dari array
@@ -363,6 +380,9 @@ export default function MonitoringPage() {
       { wch: 10 }, // ID Peserta
       { wch: 30 }, // Nama Peserta
       { wch: 20 }, // Batch/Kelas
+      { wch: 25 }, // Waktu Mulai
+      { wch: 25 }, // Waktu Selesai
+      { wch: 15 }, // Durasi
       { wch: 10 }, // Skor
       { wch: 15 }, // Status
     ];

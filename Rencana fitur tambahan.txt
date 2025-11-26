@@ -23,13 +23,15 @@ DONE9. fitur export ke excel pada halaman detail batch, yang dapat mengexport ke
 
 DONE10. buat agar pada halaman utama pada saat ingin ujian, yaitu pada halaman peserta harus memasukkan nama dan kelas, hanya peserta yang sudah dipilih dan ditentukan oleh admin, dapat menginputkan namanya, jadi tidak keseluruhan peserta akan ditampilkan di dalam suatu form tersebut
 
-11. buat agar jumlah menit ujian pada peserta agar ditampilkan, maksudnya misalkan Freya mengerjakan ujian Informatika dengan waktu berapa menit berapa detik. (jangan lupa fitur pada saat exportnya juga disesuaikan)
+DONE11. buat agar jumlah menit ujian pada peserta agar ditampilkan, maksudnya misalkan Freya mengerjakan ujian Informatika dengan waktu berapa menit berapa detik. (jangan lupa fitur pada saat exportnya juga disesuaikan)
 
 DONE12. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur checklist)
 
 DONE13. buat agar sistem bisa secara otomatis menghapus gambar atau foto yang ada, contohnya jika data peserta yang mempunyai foto dihapus, maka fotonya pun harus ikut terhapus.
 
 14. buat pada halaman detail batch, supaya pada chart dari rata rata perujian dapat diklik, dan setelah diklik akan langsung masuk ke halaman monitoring ujian dan langsung mengaktifkan filter berdasarkan batchnya yang sesuai. jadi misalkan begini, saya masuk ke halaman detail batch jkt48, nah lalu di sana akan ada grafik, dan pada saat pointer menyentuh grafik, maka akan muncul tampilan bacaan untuk mengarahkan ke halaman monitoring, misalkan "monitor ujian", nah lalu jika tabelnya diklik, maka akan diarahkan ke halaman monitoring. dan seperti yang saya bilang tadi, sistem akan otomatis melakukan filtering berdasarkan batchnya yang sesuai.
+
+15. perbaiki grafik pada rata rata per peserta di halaman batch detail.
 
 
 
