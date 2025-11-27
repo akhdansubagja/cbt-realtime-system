@@ -24,6 +24,22 @@ export class ExamineesService {
     private readonly batchRepository: Repository<Batch>,
   ) {}
 
+  private generateUniqId(): string {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}${mm}${dd}`;
+
+    // Generate 4 random alphanumeric characters
+    const randomSuffix = Math.random()
+      .toString(36)
+      .substring(2, 6)
+      .toUpperCase();
+
+    return `${dateStr}-${randomSuffix}`;
+  }
+
   async create(
     createExamineeDto: CreateExamineeDto,
     file: Express.Multer.File,
@@ -44,6 +60,7 @@ export class ExamineesService {
       ...restDto,
       batch: batch ?? undefined,
       avatar_url: file ? file.path : undefined,
+      uniqid: this.generateUniqId(),
     });
 
     return this.examineeRepository.save(examinee);
@@ -216,6 +233,7 @@ export class ExamineesService {
         name: name,
         batch: batch ?? undefined,
         avatar_url: file ? file.path : undefined,
+        uniqid: this.generateUniqId(),
       });
     });
 

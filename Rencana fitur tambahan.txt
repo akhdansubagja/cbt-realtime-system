@@ -35,6 +35,8 @@ DONE15. perbaiki grafik pada rata rata per peserta di halaman batch detail, supa
 
 DONE16. buat filter di halaman manajemen ujian berdasarkan status.
 
+DONE17. buat agar sistem bisa menambahkan peserta dengan nama yang sama. (hingga saat ini masih bingung unique_keynya apa)
+
 
 
 

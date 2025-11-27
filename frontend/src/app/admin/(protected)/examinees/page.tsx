@@ -57,6 +57,7 @@ interface Examinee {
   batch: Batch | null;
   avatar_url: string | null;
   is_active: boolean; // <-- TAMBAHAN
+  uniqid: string;
 }
 
 export default function ExamineesPage() {
@@ -584,7 +585,19 @@ export default function ExamineesPage() {
                     </Box>
                   ),
                 },
-                { accessor: "name", title: "Nama Peserta", sortable: true },
+                { 
+                  accessor: "name", 
+                  title: "Nama Peserta", 
+                  sortable: true,
+                  render: (record) => (
+                    <Stack gap={0}>
+                      <Text size="sm" fw={500}>{record.name}</Text>
+                      <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
+                        {record.uniqid || '-'}
+                      </Text>
+                    </Stack>
+                  )
+                },
                 {
                   accessor: "batch",
                   title: "Batch",

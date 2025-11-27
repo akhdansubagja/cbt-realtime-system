@@ -5,6 +5,7 @@ import { ExamineesService } from './examinees.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Examinee } from './entities/examinee.entity';
 import { Repository } from 'typeorm';
+import { Batch } from 'src/batches/entities/batch.entity';
 import { CreateExamineeDto } from './dto/create-examinee.dto';
 import { UpdateExamineeDto } from './dto/update-examinee.dto';
 
@@ -18,6 +19,11 @@ const mockExamineeRepository = {
   update: jest.fn(),
   delete: jest.fn(),
   find: jest.fn(),
+  preload: jest.fn(),
+};
+
+const mockBatchRepository = {
+  findOneBy: jest.fn(),
 };
 
 describe('ExamineesService', () => {
@@ -31,6 +37,10 @@ describe('ExamineesService', () => {
         {
           provide: getRepositoryToken(Examinee),
           useValue: mockExamineeRepository,
+        },
+        {
+          provide: getRepositoryToken(Batch),
+          useValue: mockBatchRepository,
         },
       ],
     }).compile();
@@ -53,12 +63,36 @@ describe('ExamineesService', () => {
       mockExamineeRepository.create.mockReturnValue(newExaminee);
       mockExamineeRepository.save.mockResolvedValue({ newExaminee, id: 1 });
 
-      const result = await service.create(createDto);
+      const result = await service.create(createDto, null as any);
 
       expect(result).toBeDefined();
       expect(result.id).toBe(1);
-      expect(repository.create).toHaveBeenCalledWith(createDto);
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...createDto,
+          uniqid: expect.any(String),
+        }),
+      );
       expect(repository.save).toHaveBeenCalledWith(newExaminee);
+    });
+
+    it('should generate uniqid and allow duplicate names', async () => {
+      const createDto = { name: 'Andi' } as CreateExamineeDto;
+
+      // Mock create to return object with uniqid
+      mockExamineeRepository.create.mockImplementation((dto) => dto);
+      mockExamineeRepository.save.mockImplementation((dto) =>
+        Promise.resolve({ id: 1, ...dto }),
+      );
+
+      const result1 = await service.create(createDto, null as any);
+      const result2 = await service.create(createDto, null as any);
+
+      expect(result1.uniqid).toBeDefined();
+      expect(result1.uniqid).toMatch(/^\d{8}-[A-Z0-9]{4}$/); // Check format YYYYMMDD-XXXX
+
+      expect(result2.uniqid).toBeDefined();
+      expect(result2.uniqid).not.toBe(result1.uniqid); // Should be different even if name is same
     });
   });
 
@@ -67,16 +101,23 @@ describe('ExamineesService', () => {
       const options = { page: 1, limit: 10 };
       const mockExaminees = [new Examinee()];
       const total = 1;
-      mockExamineeRepository.findAndCount.mockResolvedValue([mockExaminees, total]);
+      mockExamineeRepository.findAndCount.mockResolvedValue([
+        mockExaminees,
+        total,
+      ]);
 
       const result = await service.findAll(options);
 
       expect(result.data).toEqual(mockExaminees);
       expect(result.total).toBe(total);
       expect(repository.findAndCount).toHaveBeenCalledWith({
+        where: {},
         order: { name: 'ASC' },
         take: options.limit,
         skip: 0,
+        relations: {
+          batch: true,
+        },
       });
     });
   });
@@ -105,13 +146,18 @@ describe('ExamineesService', () => {
       updatedExaminee.id = examineeId;
       updatedExaminee.name = 'Budi';
 
-      mockExamineeRepository.update.mockResolvedValue(undefined);
+      mockExamineeRepository.preload.mockResolvedValue(updatedExaminee);
       mockExamineeRepository.findOneBy.mockResolvedValue(updatedExaminee);
 
-      const result = await service.update(examineeId, updateDto);
+      const result = await service.update(examineeId, updateDto, null as any);
 
       expect(result).toEqual(updatedExaminee);
-      expect(repository.update).toHaveBeenCalledWith(examineeId, updateDto);
+      expect(repository.preload).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: examineeId,
+          ...updateDto,
+        }),
+      );
       expect(repository.findOneBy).toHaveBeenCalledWith({ id: examineeId });
     });
   });
@@ -129,16 +175,16 @@ describe('ExamineesService', () => {
 
   describe('findAllSimple', () => {
     it('should return a simple list of examinees', async () => {
-        const mockExaminees = [{ id: 1, name: 'Andi' }];
-        mockExamineeRepository.find.mockResolvedValue(mockExaminees);
+      const mockExaminees = [{ id: 1, name: 'Andi' }];
+      mockExamineeRepository.find.mockResolvedValue(mockExaminees);
 
-        const result = await service.findAllSimple();
+      const result = await service.findAllSimple();
 
-        expect(result).toEqual(mockExaminees);
-        expect(repository.find).toHaveBeenCalledWith({
-            select: ['id', 'name'],
-            order: { name: 'ASC' },
-        });
+      expect(result).toEqual(mockExaminees);
+      expect(repository.find).toHaveBeenCalledWith({
+        select: ['id', 'name'],
+        order: { name: 'ASC' },
+      });
     });
   });
 });

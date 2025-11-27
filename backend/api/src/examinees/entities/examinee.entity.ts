@@ -17,8 +17,11 @@ export class Examinee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true }) // Kita buat nama harus unik untuk menghindari duplikasi
+  @Column()
   name: string;
+
+  @Column({ unique: true, nullable: true })
+  uniqid: string;
 
   @Column({ nullable: true })
   avatar_url: string;
