@@ -211,8 +211,6 @@ export default function QuestionBanksPage() {
     }
   };
 
-
-
   const rows = banks.map((bank) => (
     <Table.Tr key={bank.id}>
       <Table.Td>{bank.id}</Table.Td>
@@ -315,9 +313,11 @@ export default function QuestionBanksPage() {
 
         <TextInput
           placeholder="Cari bank soal berdasarkan nama atau deskripsi..."
+          label="Pencarian"
           leftSection={<IconSearch size={16} />}
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
+          style={{ flex: 2 }}
         />
 
         <Box>

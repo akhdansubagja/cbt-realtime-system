@@ -36,6 +36,7 @@ import {
   XAxis,
   YAxis,
   Cell,
+  LabelList, // <-- Tambahkan LabelList
 } from "recharts";
 
 import {
@@ -117,6 +118,32 @@ export function InteractiveBatchChart({
       setChartData([]);
       return;
     }
+
+
+    const convertImagesToBase64 = async (data: ChartData[]) => {
+      const promises = data.map(async (item) => {
+        if (item.avatar_url) {
+          try {
+            const imageUrl = `http://localhost:3000/${item.avatar_url}`;
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            return new Promise<ChartData>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve({ ...item, avatar_url: reader.result as string });
+              };
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.error("Failed to load image", e);
+            return item;
+          }
+        }
+        return item;
+      });
+      return Promise.all(promises);
+    };
+
     const fetchChartData = async () => {
       setLoading(true);
       setError(null);
@@ -131,25 +158,24 @@ export function InteractiveBatchChart({
             data = response.data.map((item) => ({
               name: item.examTitle,
               "Nilai Rata-rata": parseFloat(item.averageScore),
-              examId: item.examId, // <-- Tambahkan examId
+              examId: item.examId,
             }));
             setChartData(data);
             break;
           case "avg_participant":
-            // 1. Ubah tipe <BatchParticipantReport[]> menjadi <BatchParticipantReportData>
             response = await api.get<BatchParticipantReportData>(
               `/reports/batch-participants/${batchId}`
             );
 
-            // 2. Akses 'response.data.participantScores' (objek) BUKAN 'response.data' (array)
             data = response.data.participantScores.map((item) => ({
-              // 3. Sesuaikan nama properti (item.examinee.name, dll.)
               name: item.examinee.name,
-              "Nilai Rata-rata": item.averageScore, // Tipe baru sudah menyediakan ini
+              "Nilai Rata-rata": item.averageScore,
               avatar_url: item.examinee.avatar,
             }));
 
             data.sort((a, b) => b["Nilai Rata-rata"] - a["Nilai Rata-rata"]);
+            // Convert avatars to Base64 for download compatibility
+            data = await convertImagesToBase64(data);
             setChartData(data);
             break;
           case "specific_exam":
@@ -162,6 +188,8 @@ export function InteractiveBatchChart({
               avatar_url: item.avatar_url,
             }));
             data.sort((a, b) => b.Skor - a.Skor);
+            // Convert avatars to Base64 for download compatibility
+            data = await convertImagesToBase64(data);
             setChartData(data);
             break;
         }
@@ -289,122 +317,215 @@ export function InteractiveBatchChart({
         {!loading &&
           !error &&
           chartData.length > 0 &&
-          (isHorizontal ? (
-            // --- TAMPILAN 1: GRAFIK MANUAL (HORIZONTAL) ---
-            <Stack gap="sm" mt="md">
-              {chartData.map((item, index) => {
-                const score = item[dataKey];
-                const barWidthPercent = (score / 110) * 100;
-                const avatarSrc = item.avatar_url
-                  ? `http://localhost:3000/${item.avatar_url}`
-                  : null;
-                const barColor = COLORS[index % COLORS.length]; // Warna dinamis per bar
-
-                return (
-                  <Grid key={item.name} align="center">
-                    <Grid.Col span={2.4}>
-                      <Group gap="xs" wrap="nowrap" justify="flex-start">
-                        {/* Penomoran dengan ikon untuk juara 1-3, angka untuk sisanya */}
-                        {index === 0 ? (
-                          <IconTrophy size={16} color="gold" />
-                        ) : index === 1 ? (
-                          <IconMedal size={16} color="silver" />
-                        ) : index === 2 ? (
-                          <IconAward size={16} color="#CD7F32" />
-                        ) : (
-                          <Text size="sm" fw={500} c="dimmed">
-                            {index + 1}.
-                          </Text>
-                        )}
-                        <Text ta="left" size="sm" fw={500} truncate>
-                          {item.name}
-                        </Text>
-                      </Group>
-                    </Grid.Col>
-                    <Grid.Col span={9}>
-                      <Tooltip
-                        label={`${item.name}: ${score}`}
-                        position="top"
-                        withArrow
-                      >
-                        <Group gap={8} wrap="nowrap">
-                          <Box
-                            bg={barColor} // Gunakan warna dinamis
-                            h={24}
-                            w={`${barWidthPercent}%`}
-                            style={{
-                              borderRadius: theme.radius.sm,
-                              minWidth: "4px",
-                            }}
-                          />
-                          <Avatar src={avatarSrc} radius="xl" size="sm">
-                            {item.name.charAt(0)}
-                          </Avatar>
-                          <Text c="dimmed" fw={700} size="sm">
-                            {score}
-                          </Text>
-                        </Group>
-                      </Tooltip>
-                    </Grid.Col>
-                  </Grid>
-                );
-              })}
-            </Stack>
-          ) : (
-            // --- TAMPILAN 2: GRAFIK RECHARTS (VERTIKAL) ---
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={chartData}
-                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 100]} />
-                <RechartsTooltip
-                  cursor={{ fill: 'transparent' }}
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <Paper p="xs" shadow="xs" withBorder>
-                          <Text fw={500}>{label}</Text>
-                          <Text size="sm">
-                            {payload[0].name}: {payload[0].value}
-                          </Text>
-                          <Text size="xs" c="dimmed" mt={4}>
-                            Klik untuk monitor ujian
-                          </Text>
-                        </Paper>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey={dataKey}
-                  onClick={(data: any) => {
-                    if (data.examId) {
-                      router.push(
-                        `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(
-                          batchName
-                        )}`
-                      );
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
+            (isHorizontal ? (
+              // --- TAMPILAN 1: GRAFIK RECHARTS (HORIZONTAL BAR - UNTUK PESERTA) ---
+              <ResponsiveContainer width="100%" height={Math.max(400, chartData.length * 35)}>
+                <BarChart
+                  layout="vertical"
+                  data={chartData}
+                  margin={{ top: 5, right: 100, left: 40, bottom: 5 }}
                 >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                      style={{ cursor: "pointer" }} // Pastikan kursor berubah
+                  <defs>
+                    <clipPath id={`circleClip-${batchId}`} clipPathUnits="objectBoundingBox">
+                      <circle cx="0.5" cy="0.5" r="0.5" />
+                    </clipPath>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} hide />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={180}
+                    tick={({ x, y, payload }) => {
+                      const index = chartData.findIndex((d) => d.name === payload.value);
+                      const rank = index + 1;
+                      const isTop3 = rank <= 3;
+                      
+                      let rankColor = "#dimmed";
+                      if (rank === 1) rankColor = "gold";
+                      if (rank === 2) rankColor = "silver";
+                      if (rank === 3) rankColor = "#CD7F32";
+
+                      const data = chartData.find((d) => d.name === payload.value);
+                      const avatarUrl = data?.avatar_url;
+                      const avatarSrc = avatarUrl?.startsWith("data:")
+                        ? avatarUrl
+                        : avatarUrl
+                        ? `http://localhost:3000/${avatarUrl}`
+                        : null;
+
+                      return (
+                        <g transform={`translate(${x},${y})`}>
+                          {isTop3 ? (
+                             <g transform="translate(-170, -10)">
+                               <circle cx="10" cy="10" r="10" fill={rankColor} />
+                               <text x="10" y="14" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">{rank}</text>
+                             </g>
+                          ) : (
+                            <text x={-160} y={4} textAnchor="middle" fill="gray" fontSize="12" fontWeight="bold">
+                              {rank}.
+                            </text>
+                          )}
+                          <text
+                            x={-140}
+                            y={4}
+                            textAnchor="start"
+                            fill={colorScheme === "dark" ? "#fff" : "#000"}
+                            fontSize={12}
+                            fontWeight={500}
+                          >
+                            {payload.value.length > 20
+                              ? `${payload.value.substring(0, 20)}...`
+                              : payload.value}
+                          </text>
+                        </g>
+                      );
+                    }}
+                  />
+                  <RechartsTooltip
+                    cursor={{ fill: "transparent" }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <Paper p="xs" shadow="xs" withBorder>
+                            <Text fw={500}>{label}</Text>
+                            <Text size="sm">
+                              {payload[0].name}: {payload[0].value}
+                            </Text>
+                          </Paper>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar
+                    dataKey={dataKey}
+                    barSize={20}
+                    radius={[0, 4, 4, 0]}
+                    isAnimationActive={false}
+                    onClick={(data: any) => {
+                      if (data.examId) {
+                        router.push(
+                          `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(
+                            batchName
+                          )}`
+                        );
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                        style={{ cursor: "pointer" }}
+                      />
+                    ))}
+                    <LabelList
+                      dataKey={dataKey}
+                      position="right"
+                      content={(props: any) => {
+                        const { x, y, width, value, index } = props;
+                        const dataItem = chartData[index];
+                        const avatarUrl = dataItem?.avatar_url;
+                        const avatarSrc = avatarUrl?.startsWith("data:")
+                          ? avatarUrl
+                          : avatarUrl
+                          ? `http://localhost:3000/${avatarUrl}`
+                          : null;
+                        
+                        const startX = x + width + 10;
+                        const centerY = y + 10;
+
+                        return (
+                          <g>
+                            {avatarSrc ? (
+                              <image
+                                x={startX}
+                                y={y - 9}
+                                href={avatarSrc}
+                                height="32"
+                                width="32"
+                                clipPath={`url(#circleClip-${batchId})`}
+                                preserveAspectRatio="xMidYMid slice"
+                              />
+                            ) : (
+                              <circle cx={startX + 16} cy={centerY} r={16} fill="#ccc" />
+                            )}
+                            <text
+                              x={startX + 40}
+                              y={centerY + 4}
+                              fill={colorScheme === "dark" ? "#fff" : "#000"}
+                              fontSize={12}
+                              fontWeight="bold"
+                              textAnchor="start"
+                            >
+                              {value}
+                            </text>
+                          </g>
+                        );
+                      }}
                     />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              // --- TAMPILAN 2: GRAFIK RECHARTS (VERTIKAL COLUMN - UNTUK UJIAN) ---
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis domain={[0, 100]} />
+                  <RechartsTooltip
+                    cursor={{ fill: 'transparent' }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <Paper p="xs" shadow="xs" withBorder>
+                            <Text fw={500}>{label}</Text>
+                            <Text size="sm">
+                              {payload[0].name}: {payload[0].value}
+                            </Text>
+                            <Text size="xs" c="dimmed" mt={4}>
+                              Klik untuk monitor ujian
+                            </Text>
+                          </Paper>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar
+                    dataKey={dataKey}
+                    isAnimationActive={false}
+                    onClick={(data: any) => {
+                      if (data.examId) {
+                        router.push(
+                          `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(
+                            batchName
+                          )}`
+                        );
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                        style={{ cursor: "pointer" }}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ))
+          }
       </Box>
     </Paper>
   );
 }
+

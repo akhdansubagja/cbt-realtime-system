@@ -29,9 +29,14 @@ DONE12. buat di semua tempat agar bisa dilakukan memilih secara banyak (fitur ch
 
 DONE13. buat agar sistem bisa secara otomatis menghapus gambar atau foto yang ada, contohnya jika data peserta yang mempunyai foto dihapus, maka fotonya pun harus ikut terhapus.
 
-14. buat pada halaman detail batch, supaya pada chart dari rata rata perujian dapat diklik, dan setelah diklik akan langsung masuk ke halaman monitoring ujian dan langsung mengaktifkan filter berdasarkan batchnya yang sesuai. jadi misalkan begini, saya masuk ke halaman detail batch jkt48, nah lalu di sana akan ada grafik, dan pada saat pointer menyentuh grafik, maka akan muncul tampilan bacaan untuk mengarahkan ke halaman monitoring, misalkan "monitor ujian", nah lalu jika tabelnya diklik, maka akan diarahkan ke halaman monitoring. dan seperti yang saya bilang tadi, sistem akan otomatis melakukan filtering berdasarkan batchnya yang sesuai.
+DONE14. buat pada halaman detail batch, supaya pada chart dari rata rata perujian dapat diklik, dan setelah diklik akan langsung masuk ke halaman monitoring ujian dan langsung mengaktifkan filter berdasarkan batchnya yang sesuai. jadi misalkan begini, saya masuk ke halaman detail batch jkt48, nah lalu di sana akan ada grafik, dan pada saat pointer menyentuh grafik, maka akan muncul tampilan bacaan untuk mengarahkan ke halaman monitoring, misalkan "monitor ujian", nah lalu jika tabelnya diklik, maka akan diarahkan ke halaman monitoring. dan seperti yang saya bilang tadi, sistem akan otomatis melakukan filtering berdasarkan batchnya yang sesuai.
 
-15. perbaiki grafik pada rata rata per peserta di halaman batch detail.
+DONE15. perbaiki grafik pada rata rata per peserta di halaman batch detail, supaya menggunakan grafik sungguhan yang berfungsi, bukan menggunakan gambar dan komponen yang dimodifikasi menjadi grafik, tujuannya adalah supaya pada saat mendownload grafik, benar benar mendownload grafik, bukan malah seperti melakukan screenshot.
+
+DONE16. buat filter di halaman manajemen ujian berdasarkan status.
+
+
+
 
 
 
@@ -42,6 +47,8 @@ DONE13. buat agar sistem bisa secara otomatis menghapus gambar atau foto yang ad
 
 OPSIONAL
 1. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
+2. pada halaman utama untuk pesertam tambahkan fitur untuk quiz latihan matematika kabataku, yang angkanya dihasilkan random dari frontend, lalu disediakan juga seperti lembar kosong untuk melakukan penghitungan soal secara manual.
+
 
 
 SECURITY

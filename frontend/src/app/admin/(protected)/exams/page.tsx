@@ -28,6 +28,7 @@ import {
   Indicator,
   Tooltip,
   Skeleton,
+  Kbd,
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
 import "dayjs/locale/id"; // Import locale untuk bahasa Indonesia
@@ -49,6 +50,7 @@ import {
   IconPencil,
   IconPlayerPlay,
   IconPlayerStop,
+  IconFilter,
 } from "@tabler/icons-react"; // IconPlus sudah ada
 import { useRouter } from "next/navigation";
 import sortBy from "lodash/sortBy";
@@ -100,6 +102,8 @@ export default function ExamsPage() {
     direction: "asc",
   });
   const router = useRouter();
+
+  const [statusFilter, setStatusFilter] = useState<string | null>("all"); // State untuk filter status
 
   // Reset page to 1 when pageSize changes
   useEffect(() => {
@@ -171,15 +175,38 @@ export default function ExamsPage() {
       });
   }, [pickerBankId]); // <-- 'Dengarkan' perubahan pada pickerBankId
 
+  // Helper function to get status string for filtering
+  const getExamStatusString = (startTime: string | null, endTime: string | null) => {
+    const now = new Date();
+    const start = startTime ? new Date(startTime) : null;
+    const end = endTime ? new Date(endTime) : null;
+
+    if (end && now > end) return "selesai";
+    if (start && now >= start) return "berlangsung";
+    if (start && now < start) return "terjadwal";
+    return "selalu_aktif";
+  };
+
   const sortedAndFilteredRecords = useMemo(() => {
     let filtered = exams;
+
+    // Filter by Query
     if (query) {
-      filtered = exams.filter(
+      filtered = filtered.filter(
         ({ title, code }) =>
           title.toLowerCase().includes(query.toLowerCase()) ||
           code.toLowerCase().includes(query.toLowerCase())
       );
     }
+
+    // Filter by Status
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter((exam) => {
+        const status = getExamStatusString(exam.start_time, exam.end_time);
+        return status === statusFilter;
+      });
+    }
+
     const sorted = sortBy(filtered, sortStatus.columnAccessor);
     const reversed = sortStatus.direction === "desc" ? sorted.reverse() : sorted;
 
@@ -187,7 +214,7 @@ export default function ExamsPage() {
     const from = (page - 1) * pageSize;
     const to = from + pageSize;
     return reversed.slice(from, to);
-  }, [exams, query, sortStatus, page, pageSize]);
+  }, [exams, query, sortStatus, page, pageSize, statusFilter]);
 
   // State untuk Multi-Select
   const [selectedRecords, setSelectedRecords] = useState<Exam[]>([]);
@@ -725,12 +752,31 @@ export default function ExamsPage() {
           }
         />
 
-        <TextInput
-          placeholder="Cari ujian berdasarkan judul atau kode..."
-          leftSection={<IconSearch size={16} />}
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-        />
+        <Group align="end" grow>
+          <TextInput
+            label="Pencarian"
+            placeholder="Cari ujian berdasarkan judul atau kode..."
+            leftSection={<IconSearch size={16} />}
+            value={query}
+            onChange={(e) => setQuery(e.currentTarget.value)}
+            style={{ flex: 2 }}
+          />
+          <Select
+            label="Filter Status"
+            placeholder="Filter Status"
+            leftSection={<IconFilter size={16} />}
+            data={[
+              { value: "all", label: "Semua" },
+              { value: "terjadwal", label: "Terjadwal" },
+              { value: "berlangsung", label: "Berlangsung" },
+              { value: "selesai", label: "Selesai" },
+              { value: "selalu_aktif", label: "Selalu Aktif" },
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ flex: 1 }}
+          />
+        </Group>
 
         <Box>
           {loading ? (

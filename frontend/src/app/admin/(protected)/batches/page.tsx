@@ -16,6 +16,7 @@ import {
   Menu,
   Box,
   Skeleton,
+  Kbd,
 } from "@mantine/core";
 import {
   IconAlertCircle,
@@ -45,7 +46,7 @@ export default function BatchesPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // State DataTable Modern
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
@@ -67,7 +68,10 @@ export default function BatchesPage() {
   // 1. Form Hook (Sama seperti sebelumnya)
   const form = useForm({
     initialValues: { name: "" },
-    validate: { name: (value) => (value.trim().length > 0 ? null : "Nama batch harus diisi") },
+    validate: {
+      name: (value) =>
+        value.trim().length > 0 ? null : "Nama batch harus diisi",
+    },
   });
 
   // 2. Fetch Data
@@ -83,7 +87,9 @@ export default function BatchesPage() {
     }
   };
 
-  useEffect(() => { fetchBatches(); }, []);
+  useEffect(() => {
+    fetchBatches();
+  }, []);
 
   // 3. LOGIKA PENTING: Filter -> Sort -> Paginate
   const records = useMemo(() => {
@@ -91,7 +97,9 @@ export default function BatchesPage() {
 
     // Filter Pencarian
     if (query) {
-      data = data.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()));
+      data = data.filter((b) =>
+        b.name.toLowerCase().includes(query.toLowerCase())
+      );
     }
 
     // Sorting
@@ -106,7 +114,11 @@ export default function BatchesPage() {
 
   // Total data (untuk indikator halaman)
   const totalRecords = useMemo(() => {
-      return query ? batches.filter(b => b.name.toLowerCase().includes(query.toLowerCase())).length : batches.length;
+    return query
+      ? batches.filter((b) =>
+          b.name.toLowerCase().includes(query.toLowerCase())
+        ).length
+      : batches.length;
   }, [batches, query]);
 
   // Reset halaman ke 1 jika user mengetik di search
@@ -122,9 +134,15 @@ export default function BatchesPage() {
         await api.post("/batches", values);
         await showSuccessAlert("Berhasil", "Batch baru dibuat");
       }
-      close(); form.reset(); fetchBatches();
+      close();
+      form.reset();
+      fetchBatches();
     } catch (err) {
-      notifications.show({ title: "Gagal", message: "Terjadi kesalahan", color: "red" });
+      notifications.show({
+        title: "Gagal",
+        message: "Terjadi kesalahan",
+        color: "red",
+      });
     }
   };
 
@@ -162,19 +180,29 @@ export default function BatchesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    const result = await confirmDelete("Hapus Batch?", "Data peserta di dalamnya mungkin ikut terhapus!");
+    const result = await confirmDelete(
+      "Hapus Batch?",
+      "Data peserta di dalamnya mungkin ikut terhapus!"
+    );
     if (result.isConfirmed) {
       try {
         await api.delete(`/batches/${id}`);
         setBatches((prev) => prev.filter((b) => b.id !== id)); // Hapus langsung dari tabel
         await showSuccessAlert("Terhapus!", "Batch berhasil dihapus.");
       } catch (err) {
-        notifications.show({ title: "Gagal", message: "Gagal menghapus batch.", color: "red" });
+        notifications.show({
+          title: "Gagal",
+          message: "Gagal menghapus batch.",
+          color: "red",
+        });
       }
     }
   };
 
-  const handleBatchStatusUpdate = async (batchId: number, isActive: boolean) => {
+  const handleBatchStatusUpdate = async (
+    batchId: number,
+    isActive: boolean
+  ) => {
     const action = isActive ? "mengaktifkan" : "menonaktifkan";
     const result = await confirmDelete(
       `Konfirmasi`,
@@ -184,7 +212,12 @@ export default function BatchesPage() {
     if (result.isConfirmed) {
       try {
         await api.patch(`/batches/${batchId}/status`, { is_active: isActive });
-        await showSuccessAlert("Berhasil", `Semua peserta dalam batch telah di${isActive ? "aktifkan" : "nonaktifkan"}.`);
+        await showSuccessAlert(
+          "Berhasil",
+          `Semua peserta dalam batch telah di${
+            isActive ? "aktifkan" : "nonaktifkan"
+          }.`
+        );
       } catch (err) {
         notifications.show({
           title: "Gagal",
@@ -196,22 +229,37 @@ export default function BatchesPage() {
   };
 
   if (loading) return <Loader />;
-  if (error) return <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">{error}</Alert>;
+  if (error)
+    return (
+      <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">
+        {error}
+      </Alert>
+    );
 
   return (
     <Stack>
       {/* Modal Form (Create/Edit) */}
       <Modal
         opened={opened}
-        onClose={() => { close(); form.reset(); }}
+        onClose={() => {
+          close();
+          form.reset();
+        }}
         title={editingBatch ? "Edit Batch" : "Buat Batch Baru"}
         centered
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>
-            <TextInput label="Nama Batch" placeholder="Contoh: Batch 2025" withAsterisk {...form.getInputProps("name")} />
+            <TextInput
+              label="Nama Batch"
+              placeholder="Contoh: Batch 2025"
+              withAsterisk
+              {...form.getInputProps("name")}
+            />
             <Group justify="flex-end">
-              <Button variant="default" onClick={close}>Batal</Button>
+              <Button variant="default" onClick={close}>
+                Batal
+              </Button>
               <Button type="submit">Simpan</Button>
             </Group>
           </Stack>
@@ -252,10 +300,12 @@ export default function BatchesPage() {
 
       {/* Kolom Pencarian */}
       <TextInput
+        label="Pencarian"
         placeholder="Cari batch..."
         leftSection={<IconSearch size={16} />}
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
+        style={{ flex: 2 }}
       />
 
       {/* TABEL MODERN */}
@@ -290,8 +340,7 @@ export default function BatchesPage() {
               accessor: "createdAt",
               title: "Tanggal Dibuat",
               sortable: true,
-              render: ({ createdAt }) =>
-                dayjs(createdAt).format("DD MMM YYYY"),
+              render: ({ createdAt }) => dayjs(createdAt).format("DD MMM YYYY"),
             },
             {
               accessor: "actions",
@@ -325,7 +374,7 @@ export default function BatchesPage() {
                       >
                         Edit
                       </Menu.Item>
-                      
+
                       <Menu.Divider />
                       <Menu.Label>Status Peserta</Menu.Label>
                       <Menu.Item
@@ -362,4 +411,3 @@ export default function BatchesPage() {
     </Stack>
   );
 }
-
