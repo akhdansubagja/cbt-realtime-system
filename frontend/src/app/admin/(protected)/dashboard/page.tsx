@@ -25,6 +25,9 @@ import {
 import { useEffect, useState } from "react";
 import axios from "@/lib/axios";
 import { motion } from "framer-motion";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { DashboardChart } from "@/components/dashboard/DashboardChart";
+import { IconCheck } from "@tabler/icons-react";
 
 // Tipe data untuk statistik
 interface StatsData {
@@ -180,7 +183,7 @@ export default function DashboardPage() {
         ))}
       </SimpleGrid>
 
-      {/* Example of another section, maybe recent activity or chart placeholder */}
+      {/* Charts & Activity Section */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -188,34 +191,45 @@ export default function DashboardPage() {
       >
         <Grid gutter="lg">
           <Grid.Col span={{ base: 12, md: 8 }}>
-            <Card withBorder radius="md" p="md">
-              <Title order={4} mb="md">
-                Aktivitas Terkini
-              </Title>
-              <Skeleton height={200} radius="md" />
-            </Card>
+             <DashboardChart />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
-            <Card withBorder radius="md" p="md">
-              <Title order={4} mb="md">
-                Status Server
-              </Title>
-              <Group justify="center">
-                <RingProgress
-                  size={150}
-                  roundCaps
-                  thickness={12}
-                  sections={[{ value: 100, color: "teal" }]}
-                  label={
-                    <Text c="teal" fw={700} ta="center" size="xl">
-                      Online
-                    </Text>
-                  }
-                />
-              </Group>
-            </Card>
+             <RecentActivity />
           </Grid.Col>
         </Grid>
+      </motion.div>
+
+      {/* Server Status Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+      >
+         <Card withBorder radius="lg" p="lg">
+            <Group justify="space-between">
+               <div>
+                  <Title order={4}>Status Server</Title>
+                  <Text c="dimmed" size="sm">Kondisi sistem saat ini</Text>
+               </div>
+               <Group>
+                  <RingProgress
+                    size={80}
+                    roundCaps
+                    thickness={8}
+                    sections={[{ value: 100, color: "teal" }]}
+                    label={
+                      <ThemeIcon color="teal" variant="light" radius="xl" size={40} style={{ margin: 'auto' }}>
+                         <IconCheck size={20} />
+                      </ThemeIcon>
+                    }
+                  />
+                  <div>
+                     <Text fw={700} size="lg" c="teal">Sistem Online</Text>
+                     <Text size="xs" c="dimmed">Latency: 24ms</Text>
+                  </div>
+               </Group>
+            </Group>
+         </Card>
       </motion.div>
     </Stack>
   );

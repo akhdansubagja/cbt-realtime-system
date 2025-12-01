@@ -250,15 +250,15 @@ export default function ExamsPage() {
 
   const handleDeleteExam = async (examId: number) => {
     const result = await confirmDelete(
-      'Hapus Peserta?',
-      'Peserta ini akan dihapus permanen dari sistem.'
+      'Hapus Ujian?',
+      'Ujian ini akan dihapus permanen dari sistem.'
     );
 
     if (result.isConfirmed) {
       try {
         await api.delete(`/exams/${examId}`);
         setExams((current) => current.filter((e) => e.id !== examId));
-        await showSuccessAlert("Terhapus!", "Data peserta berhasil dihapus.");
+        await showSuccessAlert("Terhapus!", "Data ujian berhasil dihapus.");
       } catch (err) {
         notifications.show({
           title: "Gagal",

@@ -19,7 +19,18 @@ export function ThemeToggle() {
   }
 
   return (
-    <ActionIcon variant="default" onClick={() => toggleColorScheme()} size="lg">
+    <ActionIcon 
+      variant="gradient" 
+      gradient={{ from: 'violet', to: 'indigo', deg: 135 }}
+      onClick={() => toggleColorScheme()} 
+      size="lg"
+      radius="xl"
+      style={{
+        transition: 'transform 0.2s ease',
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1) rotate(15deg)'}
+      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
+    >
       {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
     </ActionIcon>
   );

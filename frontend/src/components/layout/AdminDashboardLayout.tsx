@@ -85,7 +85,7 @@ export function AdminDashboardLayout({
         key={link.label}
         href={link.href}
         label={
-          <MantineText fw={isActive ? 600 : 500} size="sm">
+          <MantineText fw={isActive ? 700 : 500} size="sm" c={isActive ? "white" : "dimmed"}>
             {link.label}
           </MantineText>
         }
@@ -93,7 +93,7 @@ export function AdminDashboardLayout({
           <link.icon
             size="1.2rem"
             stroke={1.5}
-            color={isActive ? theme.colors.violet[6] : "currentColor"}
+            color={isActive ? "white" : "currentColor"}
           />
         }
         onClick={(e) => {
@@ -101,12 +101,14 @@ export function AdminDashboardLayout({
           router.push(link.href);
         }}
         active={isActive}
-        variant="light"
-        color="violet"
+        variant="filled"
+        color="transparent"
         style={{
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.lg,
           marginBottom: 4,
           transition: "all 0.2s ease",
+          background: isActive ? "linear-gradient(90deg, rgba(121, 80, 242, 0.8) 0%, rgba(79, 70, 229, 0.8) 100%)" : "transparent",
+          boxShadow: isActive ? "0 4px 15px rgba(121, 80, 242, 0.4)" : "none",
         }}
       />
     );
@@ -121,16 +123,12 @@ export function AdminDashboardLayout({
     >
       <AppShell.Header
         style={{
-          backdropFilter: "blur(12px)",
+          backdropFilter: "blur(16px) saturate(180%)",
           backgroundColor:
             computedColorScheme === "dark"
-              ? "rgba(36, 36, 36, 0.7)"
-              : "rgba(255, 255, 255, 0.7)",
-          borderBottom: `1px solid ${
-            computedColorScheme === "dark"
-              ? "var(--mantine-color-dark-4)"
-              : "var(--mantine-color-gray-2)"
-          }`,
+              ? "rgba(15, 23, 42, 0.6)"
+              : "rgba(255, 255, 255, 0.6)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         }}
       >
         <Group h="100%" px="xl" justify="space-between">
@@ -145,15 +143,19 @@ export function AdminDashboardLayout({
               <ThemeToggle />
               <Box
                 style={{
-                  padding: "4px 12px",
-                  borderRadius: "8px",
-                  background:
-                    computedColorScheme === "dark"
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(0,0,0,0.03)",
+                  padding: "6px 16px",
+                  borderRadius: "12px",
+                  background: "linear-gradient(135deg, rgba(121, 80, 242, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%)",
+                  border: "1px solid rgba(121, 80, 242, 0.2)",
                 }}
               >
-                <Title order={4} c="violet" style={{ letterSpacing: "-0.5px" }}>
+                <Title order={4} style={{ 
+                  background: "linear-gradient(135deg, #7950f2 0%, #4f46e5 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  letterSpacing: "-0.5px",
+                  fontWeight: 800
+                }}>
                   CBT Realtime
                 </Title>
               </Box>
@@ -168,14 +170,10 @@ export function AdminDashboardLayout({
         style={{
           backgroundColor:
             computedColorScheme === "dark"
-              ? "rgba(36, 36, 36, 0.5)"
-              : "rgba(255, 255, 255, 0.5)",
-          backdropFilter: "blur(12px)",
-          borderRight: `1px solid ${
-            computedColorScheme === "dark"
-              ? "var(--mantine-color-dark-4)"
-              : "var(--mantine-color-gray-2)"
-          }`,
+              ? "rgba(15, 23, 42, 0.4)"
+              : "rgba(255, 255, 255, 0.4)",
+          backdropFilter: "blur(16px) saturate(180%)",
+          borderRight: "1px solid rgba(255, 255, 255, 0.1)",
         }}
       >
         <Flex

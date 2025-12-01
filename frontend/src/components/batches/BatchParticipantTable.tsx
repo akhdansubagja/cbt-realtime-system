@@ -150,7 +150,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   }
 
   return (
-    <Paper shadow="sm" p="lg" withBorder>
+    <Paper shadow="sm" p={0} radius="lg" style={{ overflow: "hidden" }}>
       {/* Modal Avatar (Tetap Sama) */}
       <Modal
         opened={imageModalOpened}
@@ -163,26 +163,64 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
       </Modal>
 
       {/* Header & Search Bar Modern */}
-      <Group justify="space-between" mb="md">
-        <Title order={4}>Laporan Peserta</Title>
-        <TextInput
-          placeholder="Cari nama peserta..."
-          leftSection={<IconSearch size={16} />}
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-          w={300}
-        />
-      </Group>
+      <Box 
+        p="xl" 
+        style={{ 
+          background: "linear-gradient(135deg, var(--mantine-color-indigo-6) 0%, var(--mantine-color-violet-6) 100%)",
+          borderRadius: "var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0",
+          color: "white"
+        }}
+      >
+        <Group justify="space-between" align="center">
+          <div>
+            <Title order={3} c="white" style={{ fontWeight: 800, letterSpacing: "-0.5px" }}>Laporan Peserta</Title>
+            <Text size="sm" c="indigo.1" mt={4}>Daftar peserta dan skor ujian mereka</Text>
+          </div>
+          <TextInput
+            placeholder="Cari nama peserta..."
+            leftSection={<IconSearch size={16} />}
+            value={query}
+            onChange={(e) => setQuery(e.currentTarget.value)}
+            w={300}
+            radius="xl"
+            variant="filled"
+            styles={{
+              input: {
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                color: "white",
+                border: "1px solid rgba(255, 255, 255, 0.3)",
+                '&::placeholder': {
+                  color: "rgba(255, 255, 255, 0.7)"
+                },
+                '&:focus': {
+                  backgroundColor: "rgba(255, 255, 255, 0.3)",
+                  borderColor: "white"
+                }
+              }
+            }}
+          />
+        </Group>
+      </Box>
 
       {/* TABEL MODERN */}
       <DataTable<ParticipantScore>
         idAccessor={(record) => String(record.examinee.id)}
         minHeight={200}
-        withTableBorder
-        borderRadius="sm"
+        withTableBorder={false}
+        borderRadius="lg"
         withColumnBorders={false}
-        striped
+        customRowAttributes={(record, index) => ({
+          style: {
+            backgroundColor: index % 2 === 0 
+              ? 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-7))' 
+              : 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
+            transition: 'background-color 0.2s',
+            color: 'light-dark(var(--mantine-color-black), var(--mantine-color-white))'
+          }
+        })}
         highlightOnHover
+        verticalSpacing="md"
+        horizontalSpacing="lg"
         records={records}
         totalRecords={totalRecords}
         recordsPerPage={PAGE_SIZE}
@@ -194,7 +232,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
           {
             accessor: "id", // Dummy accessor untuk avatar, bisa pakai apa saja yang unik
             title: "Avatar",
-            width: 70,
+            width: 100,
             render: (record) => (
               <Avatar
                 // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
@@ -238,19 +276,19 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             title: "Jml Ujian",
             sortable: false,
 
-            width: 100,
+            width: 120,
           },
           {
             accessor: "totalScore",
             title: "Total",
             sortable: true,
-            width: 100,
+            width: 120,
           },
           {
             accessor: "averageScore",
             title: "Rata-rata",
             sortable: true,
-            width: 100,
+            width: 120,
             render: (record) => record.averageScore.toFixed(2),
           },
         ]}
