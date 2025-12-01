@@ -1,9 +1,9 @@
+
 "use client";
 
 import api from "@/lib/axios";
 import {
   Alert,
-  Loader,
   Paper,
   Text,
   Title,
@@ -20,6 +20,7 @@ import {
   ActionIcon,
   useMantineColorScheme,
 } from "@mantine/core";
+import { ComponentLoader } from "@/components/ui/ComponentLoader";
 import { IconAlertCircle } from "@tabler/icons-react";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { toPng } from "html-to-image";
@@ -297,7 +298,7 @@ export function InteractiveBatchChart({
           </Text>
         </Stack>
         {/* Tampilkan Loader/Error/Empty State - TIDAK BERUBAH */}
-        {loading && <Loader />}
+        {loading && <ComponentLoader label="Memuat data grafik..." />}
         {error && (
           <Alert
             icon={<IconAlertCircle size={16} />}

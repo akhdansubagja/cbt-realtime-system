@@ -6,7 +6,6 @@ import { BatchParticipantReportData } from "@/types/batchParticipantReport";
 import {
   Alert,
   Button,
-  Loader,
   Paper,
   Table,
   Text,
@@ -17,6 +16,7 @@ import {
   ScrollArea,
   Tooltip,
 } from "@mantine/core";
+import { ComponentLoader } from "@/components/ui/ComponentLoader";
 import { Box, Group, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -132,7 +132,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   }, [batchId]);
 
   if (loading) {
-    return <Loader />;
+    return <ComponentLoader label="Memuat data peserta..." />;
   }
 
   if (error) {

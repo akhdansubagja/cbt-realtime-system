@@ -6,7 +6,6 @@ import {
   Table,
   Group,
   Button,
-  Loader,
   Alert,
   Text,
   Modal,
@@ -18,6 +17,7 @@ import {
   Skeleton,
   Kbd,
 } from "@mantine/core";
+import { ComponentLoader } from "@/components/ui/ComponentLoader";
 import {
   IconAlertCircle,
   IconEye,
@@ -228,7 +228,7 @@ export default function BatchesPage() {
     }
   };
 
-  if (loading) return <Loader />;
+  if (loading) return <ComponentLoader label="Memuat data batch..." minHeight="50vh" />;
   if (error)
     return (
       <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">

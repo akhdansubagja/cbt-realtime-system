@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   Title,
   Table,
-  Loader,
   Alert,
   Center,
   Button,

@@ -5,12 +5,12 @@ import api from '@/lib/axios';
 import { ParticipantHistory } from '@/types/participantHistory';
 import {
   Alert,
-  Loader,
   Paper,
   Text,
   Title,
   useMantineTheme,
 } from '@mantine/core';
+import { ComponentLoader } from '@/components/ui/ComponentLoader';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import {
@@ -76,7 +76,7 @@ export function ExamineeHistoryChart({
   }, [examineeId]);
 
   if (loading) {
-    return <Loader />;
+    return <ComponentLoader label="Memuat riwayat ujian..." />;
   }
 
   if (error) {

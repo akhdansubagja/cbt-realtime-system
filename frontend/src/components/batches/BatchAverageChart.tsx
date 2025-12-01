@@ -5,12 +5,12 @@ import api from '@/lib/axios';
 import { BatchAverageReport } from '@/types/batchAverageReport';
 import {
   Alert,
-  Loader,
   Paper,
   Text,
   Title,
   useMantineTheme,
 } from '@mantine/core';
+import { ComponentLoader } from '@/components/ui/ComponentLoader';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import {
@@ -71,7 +71,7 @@ export function BatchAverageChart({ batchId }: BatchAverageChartProps) {
   }, [batchId]);
 
   if (loading) {
-    return <Loader />;
+    return <ComponentLoader label="Memuat grafik..." />;
   }
 
   if (error) {

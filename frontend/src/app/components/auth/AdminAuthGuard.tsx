@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Center, Loader } from '@mantine/core';
+import { FullPageLoader } from '@/components/ui/FullPageLoader';
 
 // Komponen ini akan "membungkus" halaman yang ingin diproteksi
 export default function AdminAuthGuard({ children }: { children: React.ReactNode }) {
@@ -25,11 +25,7 @@ export default function AdminAuthGuard({ children }: { children: React.ReactNode
 
   // Selama pengecekan, tampilkan loader
   if (isLoading) {
-    return (
-      <Center style={{ height: '100vh' }}>
-        <Loader />
-      </Center>
-    );
+    return <FullPageLoader />;
   }
 
   // Jika pengecekan selesai dan token ada, tampilkan halaman yang diproteksi
