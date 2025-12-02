@@ -793,7 +793,7 @@ export default function ExamsPage() {
             <DataTable<Exam>
               withTableBorder={true}
               withColumnBorders={false}
-              borderRadius="md"
+              borderRadius="lg"
               shadow="sm"
               striped
               highlightOnHover

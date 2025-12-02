@@ -570,7 +570,7 @@ export default function SingleQuestionBankPage() {
             <DataTable<Question>
               withTableBorder={false}
               withColumnBorders={false}
-              borderRadius="md"
+              borderRadius="lg"
               shadow="sm"
               striped
               highlightOnHover

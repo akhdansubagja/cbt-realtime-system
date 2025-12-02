@@ -313,7 +313,7 @@ export default function BatchesPage() {
         <DataTable<Batch>
           minHeight={150}
           withTableBorder={false}
-          borderRadius="sm"
+          borderRadius="lg"
           striped
           highlightOnHover
           // Data & Pagination

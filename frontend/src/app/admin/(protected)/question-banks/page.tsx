@@ -334,7 +334,7 @@ export default function QuestionBanksPage() {
             <DataTable<QuestionBank>
               withTableBorder
               withColumnBorders={false}
-              borderRadius="md"
+              borderRadius="lg"
               shadow="sm"
               striped
               highlightOnHover

@@ -37,7 +37,9 @@ DONE16. buat filter di halaman manajemen ujian berdasarkan status.
 
 DONE17. buat agar sistem bisa menambahkan peserta dengan nama yang sama. (hingga saat ini masih bingung unique_keynya apa)
 
+18. buat animasi loading yang bagus untuk setiap loading yang ada atau diperlukan.
 
+19. buat fitur untuk menambahkan soal secara banyak secara langsung.
 
 
 
