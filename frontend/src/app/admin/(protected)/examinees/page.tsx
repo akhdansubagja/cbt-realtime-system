@@ -561,6 +561,7 @@ export default function ExamineesPage() {
               onSelectedRecordsChange={setSelectedRecords}
               isRecordSelectable={(record) => true}
               idAccessor="id"
+              fetching={loading}
               columns={[
                 {
                   accessor: "avatar_url",

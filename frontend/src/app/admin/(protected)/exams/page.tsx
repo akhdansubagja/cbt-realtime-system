@@ -798,6 +798,7 @@ export default function ExamsPage() {
               striped
               highlightOnHover
               rowStyle={() => ({ cursor: "pointer" })}
+              fetching={loading}
               onRowClick={({ record: exam }) => {
                 router.push(`/admin/monitoring/${exam.id}`);
               }}

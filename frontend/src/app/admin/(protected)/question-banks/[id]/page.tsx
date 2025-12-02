@@ -580,6 +580,7 @@ export default function SingleQuestionBankPage() {
               onSelectedRecordsChange={setSelectedRecords}
               isRecordSelectable={(record) => true}
               idAccessor="id"
+              fetching={loading}
             columns={[
               { accessor: "question_text", title: "Teks Soal", ellipsis: true },
               {

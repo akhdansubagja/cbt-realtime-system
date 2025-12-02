@@ -347,6 +347,7 @@ export default function QuestionBanksPage() {
               selectedRecords={selectedRecords}
               onSelectedRecordsChange={setSelectedRecords}
               idAccessor="id"
+              fetching={loading}
               columns={[
                 { accessor: "name", title: "Nama Bank Soal", sortable: true },
                 {
