@@ -1,10 +1,14 @@
 // frontend/src/types/participantHistory.ts
-import { Exam } from './exam';
+import { Exam } from "./exam";
 
 export interface ParticipantHistory {
   id: number;
+  exam_id: number;
   final_score: number | null;
   status: string;
+  start_time: string | null;
+  finished_at: string | null;
+  created_at: string; // Fallback date
   exam: Exam; // <- Kita embed tipe Exam di sini
   // Tambahkan properti lain jika diperlukan
-}   
+}

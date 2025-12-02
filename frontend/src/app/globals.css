@@ -29,7 +29,6 @@ body {
   font-family: var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom Scrollbar */
@@ -61,11 +60,15 @@ body {
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+  height: 100%;
+  overflow: clip;
 }
 
 ::view-transition-old(root) {
   z-index: 1;
+  opacity: 1;
 }
+
 ::view-transition-new(root) {
   z-index: 9999;
 }

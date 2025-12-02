@@ -43,7 +43,9 @@ DONE18. buat animasi loading yang bagus untuk setiap loading yang ada atau diper
 
 20. buat status di batch, buat tau apa batch itu aktif atau engga peserta yang ada di batch tersebutnya, misalkan ada 3 posisi, yaitu aktif/nonaktif/aktifsebagian. 
 
-21. ubah halaman detail suatu peserta supaya menampilkan detail dari seorang peserta secara lengkap, mulai dari ujian yang telah dilakukan, nilai atau skor, tanggal didaftarkan, foto profile dan lain lain sebagainya.
+DONE21. ubah halaman detail suatu peserta supaya menampilkan detail dari seorang peserta secara lengkap, mulai dari ujian yang telah dilakukan, nilai atau skor, tanggal didaftarkan, foto profile dan lain lain sebagainya.
+
+22. pada halaman detail bank soal, alias halaman di mana soal soal berada, buat agar 
 
 
 

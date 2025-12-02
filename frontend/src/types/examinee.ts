@@ -1,9 +1,13 @@
-// frontend/src/types/examinee.ts
+import { Batch } from "./batch";
+
 export interface Examinee {
   id: number;
   name: string;
   batch_id: number;
+  batch?: Batch | null;
   avatar_url: string | null;
-  createdAt: string;
-  updatedAt: string;
+  is_active: boolean;
+  uniqid: string;
+  created_at: string;
+  updated_at: string;
 }

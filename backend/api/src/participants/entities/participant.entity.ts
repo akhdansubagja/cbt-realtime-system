@@ -6,6 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  CreateDateColumn,
   Column,
   OneToMany, // <-- Import OneToMany
 } from 'typeorm';
@@ -49,6 +50,9 @@ export class Participant {
 
   @Column({ type: 'timestamptz', nullable: true })
   finished_at: Date;
+
+  @CreateDateColumn()
+  created_at: Date;
 
   @UpdateDateColumn()
   updated_at: Date;

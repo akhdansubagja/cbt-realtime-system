@@ -3,59 +3,83 @@
 
 import {
   Title,
-  Paper,
   Text,
   Loader,
   Alert,
   Breadcrumbs,
   Anchor,
   Stack,
+  Grid,
+  Group,
 } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { Examinee } from '@/types/examinee';
+import { ParticipantHistory } from '@/types/participantHistory';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ExamineeHistoryChart } from '@/components/charts/ExamineeHistoryChart';
-
+import { ExamineeProfileCard } from '@/components/examinees/ExamineeProfileCard';
+import { ExamineeHistoryTable } from '@/components/examinees/ExamineeHistoryTable';
+import { DataTableSortStatus } from 'mantine-datatable';
+import sortBy from 'lodash/sortBy';
 
 export default function ExamineeDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const examineeId = parseInt(id, 10); // ID sebagai number
+  const examineeId = parseInt(id, 10);
 
   const [examinee, setExaminee] = useState<Examinee | null>(null);
+  const [history, setHistory] = useState<ParticipantHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<ParticipantHistory>>({
+    columnAccessor: 'start_time',
+    direction: 'desc',
+  });
 
   useEffect(() => {
     if (!examineeId) return;
 
-    const fetchExamineeDetail = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        // Endpoint ini mengambil detail 1 peserta
-        const response = await api.get(`/examinees/${examineeId}`);
-        setExaminee(response.data);
+
+        // Parallel fetching
+        const [examineeRes, historyRes] = await Promise.all([
+          api.get(`/examinees/${examineeId}`),
+          api.get<ParticipantHistory[]>(`/participants/by-examinee/${examineeId}`)
+        ]);
+
+        setExaminee(examineeRes.data);
+        
+        const historyData = historyRes.data;
+        setHistory(historyData);
+
       } catch (err) {
-        setError('Gagal mengambil detail peserta.');
+        setError('Gagal mengambil data peserta.');
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchExamineeDetail();
+    fetchData();
   }, [examineeId]);
 
-  // Menampilkan state loading
+  // Compute stats
+  const stats = {
+    totalExams: history.filter(h => h.status === 'finished').length,
+    averageScore: history.length > 0 
+      ? history.reduce((acc, curr) => acc + (curr.final_score || 0), 0) / history.filter(h => h.final_score !== null).length || 0
+      : 0
+  };
+
   if (loading) {
     return <Loader />;
   }
 
-  // Menampilkan state error
   if (error) {
     return (
       <Alert
@@ -68,40 +92,38 @@ export default function ExamineeDetailPage() {
     );
   }
 
-  // Menampilkan jika peserta tidak ditemukan
   if (!examinee) {
     return <Text>Data peserta tidak ditemukan.</Text>;
   }
 
+  // Sorting Logic
+  const sortedHistory = sortBy(history, sortStatus.columnAccessor) as ParticipantHistory[];
+  const records = sortStatus.direction === 'desc' ? sortedHistory.reverse() : sortedHistory;
+
   return (
-    <Stack>
-      <Breadcrumbs mb="md">
-        {/* Link kembali ke Batch (jika ada) atau ke daftar Peserta */}
-        {examinee.batch_id ? (
-          <Anchor component={Link} href={`/admin/batches/${examinee.batch_id}`}>
-            Detail Batch
-          </Anchor>
-        ) : (
-          <Anchor component={Link} href="/admin/examinees">
-            Manajemen Peserta
-          </Anchor>
-        )}
+    <Stack gap="lg">
+      <Breadcrumbs>
+        <Anchor component={Link} href="/admin/examinees">
+          Manajemen Peserta
+        </Anchor>
         <Text>{examinee.name}</Text>
       </Breadcrumbs>
 
-      <Title order={2} mb="md">
-        Detail Peserta: {examinee.name}
-      </Title>
+      <Title order={2}>Detail Peserta</Title>
 
-      {/* V V V Tampilkan Komponen Grafik V V V */}
-      {/* Kita hanya perlu meneruskan examineeId. 
-          Komponen akan menangani logikanya sendiri.
-      */}
-      <ExamineeHistoryChart examineeId={examineeId} />
-      {/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */}
-
-      {/* Anda bisa menambahkan info lain tentang peserta di sini 
-          di dalam <Paper> lain jika mau */}
+      <Stack gap="lg">
+        <ExamineeProfileCard examinee={examinee} stats={stats} />
+        
+        <Stack gap="xs">
+            <Title order={4}>Riwayat Ujian Lengkap</Title>
+            <ExamineeHistoryTable 
+              records={records} 
+              loading={loading} 
+              sortStatus={sortStatus}
+              onSortStatusChange={setSortStatus}
+            />
+        </Stack>
+      </Stack>
     </Stack>
   );
 }

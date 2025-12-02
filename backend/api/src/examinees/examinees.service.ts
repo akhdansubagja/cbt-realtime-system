@@ -117,6 +117,7 @@ export class ExamineesService {
       relations: [
         'participants', // Ambil semua sesi ujian peserta ini
         'participants.exam', // Untuk setiap sesi, ambil detail ujiannya (seperti judul)
+        'batch', // <-- Tambahkan relasi batch
       ],
     });
   }

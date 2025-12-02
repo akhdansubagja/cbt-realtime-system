@@ -25,71 +25,19 @@ import {
 } from 'recharts';
 
 interface ExamineeHistoryChartProps {
-  examineeId: number; // Kita akan terima ID peserta sebagai prop
+  data: ChartData[];
 }
 
 // Tipe data khusus untuk grafik
-interface ChartData {
+export interface ChartData {
   name: string; // Nama Ujian
   Nilai: number; // Skor
 }
 
 export function ExamineeHistoryChart({
-  examineeId,
+  data,
 }: ExamineeHistoryChartProps) {
-  const [data, setData] = useState<ChartData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const theme = useMantineTheme(); // Untuk warna grafik
-
-  useEffect(() => {
-    if (!examineeId) return;
-
-    const fetchHistory = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        // Endpoint yang kita tes di Postman
-        const response = await api.get<ParticipantHistory[]>(
-          `/participants/by-examinee/${examineeId}`
-        );
-
-        // Ubah data API menjadi data yang bisa dibaca Recharts
-        const formattedData = response.data
-          .filter((item) => item.status === 'finished' && item.final_score !== null)
-          .map((item) => ({
-            name: item.exam.title, // 'Informatika', 'Matematika'
-            Nilai: item.final_score as number, // 80, 90
-          }))
-          .reverse(); // Balik urutannya agar ujian terlama di kiri
-
-        setData(formattedData);
-      } catch (err) {
-        setError('Gagal mengambil riwayat ujian.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-  }, [examineeId]);
-
-  if (loading) {
-    return <ComponentLoader label="Memuat riwayat ujian..." />;
-  }
-
-  if (error) {
-    return (
-      <Alert
-        icon={<IconAlertCircle size={16} />}
-        title="Error!"
-        color="red"
-      >
-        {error}
-      </Alert>
-    );
-  }
 
   if (data.length === 0) {
     return <Text>Peserta ini belum memiliki riwayat ujian yang selesai.</Text>;
