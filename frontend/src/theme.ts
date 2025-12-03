@@ -155,6 +155,7 @@ export const theme = createTheme({
     Modal: {
       defaultProps: {
         radius: "lg",
+        padding: 0,
         overlayProps: {
           backgroundOpacity: 0.55,
           blur: 5,
@@ -163,6 +164,36 @@ export const theme = createTheme({
           transition: "pop",
         },
       },
+      styles: (theme: any) => ({
+        content: {
+          display: "flex",
+          flexDirection: "column",
+          padding: 0,
+          gap: 0,
+          overflow: "hidden",
+        },
+
+        header: {
+          padding: theme.spacing.md,
+          margin: 0,
+          borderBottom: `1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4))`,
+          backgroundColor:
+            "light-dark(var(--mantine-color-white), var(--mantine-color-dark-6))",
+          width: "100%",
+          flex: "0 0 auto",
+          minHeight: "auto",
+
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+        },
+
+        body: {
+          padding: theme.spacing.md,
+          width: "100%",
+          flex: "1 1 auto",
+          overflowY: "auto",
+        },
+      }),
     },
     Badge: {
       defaultProps: {
