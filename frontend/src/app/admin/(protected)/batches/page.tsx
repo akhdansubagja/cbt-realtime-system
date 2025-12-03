@@ -16,6 +16,7 @@ import {
   Box,
   Skeleton,
   Kbd,
+  Badge,
 } from "@mantine/core";
 import { ComponentLoader } from "@/components/ui/ComponentLoader";
 import {
@@ -228,6 +229,25 @@ export default function BatchesPage() {
     }
   };
 
+  const getBatchStatus = (batch: Batch) => {
+    const total = batch.examinees?.length || 0;
+    if (total === 0) {
+      return { label: "Kosong", color: "gray" };
+    }
+
+    const activeCount = batch.examinees.filter((e) => e.is_active).length;
+
+    if (activeCount === 0) {
+      return { label: "Nonaktif", color: "red" };
+    }
+
+    if (activeCount === total) {
+      return { label: "Aktif", color: "green" };
+    }
+
+    return { label: "Aktif Sebagian", color: "orange" };
+  };
+
   if (loading) return <ComponentLoader label="Memuat data batch..." minHeight="50vh" />;
   if (error)
     return (
@@ -341,6 +361,20 @@ export default function BatchesPage() {
               title: "Tanggal Dibuat",
               sortable: true,
               render: ({ createdAt }) => dayjs(createdAt).format("DD MMM YYYY"),
+            },
+            {
+              accessor: "status",
+              title: "Status",
+              sortable: false,
+              textAlign: "center",
+              render: (batch) => {
+                const status = getBatchStatus(batch);
+                return (
+                  <Badge color={status.color} variant="light">
+                    {status.label}
+                  </Badge>
+                );
+              },
             },
             {
               accessor: "actions",

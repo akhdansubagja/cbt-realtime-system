@@ -47,7 +47,7 @@ DONE21. ubah halaman detail suatu peserta supaya menampilkan detail dari seorang
 
 22. pada halaman detail bank soal, alias halaman di mana soal soal berada, buat agar 
 
-
+DONE23. buat di halaman detail batch, agar peserta dapat dklik dan dilihat detailnya, menggunakan fitur yang sudah ada pada halaman manajemen peserta.
 
 
 

@@ -24,6 +24,7 @@ import {
   IconSearch,
   IconUserSearch,
 } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 import { DataTable, DataTableSortStatus } from "mantine-datatable"; // Import Library Modern
 import sortBy from "lodash/sortBy"; // Helper untuk sorting
 import Link from "next/link";
@@ -42,6 +43,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const router = useRouter();
 
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10; // Bisa dibuat dinamis jika mau
@@ -219,6 +221,10 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
           }
         })}
         highlightOnHover
+        rowStyle={() => ({ cursor: "pointer" })}
+        onRowClick={({ record }) => {
+          router.push(`/admin/examinees/${record.examinee.id}`);
+        }}
         verticalSpacing="md"
         horizontalSpacing="lg"
         records={records}
@@ -232,22 +238,24 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
           {
             accessor: "id", // Dummy accessor untuk avatar, bisa pakai apa saja yang unik
             title: "Avatar",
-            width: 100,
+            width: 85,
             render: (record) => (
-              <Avatar
-                // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
-                src={
-                  record.examinee.avatar
-                    ? `http://localhost:3000/${record.examinee.avatar}`
-                    : null
-                }
-                size="md"
-                radius="xl"
-                style={{ cursor: "pointer" }}
-                onClick={() => handleAvatarClick(record.examinee.avatar)}
-              >
-                {record.examinee.name.charAt(0)}
-              </Avatar>
+              <Box onClick={(e) => e.stopPropagation()}>
+                <Avatar
+                  // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
+                  src={
+                    record.examinee.avatar
+                      ? `http://localhost:3000/${record.examinee.avatar}`
+                      : null
+                  }
+                  size="md"
+                  radius="xl"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleAvatarClick(record.examinee.avatar)}
+                >
+                  {record.examinee.name.charAt(0)}
+                </Avatar>
+              </Box>
             ),
           },
           {

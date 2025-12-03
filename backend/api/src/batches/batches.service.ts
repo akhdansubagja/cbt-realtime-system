@@ -23,6 +23,9 @@ export class BatchesService {
       order: {
         id: 'ASC', // Urutkan berdasarkan ID
       },
+      relations: {
+        examinees: true,
+      },
     });
   }
 
