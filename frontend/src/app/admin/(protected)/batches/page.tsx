@@ -41,6 +41,7 @@ import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DataTable, DataTableSortStatus } from "mantine-datatable";
 import sortBy from "lodash/sortBy";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 
 export default function BatchesPage() {
   // State Data
@@ -50,8 +51,7 @@ export default function BatchesPage() {
 
   // State DataTable Modern
   const [page, setPage] = useState(1);
-  const PAGE_SIZES = [10, 25, 50, 100];
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
   const [query, setQuery] = useState("");
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Batch>>({
     columnAccessor: "name",

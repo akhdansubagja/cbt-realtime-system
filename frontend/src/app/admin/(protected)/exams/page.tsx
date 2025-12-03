@@ -57,6 +57,7 @@ import sortBy from "lodash/sortBy";
 import dayjs from "dayjs";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 
 // Definisikan tipe data yang kita butuhkan
 interface Exam {
@@ -94,8 +95,7 @@ export default function ExamsPage() {
   const [questionsInPicker, setQuestionsInPicker] = useState<Question[]>([]); // Untuk daftar soal di modal
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const PAGE_SIZES = [10, 20, 50];
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
 
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Exam>>({
     columnAccessor: "title",

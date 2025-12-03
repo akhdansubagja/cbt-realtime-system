@@ -49,6 +49,7 @@ import dayjs from "dayjs";
 import { Batch } from "@/types/batch";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 
 interface Examinee {
   id: number;
@@ -69,8 +70,7 @@ export default function ExamineesPage() {
   const [editingExaminee, setEditingExaminee] = useState<Examinee | null>(null);
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const PAGE_SIZES = [10, 25, 50, 100];
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[3]);
+  const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
   const [query, setQuery] = useState("");
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Examinee>>({
     columnAccessor: "name",

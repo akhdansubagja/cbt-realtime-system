@@ -43,6 +43,7 @@ import dayjs from "dayjs";
 import sortBy from "lodash/sortBy";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 
 // Definisikan tipe data
 interface Question {
@@ -74,8 +75,7 @@ export default function SingleQuestionBankPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const PAGE_SIZES = [10, 25, 50, 100];
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [
     deleteModalOpened,
