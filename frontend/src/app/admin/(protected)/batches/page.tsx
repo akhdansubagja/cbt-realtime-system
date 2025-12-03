@@ -50,7 +50,8 @@ export default function BatchesPage() {
 
   // State DataTable Modern
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const PAGE_SIZES = [10, 25, 50, 100];
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const [query, setQuery] = useState("");
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Batch>>({
     columnAccessor: "name",
@@ -108,10 +109,10 @@ export default function BatchesPage() {
     if (sortStatus.direction === "desc") data = data.reverse();
 
     // Pagination
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize;
     return data.slice(from, to);
-  }, [batches, query, sortStatus, page]);
+  }, [batches, query, sortStatus, page, pageSize]);
 
   // Total data (untuk indikator halaman)
   const totalRecords = useMemo(() => {
@@ -122,8 +123,8 @@ export default function BatchesPage() {
       : batches.length;
   }, [batches, query]);
 
-  // Reset halaman ke 1 jika user mengetik di search
-  useEffect(() => setPage(1), [query]);
+  // Reset halaman ke 1 jika user mengetik di search atau ganti page size
+  useEffect(() => setPage(1), [query, pageSize]);
 
   // 4. Handler Actions (Create/Edit/Delete)
   const handleSubmit = async (values: { name: string }) => {
@@ -339,9 +340,14 @@ export default function BatchesPage() {
           // Data & Pagination
           records={records}
           totalRecords={totalRecords}
-          recordsPerPage={PAGE_SIZE}
+          recordsPerPage={pageSize}
           page={page}
           onPageChange={setPage}
+          recordsPerPageOptions={PAGE_SIZES}
+          onRecordsPerPageChange={setPageSize}
+          paginationText={({ from, to, totalRecords }) =>
+            `${from} - ${to} dari ${totalRecords}`
+          }
           selectedRecords={selectedRecords}
           onSelectedRecordsChange={setSelectedRecords}
           isRecordSelectable={(record) => true}

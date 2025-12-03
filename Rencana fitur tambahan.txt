@@ -41,13 +41,17 @@ DONE18. buat animasi loading yang bagus untuk setiap loading yang ada atau diper
 
 19. buat fitur untuk menambahkan soal secara banyak secara langsung.
 
-20. buat status di batch, buat tau apa batch itu aktif atau engga peserta yang ada di batch tersebutnya, misalkan ada 3 posisi, yaitu aktif/nonaktif/aktifsebagian. 
+DONE20. buat status di batch, buat tau apa batch itu aktif atau engga peserta yang ada di batch tersebutnya, misalkan ada 3 posisi, yaitu aktif/nonaktif/aktifsebagian. 
 
 DONE21. ubah halaman detail suatu peserta supaya menampilkan detail dari seorang peserta secara lengkap, mulai dari ujian yang telah dilakukan, nilai atau skor, tanggal didaftarkan, foto profile dan lain lain sebagainya.
 
-22. pada halaman detail bank soal, alias halaman di mana soal soal berada, buat agar 
+DONE22. pada halaman detail bank soal, alias halaman di mana soal soal berada, buat agar lebih bagus dan baik secara tampilan maupun fungsi.
 
 DONE23. buat di halaman detail batch, agar peserta dapat dklik dan dilihat detailnya, menggunakan fitur yang sudah ada pada halaman manajemen peserta.
+
+DONE24. perbaiki pada tiap modal yang seperti menjadi aneh kotaknya
+
+DONE25.hilangkan tipe soal "essay"
 
 
 
