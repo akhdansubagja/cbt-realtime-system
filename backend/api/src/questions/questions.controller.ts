@@ -8,9 +8,10 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
   ParseIntPipe, // <-- Tambahan Disarankan: Validasi ID harus angka
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { QuestionsService } from './questions.service';
@@ -62,8 +63,35 @@ export class QuestionsController {
   }
 
   @Post('bulk')
-  createBulk(@Body() createBulkDto: CreateBulkQuestionsDto) {
-    return this.questionsService.createBulk(createBulkDto);
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          const filename = `${uniqueSuffix}${ext}`;
+          callback(null, filename);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return callback(
+            new Error('Hanya file gambar yang diizinkan!'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  createBulk(
+    @Body() body: { data: string },
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    const createBulkDto: CreateBulkQuestionsDto = JSON.parse(body.data);
+    return this.questionsService.createBulk(createBulkDto, files);
   }
 
   @Get()

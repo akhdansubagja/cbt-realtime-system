@@ -14,8 +14,11 @@ import {
   SimpleGrid,
   Divider,
   ActionIcon,
+  FileInput,
+  Image,
+  Center
 } from "@mantine/core";
-import { IconAlertCircle, IconCheck, IconX } from "@tabler/icons-react";
+import { IconAlertCircle, IconCheck, IconX, IconPhoto, IconTrash } from "@tabler/icons-react";
 import { parseQuestionText, ParsedQuestion } from "@/lib/question-parser";
 import { notifications } from "@mantine/notifications";
 
@@ -37,9 +40,44 @@ export function QuickImportModal({
 
   useEffect(() => {
     const parsed = parseQuestionText(text);
-    setParsedQuestions(parsed);
+    // Preserve existing images if question text matches (simple heuristic)
+    // Or just reset images when text changes? 
+    // For simplicity, let's reset images when text changes significantly, 
+    // but maybe we can try to keep them if the array length is same?
+    // Actually, re-parsing on every keystroke might lose images if we just replace state.
+    // Better approach: Merge new parsed data with existing state if possible.
+    
+    setParsedQuestions(prev => {
+      // If length changed, probably hard to map. Reset images.
+      if (prev.length !== parsed.length) return parsed;
+
+      return parsed.map((q, i) => ({
+        ...q,
+        imageFile: prev[i]?.imageFile,
+        imagePreviewUrl: prev[i]?.imagePreviewUrl
+      }));
+    });
+    
     setErrorCount(parsed.filter((q) => !q.isValid).length);
   }, [text]);
+
+  const handleFileChange = (index: number, file: File | null) => {
+    setParsedQuestions(prev => {
+      const newQuestions = [...prev];
+      const question = { ...newQuestions[index] };
+      
+      if (file) {
+        question.imageFile = file;
+        question.imagePreviewUrl = URL.createObjectURL(file);
+      } else {
+        question.imageFile = undefined;
+        question.imagePreviewUrl = undefined;
+      }
+      
+      newQuestions[index] = question;
+      return newQuestions;
+    });
+  };
 
   const handleSave = async () => {
     if (errorCount > 0) return;
@@ -159,6 +197,40 @@ ANSWER: B`}
                       </Badge>
                     )}
                   </Group>
+
+                  {q.imagePreviewUrl && (
+                    <Box mb="sm">
+                      <Image 
+                        src={q.imagePreviewUrl} 
+                        h={100} 
+                        w="auto" 
+                        fit="contain" 
+                        radius="sm"
+                        mb="xs"
+                      />
+                      <Button 
+                        color="red" 
+                        variant="subtle" 
+                        size="xs" 
+                        onClick={() => handleFileChange(i, null)}
+                        leftSection={<IconTrash size={14} />}
+                      >
+                        Remove Image
+                      </Button>
+                    </Box>
+                  )}
+
+                  {!q.imagePreviewUrl && (
+                    <FileInput 
+                      placeholder="Attach Image (Optional)" 
+                      accept="image/*" 
+                      size="xs" 
+                      mb="sm"
+                      leftSection={<IconPhoto size={14} />}
+                      onChange={(file) => handleFileChange(i, file)}
+                      clearable
+                    />
+                  )}
 
                   <Stack gap={4} ml="lg">
                     {q.options.map((opt) => (

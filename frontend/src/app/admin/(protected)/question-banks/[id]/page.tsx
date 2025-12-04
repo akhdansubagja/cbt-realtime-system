@@ -361,19 +361,33 @@ export default function SingleQuestionBankPage() {
 
   const handleBulkImport = async (parsedQuestions: ParsedQuestion[]) => {
     try {
-      const payload = {
-        bankId: parseInt(bankId),
-        questions: parsedQuestions.map(q => ({
-          text: q.question_text,
-          type: 'multiple_choice',
-          options: q.options.map(opt => ({
-            text: opt.text,
-            isCorrect: opt.key === q.correct_answer
-          }))
+      const formData = new FormData();
+      
+      const questionsData = parsedQuestions.map(q => ({
+        text: q.question_text,
+        type: 'multiple_choice',
+        options: q.options.map(opt => ({
+          text: opt.text,
+          isCorrect: opt.key === q.correct_answer
         }))
-      };
+      }));
 
-      await api.post('/questions/bulk', payload);
+      formData.append('data', JSON.stringify({
+        bankId: parseInt(bankId),
+        questions: questionsData
+      }));
+
+      parsedQuestions.forEach((q, index) => {
+        if (q.imageFile) {
+          formData.append(`images_${index}`, q.imageFile);
+        }
+      });
+
+      await api.post('/questions/bulk', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       notifications.show({
         title: "Berhasil!",

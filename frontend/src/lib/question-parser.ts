@@ -5,6 +5,8 @@ export interface ParsedQuestion {
   correct_answer: string;
   isValid: boolean;
   validationError?: string;
+  imageFile?: File;
+  imagePreviewUrl?: string;
 }
 
 export function parseQuestionText(text: string): ParsedQuestion[] {

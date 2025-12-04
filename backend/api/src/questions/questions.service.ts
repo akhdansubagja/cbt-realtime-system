@@ -41,14 +41,17 @@ export class QuestionsService {
     return this.questionRepository.save(newQuestion);
   }
 
-  async createBulk(createBulkDto: CreateBulkQuestionsDto) {
+  async createBulk(
+    createBulkDto: CreateBulkQuestionsDto,
+    files: Array<Express.Multer.File> = [],
+  ) {
     const { bankId, questions } = createBulkDto;
 
     // Validate bank exists (optional but good practice)
     // const bank = await this.bankRepository.findOneBy({ id: bankId });
     // if (!bank) throw new NotFoundException('Bank not found');
 
-    const entities = questions.map((q) => {
+    const entities = questions.map((q, index) => {
       // Map options to the format expected by the entity (assuming JSONB or similar)
       // Based on existing code: options: { key: string; text: string }[]
       // But DTO has { text, isCorrect }
@@ -66,6 +69,11 @@ export class QuestionsService {
           ? String.fromCharCode(65 + correctOptionIndex)
           : '';
 
+      // Find image for this question index
+      // Frontend sends 'images_0', 'images_1', etc.
+      const imageFile = files.find((f) => f.fieldname === `images_${index}`);
+      const imageUrl = imageFile ? `/uploads/${imageFile.filename}` : undefined;
+
       return this.questionRepository.create({
         question_text: q.text,
         question_type:
@@ -75,6 +83,7 @@ export class QuestionsService {
         options: mappedOptions,
         correct_answer: correctAnswer,
         bank: { id: bankId },
+        image_url: imageUrl,
       });
     });
 
