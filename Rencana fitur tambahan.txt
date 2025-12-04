@@ -53,7 +53,7 @@ DONE24. perbaiki pada tiap modal yang seperti menjadi aneh kotaknya
 
 DONE25.hilangkan tipe soal "essay"
 
-26. terapkan fitur pencarian yang sekarang ada di halaman detail bank soal, yaitu halaman di mana soal soal dari bank soal berada, ke halaman manajemen peserta.
+DONE26. terapkan fitur pencarian yang sekarang ada di halaman detail bank soal, yaitu halaman di mana soal soal dari bank soal berada, ke halaman manajemen peserta.
 
 
 

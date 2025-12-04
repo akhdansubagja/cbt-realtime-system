@@ -32,7 +32,7 @@ export class Question {
   question_text: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  image_url: string;
+  image_url: string | null;
 
   @Column({
     type: 'enum',

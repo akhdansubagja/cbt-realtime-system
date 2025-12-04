@@ -22,17 +22,12 @@ import { IconAlertCircle, IconCheck, IconX, IconPhoto, IconTrash } from "@tabler
 import { parseQuestionText, ParsedQuestion } from "@/lib/question-parser";
 import { notifications } from "@mantine/notifications";
 
-interface QuickImportModalProps {
-  opened: boolean;
-  onClose: () => void;
+interface QuickImportPanelProps {
   onSave: (questions: ParsedQuestion[]) => Promise<void>;
+  onCancel: () => void;
 }
 
-export function QuickImportModal({
-  opened,
-  onClose,
-  onSave,
-}: QuickImportModalProps) {
+export function QuickImportPanel({ onSave, onCancel }: QuickImportPanelProps) {
   const [text, setText] = useState("");
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [errorCount, setErrorCount] = useState(0);
@@ -40,22 +35,22 @@ export function QuickImportModal({
 
   useEffect(() => {
     const parsed = parseQuestionText(text);
-    // Preserve existing images if question text matches (simple heuristic)
-    // Or just reset images when text changes? 
-    // For simplicity, let's reset images when text changes significantly, 
-    // but maybe we can try to keep them if the array length is same?
-    // Actually, re-parsing on every keystroke might lose images if we just replace state.
-    // Better approach: Merge new parsed data with existing state if possible.
     
     setParsedQuestions(prev => {
-      // If length changed, probably hard to map. Reset images.
-      if (prev.length !== parsed.length) return parsed;
-
-      return parsed.map((q, i) => ({
-        ...q,
-        imageFile: prev[i]?.imageFile,
-        imagePreviewUrl: prev[i]?.imagePreviewUrl
-      }));
+      return parsed.map((newQ, i) => {
+        // Check if we had a question at this index previously
+        const existingQ = prev[i];
+        
+        // If yes, PRESERVE the image data
+        if (existingQ && existingQ.imageFile) {
+          return {
+            ...newQ,
+            imageFile: existingQ.imageFile,
+            imagePreviewUrl: existingQ.imagePreviewUrl
+          };
+        }
+        return newQ;
+      });
     });
     
     setErrorCount(parsed.filter((q) => !q.isValid).length);
@@ -86,7 +81,7 @@ export function QuickImportModal({
     try {
       await onSave(parsedQuestions);
       setText(""); // Reset form on success
-      onClose();
+      onCancel();
     } catch (error) {
       // Error handling is done in parent or global handler
     } finally {
@@ -95,69 +90,35 @@ export function QuickImportModal({
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title="Quick Question Import"
-      size="90%"
-      styles={{
-        body: { height: "80vh", display: "flex", flexDirection: "column" },
-      }}
-      centered
-    >
-      <Group align="flex-start" grow style={{ flex: 1, overflow: "hidden" }}>
-        {/* LEFT PANEL: INPUT */}
-        <Stack style={{ height: "100%" }}>
-          <Text size="sm" c="dimmed">
-            Paste your questions here. Supported formats:
-            <br />
-            1. Suffix: "Option text ##" for correct answer.
-            <br />
-            2. Answer Line: "ANSWER: A" on a new line.
-          </Text>
-          <Textarea
-            placeholder={`1. What is 2+2?
-a. 3
-b. 4 ##
-c. 5
+    <Stack h="100%">
+      <SimpleGrid cols={2} spacing="md" style={{ flex: 1, minHeight: 0 }}>
+        <Stack h="100%">
+          <Text fw={500}>Paste Text Soal di Sini:</Text>
+          <Textarea 
+            placeholder={`Format A (Suffix):
+1. Ibukota Indonesia adalah...
+a. Bandung
+b. Jakarta ##
+c. Surabaya
 
-2. Capital of France?
-A. London
-B. Paris
+Format B (Answer Line):
+1. Ibukota Indonesia adalah...
+A. Bandung
+B. Jakarta
 ANSWER: B`}
             value={text}
             onChange={(e) => setText(e.currentTarget.value)}
-            style={{ flex: 1 }}
-            styles={{ 
-              input: { 
-                height: "100%", 
-                fontFamily: "monospace",
-                resize: "vertical" 
-              },
-              wrapper: {
-                height: "100%",
-                display: "flex",
-                flexDirection: "column"
-              }
-            }}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+            styles={{ wrapper: { flex: 1 }, input: { height: '100%' } }}
           />
         </Stack>
 
-        {/* RIGHT PANEL: PREVIEW */}
-        <Stack
-          style={{
-            height: "100%",
-            borderLeft: "1px solid #eee",
-            paddingLeft: "1rem",
-          }}
-        >
+        <Stack h="100%" style={{ overflowY: 'auto' }}>
           <Group justify="space-between">
-            <Text fw={700}>
-              Live Preview ({parsedQuestions.length} Questions)
-            </Text>
+            <Text fw={500}>Live Preview ({parsedQuestions.length} Soal)</Text>
             {errorCount > 0 && (
               <Badge color="red" leftSection={<IconAlertCircle size={14} />}>
-                {errorCount} Errors
+                {errorCount} Error
               </Badge>
             )}
           </Group>
@@ -256,22 +217,19 @@ ANSWER: B`}
             </Stack>
           </ScrollArea>
         </Stack>
-      </Group>
+      </SimpleGrid>
 
-      <Divider my="md" />
+      <Divider />
 
       <Group justify="flex-end">
-        <Button variant="default" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={parsedQuestions.length === 0 || errorCount > 0}
-          loading={isSaving}
+        <Button variant="default" onClick={onCancel}>Batal</Button>
+        <Button 
+          onClick={handleSave} 
+          disabled={errorCount > 0 || parsedQuestions.length === 0}
         >
-          Save All ({parsedQuestions.length})
+          Simpan Semua ({parsedQuestions.length})
         </Button>
       </Group>
-    </Modal>
+    </Stack>
   );
 }

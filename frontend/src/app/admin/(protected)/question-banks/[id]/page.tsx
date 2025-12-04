@@ -19,12 +19,13 @@ import {
   SimpleGrid,
   ActionIcon,
   Pagination,
+  Tabs,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { useDisclosure, useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconFilter, IconTrash } from "@tabler/icons-react";
+import { IconFilter, IconTrash, IconList, IconBolt } from "@tabler/icons-react";
 import api from "@/lib/axios";
 import { useMemo } from "react";
 import { Flex, Box, Stack, Badge, Paper, Image, Skeleton } from "@mantine/core";
@@ -44,7 +45,8 @@ import sortBy from "lodash/sortBy";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
-import { QuickImportModal } from "@/components/questions/QuickImportModal";
+import { QuickImportPanel } from "@/components/questions/QuickImportPanel";
+import { ManualQuestionForm } from "@/components/questions/ManualQuestionForm";
 import { ParsedQuestion } from "@/lib/question-parser";
 
 // Definisikan tipe data
@@ -95,8 +97,9 @@ export default function SingleQuestionBankPage() {
   const [viewModalOpened, { open: openViewModal, close: closeViewModal }] = useDisclosure(false);
   const [viewQuestion, setViewQuestion] = useState<Question | null>(null);
 
-  // State for Quick Import Modal
-  const [importModalOpened, { open: openImportModal, close: closeImportModal }] = useDisclosure(false);
+  // State for Add Modal (Unified)
+  const [addModalOpened, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
+  const [activeTab, setActiveTab] = useState<string | null>("quick-import");
 
   const handleRowClick = ({ record }: { record: Question }) => {
     setViewQuestion(record);
@@ -264,9 +267,8 @@ export default function SingleQuestionBankPage() {
   };
 
   const handleOpenAddModal = () => {
-    setEditingQuestion(null);
-    form.reset();
-    open();
+    setActiveTab("quick-import");
+    openAddModal();
   };
 
   const showDeleteModal = (question: Question) => {
@@ -300,7 +302,17 @@ export default function SingleQuestionBankPage() {
   };
 
   // --- FUNGSI SUBMIT YANG BISA CREATE & UPDATE ---
-  const handleSubmit = async (values: typeof form.values) => {
+  // --- FUNGSI SUBMIT YANG BISA CREATE & UPDATE ---
+  // Note: ManualQuestionForm handles its own submit, but we need a handler for the Edit Modal
+  // which still uses the old form logic or we can reuse ManualQuestionForm there too.
+  // For now, let's keep the Edit Modal separate or refactor it to use ManualQuestionForm as well.
+  // The prompt asked to unified "Add Question" modal.
+  // Let's refactor the Edit Modal to use ManualQuestionForm for consistency?
+  // Or just keep the old form for Edit and use ManualQuestionForm for Add?
+  // The prompt says: "Extract ManualQuestionForm... Move useForm... logic here".
+  // This implies we should use it for both.
+  
+  const handleManualSubmit = async (values: any) => {
     const payload = {
       bank_id: parseInt(bankId),
       question_text: values.question_text,
@@ -328,6 +340,7 @@ export default function SingleQuestionBankPage() {
           message: "Soal telah berhasil diperbarui.",
           color: "teal",
         });
+        close(); // Close Edit Modal
       } else {
         // --- LOGIKA CREATE ---
         response = await api.post("/questions", payload);
@@ -342,13 +355,11 @@ export default function SingleQuestionBankPage() {
           message: "Soal baru telah berhasil ditambahkan.",
           color: "teal",
         });
+        closeAddModal(); // Close Add Modal
       }
       
       // Refresh data soal
       fetchQuestionsForPage(activePage);
-
-      close();
-      form.reset();
       setEditingQuestion(null);
     } catch (err) {
       notifications.show({
@@ -396,7 +407,7 @@ export default function SingleQuestionBankPage() {
       });
 
       fetchQuestionsForPage(activePage);
-      closeImportModal();
+      closeAddModal();
     } catch (err) {
       notifications.show({
         title: "Gagal",
@@ -459,116 +470,62 @@ export default function SingleQuestionBankPage() {
 
   return (
     <>
-      {/* --- 3. MODAL UNTUK FORM TAMBAH SOAL --- */}
+      {/* --- 3. MODAL UNIFIED TAMBAH SOAL --- */}
+      <Modal
+        opened={addModalOpened}
+        onClose={closeAddModal}
+        title="Tambah Soal Baru"
+        size="xl"
+        centered
+        styles={{ body: { height: '80vh', display: 'flex', flexDirection: 'column' } }}
+      >
+        <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Tabs.List>
+            <Tabs.Tab value="quick-import" leftSection={<IconBolt size={14} />}>
+              Import Cepat
+            </Tabs.Tab>
+            <Tabs.Tab value="manual" leftSection={<IconEdit size={14} />}>
+              Input Manual
+            </Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="quick-import" pt="xs" style={{ flex: 1, minHeight: 0 }}>
+            <QuickImportPanel 
+              onSave={handleBulkImport} 
+              onCancel={closeAddModal} 
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="manual" pt="xs">
+            <ManualQuestionForm 
+              onSubmit={handleManualSubmit}
+              onCancel={closeAddModal}
+            />
+          </Tabs.Panel>
+        </Tabs>
+      </Modal>
+
+      {/* --- MODAL EDIT (Masih terpisah untuk saat ini, menggunakan ManualQuestionForm) --- */}
       <Modal
         opened={opened}
         onClose={close}
-        title="Tambah Soal Baru"
+        title="Edit Soal"
         size="lg"
         centered
       >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Textarea
-            label="Teks Soal"
-            placeholder="Masukkan isi pertanyaan di sini..."
-            withAsterisk
-            minRows={3}
-            {...form.getInputProps("question_text")}
+        {editingQuestion && (
+          <ManualQuestionForm
+            initialValues={{
+              question_text: editingQuestion.question_text,
+              question_type: editingQuestion.question_type,
+              image_url: editingQuestion.image_url || "",
+              options: editingQuestion.options || [],
+              correct_answer: editingQuestion.correct_answer || "",
+            }}
+            onSubmit={handleManualSubmit}
+            onCancel={close}
           />
-
-          <Box mt="md">
-            {/* Jika BELUM ada gambar, tampilkan Dropzone */}
-            {!form.values.image_url && (
-              <Dropzone
-                onDrop={handleImageUpload}
-                onReject={(files) => console.log("rejected files", files)}
-                maxSize={5 * 1024 ** 2} // 5MB
-                accept={IMAGE_MIME_TYPE}
-              >
-                <Group
-                  justify="center"
-                  gap="xl"
-                  mih={150}
-                  style={{ pointerEvents: "none" }}
-                >
-                  <Dropzone.Accept>
-                    <IconUpload size={52} stroke={1.5} />
-                  </Dropzone.Accept>
-                  <Dropzone.Reject>
-                    <IconX size={52} stroke={1.5} />
-                  </Dropzone.Reject>
-                  <Dropzone.Idle>
-                    <IconPhoto size={52} stroke={1.5} />
-                  </Dropzone.Idle>
-                  <div>
-                    <Text size="xl" inline>
-                      Seret gambar ke sini atau klik untuk memilih file(Opsional)
-                    </Text>
-                    <Text size="sm" c="dimmed" inline mt={7}>
-                      Ukuran file maksimal 5MB
-                    </Text>
-                  </div>
-                </Group>
-              </Dropzone>
-            )}
-
-            {/* Jika SUDAH ada gambar, tampilkan preview dan tombol hapus */}
-            {form.values.image_url && (
-              <Paper withBorder p="sm" radius="sm">
-                <Image
-                  src={`${process.env.NEXT_PUBLIC_API_URL}${form.values.image_url}`}
-                  alt="Preview soal"
-                  height={200}
-                  width="auto"
-                  fit="contain"
-                />
-                <Button
-                  fullWidth
-                  variant="light"
-                  color="red"
-                  mt="sm"
-                  onClick={() => form.setFieldValue("image_url", "")}
-                >
-                  Hapus Gambar
-                </Button>
-              </Paper>
-            )}
-          </Box>
-
-          <Text size="sm" mt="md" fw={500}>
-            Pilihan Jawaban
-          </Text>
-
-          {/* HANYA TAMPILKAN 'optionFields' SATU KALI */}
-          {optionFields}
-
-          <Group justify="flex-start" mt="md">
-            <Button
-              variant="light"
-              onClick={() => {
-                const nextKey = String.fromCharCode(
-                  65 + form.values.options.length
-                );
-                form.insertListItem("options", { key: nextKey, text: "" });
-              }}
-            >
-              + Tambah Opsi
-            </Button>
-          </Group>
-
-          <Select
-            label="Kunci Jawaban"
-            placeholder="Pilih jawaban yang benar"
-            data={form.values.options.map((opt) => opt.key)}
-            mt="md"
-            withAsterisk
-            {...form.getInputProps("correct_answer")}
-          />
-
-          <Group justify="flex-end" mt="xl">
-            <Button type="submit">Simpan Soal</Button>
-          </Group>
-        </form>
+        )}
       </Modal>
 
       <Modal
@@ -676,11 +633,8 @@ export default function SingleQuestionBankPage() {
                   Hapus ({selectedRecords.length})
                 </Button>
               )}
-              <Button leftSection={<IconUpload size={16} />} variant="default" onClick={openImportModal}>
-                Import Soal
-              </Button>
               <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAddModal}>
-                Tambah Soal Baru
+                Tambah Soal
               </Button>
             </Group>
           }
@@ -798,11 +752,7 @@ export default function SingleQuestionBankPage() {
         </Box>
       </Stack>
 
-      <QuickImportModal 
-        opened={importModalOpened} 
-        onClose={closeImportModal} 
-        onSave={handleBulkImport} 
-      />
+
     </>
   );
 }

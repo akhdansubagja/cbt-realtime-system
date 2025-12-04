@@ -3,7 +3,7 @@ import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QuestionBank } from './entities/question-bank.entity';
-import { Repository, Like, Not, IsNull } from 'typeorm';
+import { Repository, Like, ILike, Not, IsNull } from 'typeorm';
 import { Question } from 'src/questions/entities/question.entity';
 
 interface PaginationOptions {
@@ -46,7 +46,7 @@ export class QuestionBanksService {
     const where: any = { bank: { id: bankId } };
 
     if (search) {
-      where.question_text = Like(`%${search}%`);
+      where.question_text = ILike(`%${search}%`);
     }
 
     if (has_image === 'true') {

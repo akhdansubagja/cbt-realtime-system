@@ -34,8 +34,13 @@ export class QuestionsService {
   }
 
   async create(createQuestionDto: CreateQuestionDto) {
+    const payload = { ...createQuestionDto };
+    if (payload.image_url === '') {
+      payload.image_url = undefined; // or null, but undefined works with TypeORM create
+    }
+
     const newQuestion = this.questionRepository.create({
-      ...createQuestionDto,
+      ...payload,
       bank: { id: createQuestionDto.bank_id },
     });
     return this.questionRepository.save(newQuestion);
@@ -106,8 +111,19 @@ export class QuestionsService {
       throw new NotFoundException(`Question with ID ${id} not found`);
     }
 
-    // 2. LOGIKA HAPUS FILE LAMA (Jika Gambar Diganti)
-    // Cek: Apakah di payload ada image_url DAN image_url-nya beda dengan yang lama?
+    const payload: Partial<Question> = { ...updateQuestionDto };
+
+    // Fix: If image_url is an empty string, treat it as null to clear the field
+    if (payload.image_url === '') {
+      payload.image_url = null; // Use null to explicitly clear it in DB update
+    }
+
+    // 2. LOGIKA HAPUS FILE LAMA (Jika Gambar Diganti atau Dihapus)
+    // Cek: Apakah di payload ada image_url (bisa null atau string)
+    // DAN image_url-nya beda dengan yang lama?
+    // Ini mencakup kasus:
+    // a) existing.image_url = '/uploads/old.jpg', payload.image_url = '/uploads/new.jpg' (ganti gambar)
+    // b) existing.image_url = '/uploads/old.jpg', payload.image_url = null (hapus gambar)
     if (
       updateQuestionDto.image_url !== undefined && // User mengirim field image_url
       updateQuestionDto.image_url !== existingQuestion.image_url // Dan isinya berbeda
@@ -120,13 +136,14 @@ export class QuestionsService {
 
     // 3. Update Database
     const { bank_id, ...rest } = updateQuestionDto;
-    const payload: Partial<Question> = { ...rest };
+    // Merge rest into existing payload, do not redeclare
+    Object.assign(payload, rest);
 
     if (bank_id) {
       payload.bank = { id: bank_id } as any;
     }
 
-    await this.questionRepository.update(id, payload as any);
+    await this.questionRepository.update(id, payload);
     return this.findOne(id);
   }
 
