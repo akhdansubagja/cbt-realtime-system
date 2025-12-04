@@ -44,6 +44,8 @@ import sortBy from "lodash/sortBy";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
+import { QuickImportModal } from "@/components/questions/QuickImportModal";
+import { ParsedQuestion } from "@/lib/question-parser";
 
 // Definisikan tipe data
 interface Question {
@@ -92,6 +94,9 @@ export default function SingleQuestionBankPage() {
   // State untuk View Modal
   const [viewModalOpened, { open: openViewModal, close: closeViewModal }] = useDisclosure(false);
   const [viewQuestion, setViewQuestion] = useState<Question | null>(null);
+
+  // State for Quick Import Modal
+  const [importModalOpened, { open: openImportModal, close: closeImportModal }] = useDisclosure(false);
 
   const handleRowClick = ({ record }: { record: Question }) => {
     setViewQuestion(record);
@@ -351,6 +356,40 @@ export default function SingleQuestionBankPage() {
         message: "Terjadi kesalahan.",
         color: "red",
       });
+    }
+  };
+
+  const handleBulkImport = async (parsedQuestions: ParsedQuestion[]) => {
+    try {
+      const payload = {
+        bankId: parseInt(bankId),
+        questions: parsedQuestions.map(q => ({
+          text: q.question_text,
+          type: 'multiple_choice',
+          options: q.options.map(opt => ({
+            text: opt.text,
+            isCorrect: opt.key === q.correct_answer
+          }))
+        }))
+      };
+
+      await api.post('/questions/bulk', payload);
+      
+      notifications.show({
+        title: "Berhasil!",
+        message: `${parsedQuestions.length} soal berhasil diimpor.`,
+        color: "teal",
+      });
+
+      fetchQuestionsForPage(activePage);
+      closeImportModal();
+    } catch (err) {
+      notifications.show({
+        title: "Gagal",
+        message: "Gagal mengimpor soal.",
+        color: "red",
+      });
+      throw err; // Re-throw to let modal know it failed
     }
   };
 
@@ -623,6 +662,9 @@ export default function SingleQuestionBankPage() {
                   Hapus ({selectedRecords.length})
                 </Button>
               )}
+              <Button leftSection={<IconUpload size={16} />} variant="default" onClick={openImportModal}>
+                Import Soal
+              </Button>
               <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAddModal}>
                 Tambah Soal Baru
               </Button>
@@ -741,6 +783,12 @@ export default function SingleQuestionBankPage() {
           )}
         </Box>
       </Stack>
+
+      <QuickImportModal 
+        opened={importModalOpened} 
+        onClose={closeImportModal} 
+        onSave={handleBulkImport} 
+      />
     </>
   );
 }

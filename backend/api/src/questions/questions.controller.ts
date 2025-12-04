@@ -15,6 +15,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { CreateBulkQuestionsDto } from './dto/create-bulk-questions.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 
 @Controller('questions')
@@ -58,6 +59,11 @@ export class QuestionsController {
   @Post()
   create(@Body() createQuestionDto: CreateQuestionDto) {
     return this.questionsService.create(createQuestionDto);
+  }
+
+  @Post('bulk')
+  createBulk(@Body() createBulkDto: CreateBulkQuestionsDto) {
+    return this.questionsService.createBulk(createBulkDto);
   }
 
   @Get()

@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { CreateBulkQuestionsDto } from './dto/create-bulk-questions.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
-import { Question } from './entities/question.entity';
+import { Question, QuestionType } from './entities/question.entity';
 import { promises as fs } from 'fs'; // Import filesystem
 import { join } from 'path';
 
@@ -38,6 +39,47 @@ export class QuestionsService {
       bank: { id: createQuestionDto.bank_id },
     });
     return this.questionRepository.save(newQuestion);
+  }
+
+  async createBulk(createBulkDto: CreateBulkQuestionsDto) {
+    const { bankId, questions } = createBulkDto;
+
+    // Validate bank exists (optional but good practice)
+    // const bank = await this.bankRepository.findOneBy({ id: bankId });
+    // if (!bank) throw new NotFoundException('Bank not found');
+
+    const entities = questions.map((q) => {
+      // Map options to the format expected by the entity (assuming JSONB or similar)
+      // Based on existing code: options: { key: string; text: string }[]
+      // But DTO has { text, isCorrect }
+      // We need to assign keys (A, B, C...) automatically
+
+      const mappedOptions = q.options.map((opt, index) => ({
+        key: String.fromCharCode(65 + index), // A, B, C...
+        text: opt.text,
+      }));
+
+      // Find correct answer key
+      const correctOptionIndex = q.options.findIndex((opt) => opt.isCorrect);
+      const correctAnswer =
+        correctOptionIndex !== -1
+          ? String.fromCharCode(65 + correctOptionIndex)
+          : '';
+
+      return this.questionRepository.create({
+        question_text: q.text,
+        question_type:
+          q.type === 'multiple_choice'
+            ? QuestionType.MULTIPLE_CHOICE
+            : QuestionType.MULTIPLE_CHOICE, // Default to MC for now as enum only has MC
+        options: mappedOptions,
+        correct_answer: correctAnswer,
+        bank: { id: bankId },
+      });
+    });
+
+    // Use save for bulk insert (TypeORM handles this efficiently)
+    return this.questionRepository.save(entities);
   }
 
   findAll() {
