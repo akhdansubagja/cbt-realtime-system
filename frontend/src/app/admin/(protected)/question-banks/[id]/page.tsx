@@ -652,7 +652,9 @@ export default function SingleQuestionBankPage() {
               {/* Export Dropdown */}
               <Menu shadow="md" width={200}>
                 <Menu.Target>
-                  <Button variant="outline" leftSection={<IconBolt size={16} />}>Export</Button>
+                  <Button variant="outline" leftSection={<IconBolt size={16} />}>
+                    {selectedRecords.length > 0 ? `Export (${selectedRecords.length})` : 'Export'}
+                  </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>Format</Menu.Label>
@@ -724,13 +726,14 @@ export default function SingleQuestionBankPage() {
               isRecordSelectable={(record) => true}
               idAccessor="id"
               fetching={loading}
-            columns={[
+              columns={[
               {
                 accessor: "index",
                 title: "No",
-                width: 60,
+                width: 35,
                 render: (_, index) => (activePage - 1) * pageSize + index + 1,
               },
+              { accessor: "question_text", title: "Teks Soal", width: "60%" }, // Expanded width
               {
                 accessor: "has_image",
                 title: "",
@@ -741,7 +744,6 @@ export default function SingleQuestionBankPage() {
                   ) : null
                 ),
               },
-              { accessor: "question_text", title: "Teks Soal", width: "60%" }, // Expanded width
               {
                 accessor: "actions",
                 title: "Aksi",

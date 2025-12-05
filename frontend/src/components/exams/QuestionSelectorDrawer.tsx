@@ -178,10 +178,12 @@ export function QuestionSelectorDrawer({
           <Box style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
              <DataTable<Question>
                 withTableBorder
-                borderRadius="sm"
-                withColumnBorders
+                withColumnBorders={false}
+                borderRadius="lg"
+                shadow="sm"
                 striped
                 highlightOnHover
+                verticalSpacing="xs"
                 records={questions}
                 totalRecords={totalRecords}
                 recordsPerPage={pageSize}
