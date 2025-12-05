@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocalStorage } from "@mantine/hooks";
 import {
   Modal,
   Group,
@@ -23,12 +24,19 @@ import { parseQuestionText, ParsedQuestion } from "@/lib/question-parser";
 import { notifications } from "@mantine/notifications";
 
 interface QuickImportPanelProps {
+  bankId: string | number; // Added bankId
   onSave: (questions: ParsedQuestion[]) => Promise<void>;
   onCancel: () => void;
 }
 
-export function QuickImportPanel({ onSave, onCancel }: QuickImportPanelProps) {
-  const [text, setText] = useState("");
+export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelProps) {
+  const storageKey = `draft-quick-import-qbank-${bankId}`;
+  const [text, setText, removeText] = useLocalStorage({
+    key: storageKey,
+    defaultValue: "",
+    getInitialValueInEffect: false,
+  });
+  
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [errorCount, setErrorCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,7 +88,8 @@ export function QuickImportPanel({ onSave, onCancel }: QuickImportPanelProps) {
     setIsSaving(true);
     try {
       await onSave(parsedQuestions);
-      setText(""); // Reset form on success
+      setText(""); // Reset form on success (also updates localStorage to empty string)
+      removeText(); // Explicitly remove from storage
       onCancel();
     } catch (error) {
       // Error handling is done in parent or global handler

@@ -1,3 +1,5 @@
+import { useLocalStorage } from "@mantine/hooks";
+import { useEffect } from "react";
 import {
   TextInput,
   Textarea,
@@ -16,27 +18,41 @@ import { IconUpload, IconX, IconPhoto, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
 
+export interface ManualQuestionFormValues {
+  question_text: string;
+  question_type: string;
+  image_url: string;
+  options: { key: string; text: string }[];
+  correct_answer: string;
+}
+
 interface ManualQuestionFormProps {
-  initialValues?: {
-    question_text: string;
-    question_type: string;
-    image_url: string;
-    options: { key: string; text: string }[];
-    correct_answer: string;
-  };
-  onSubmit: (values: any) => void;
+  bankId?: string | number;
+  initialValues?: ManualQuestionFormValues;
+  onSubmit: (values: ManualQuestionFormValues) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
 }
 
 export function ManualQuestionForm({
+  bankId,
   initialValues,
   onSubmit,
   onCancel,
   isSubmitting = false,
 }: ManualQuestionFormProps) {
-  const form = useForm({
-    initialValues: initialValues || {
+  // Determine if we are in "Add" mode (no initialValues provided)
+  const isAddMode = !initialValues;
+  const storageKey = `draft-manual-qbank-${bankId}`;
+
+  const [draft, setDraft, removeDraft] = useLocalStorage<string | null>({
+    key: storageKey,
+    defaultValue: null,
+    getInitialValueInEffect: false, // Read immediately
+  });
+
+  const form = useForm<ManualQuestionFormValues>({
+    initialValues: initialValues || (isAddMode && draft ? JSON.parse(draft as string) : {
       question_text: "",
       question_type: "multiple_choice",
       image_url: "",
@@ -48,7 +64,7 @@ export function ManualQuestionForm({
         { key: "E", text: "" },
       ],
       correct_answer: "",
-    },
+    }),
     validate: {
       question_text: (value) =>
         value.trim().length > 0 ? null : "Teks soal tidak boleh kosong",
@@ -62,6 +78,25 @@ export function ManualQuestionForm({
         !value ? "Kunci jawaban harus dipilih" : null,
     },
   });
+
+  // Sync form changes to local storage if in Add mode
+  useEffect(() => {
+    if (isAddMode && bankId) {
+      // Only store text fields, exclude image_url if it's not needed or to save space, 
+      // but here we just store everything except maybe large blobs if we had them.
+      // The requirement said "Only store text fields".
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { image_url, ...textValues } = form.values;
+      setDraft(JSON.stringify({ ...textValues, image_url: "" })); // Explicitly don't save image_url as per requirement
+    }
+  }, [form.values, isAddMode, bankId, setDraft]);
+
+  const handleSubmit = (values: typeof form.values) => {
+    onSubmit(values);
+    if (isAddMode && bankId) {
+      removeDraft();
+    }
+  };
 
   const handleImageUpload = (files: File[]) => {
     if (files.length === 0) return;
@@ -123,7 +158,7 @@ export function ManualQuestionForm({
   ));
 
   return (
-    <form onSubmit={form.onSubmit(onSubmit)}>
+    <form onSubmit={form.onSubmit(handleSubmit)}>
       <Textarea
         label="Teks Soal"
         placeholder="Masukkan isi pertanyaan di sini..."

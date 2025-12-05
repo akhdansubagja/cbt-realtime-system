@@ -46,7 +46,7 @@ import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { QuickImportPanel } from "@/components/questions/QuickImportPanel";
-import { ManualQuestionForm } from "@/components/questions/ManualQuestionForm";
+import { ManualQuestionForm, ManualQuestionFormValues } from "@/components/questions/ManualQuestionForm";
 import { ParsedQuestion } from "@/lib/question-parser";
 
 // Definisikan tipe data
@@ -312,7 +312,7 @@ export default function SingleQuestionBankPage() {
   // The prompt says: "Extract ManualQuestionForm... Move useForm... logic here".
   // This implies we should use it for both.
   
-  const handleManualSubmit = async (values: any) => {
+  const handleManualSubmit = async (values: ManualQuestionFormValues) => {
     const payload = {
       bank_id: parseInt(bankId),
       question_text: values.question_text,
@@ -323,6 +323,7 @@ export default function SingleQuestionBankPage() {
     };
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let response: any;
       if (editingQuestion) {
         // --- LOGIKA UPDATE ---
@@ -491,6 +492,7 @@ export default function SingleQuestionBankPage() {
 
           <Tabs.Panel value="quick-import" pt="xs" style={{ flex: 1, minHeight: 0 }}>
             <QuickImportPanel 
+              bankId={bankId}
               onSave={handleBulkImport} 
               onCancel={closeAddModal} 
             />
@@ -498,6 +500,7 @@ export default function SingleQuestionBankPage() {
 
           <Tabs.Panel value="manual" pt="xs">
             <ManualQuestionForm 
+              bankId={bankId}
               onSubmit={handleManualSubmit}
               onCancel={closeAddModal}
             />
@@ -651,8 +654,8 @@ export default function SingleQuestionBankPage() {
             style={{ flex: 2 }}
           />
           <Select
-            label="Filter Gambar"
-            placeholder="Filter Gambar"
+            label="Filter Soal"
+            placeholder="Filter Soal"
             leftSection={<IconFilter size={16} />}
             data={[
               { value: "all", label: "Semua Soal" },
