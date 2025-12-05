@@ -20,6 +20,7 @@ import {
   ActionIcon,
   Pagination,
   Tabs,
+  Menu,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
@@ -469,9 +470,20 @@ export default function SingleQuestionBankPage() {
     </Table.Tr>
   ));
 
+  const handleExport = (format: 'docx' | 'pdf') => {
+    let url = `${process.env.NEXT_PUBLIC_API_URL}/question-banks/${bankId}/export?format=${format}`;
+    
+    if (selectedRecords.length > 0) {
+      const ids = selectedRecords.map((r) => r.id).join(',');
+      url += `&ids=${ids}`;
+    }
+
+    window.open(url, '_blank');
+  };
+
   return (
     <>
-      {/* --- 3. MODAL UNIFIED TAMBAH SOAL --- */}
+      {/* ... Modals ... */}
       <Modal
         opened={addModalOpened}
         onClose={closeAddModal}
@@ -508,7 +520,7 @@ export default function SingleQuestionBankPage() {
         </Tabs>
       </Modal>
 
-      {/* --- MODAL EDIT (Masih terpisah untuk saat ini, menggunakan ManualQuestionForm) --- */}
+      {/* ... Other Modals ... */}
       <Modal
         opened={opened}
         onClose={close}
@@ -636,6 +648,23 @@ export default function SingleQuestionBankPage() {
                   Hapus ({selectedRecords.length})
                 </Button>
               )}
+              
+              {/* Export Dropdown */}
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <Button variant="outline" leftSection={<IconBolt size={16} />}>Export</Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Label>Format</Menu.Label>
+                  <Menu.Item leftSection={<IconList size={14} />} onClick={() => handleExport('docx')}>
+                    Export to DOCX
+                  </Menu.Item>
+                  <Menu.Item leftSection={<IconList size={14} />} onClick={() => handleExport('pdf')}>
+                    Export to PDF
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+
               <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAddModal}>
                 Tambah Soal
               </Button>
@@ -697,10 +726,10 @@ export default function SingleQuestionBankPage() {
               fetching={loading}
             columns={[
               {
-                accessor: "id",
-                title: "ID",
-                width: 80,
-                sortable: true,
+                accessor: "index",
+                title: "No",
+                width: 60,
+                render: (_, index) => (activePage - 1) * pageSize + index + 1,
               },
               {
                 accessor: "has_image",
@@ -712,7 +741,7 @@ export default function SingleQuestionBankPage() {
                   ) : null
                 ),
               },
-              { accessor: "question_text", title: "Teks Soal", ellipsis: true },
+              { accessor: "question_text", title: "Teks Soal", width: "60%" }, // Expanded width
               {
                 accessor: "actions",
                 title: "Aksi",
@@ -754,8 +783,6 @@ export default function SingleQuestionBankPage() {
           )}
         </Box>
       </Stack>
-
-
     </>
   );
 }

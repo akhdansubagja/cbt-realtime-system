@@ -7,7 +7,9 @@ import {
   Param,
   Delete,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { QuestionBanksService } from './question-banks.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
@@ -58,5 +60,34 @@ export class QuestionBanksController {
       search,
       has_image,
     });
+  }
+
+  @Get(':id/export')
+  async export(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Query('format') format: 'docx' | 'pdf' = 'docx',
+    @Query('ids') ids?: string,
+  ) {
+    const idList = ids ? ids.split(',').map(Number) : undefined;
+    const buffer = await this.questionBanksService.exportQuestions(
+      +id,
+      format,
+      idList,
+    );
+
+    const filename = `question-bank-${id}.${format}`;
+    const contentType =
+      format === 'docx'
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/pdf';
+
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+
+    res.send(buffer);
   }
 }

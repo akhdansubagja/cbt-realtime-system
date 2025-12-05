@@ -58,6 +58,7 @@ import dayjs from "dayjs";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
+import { QuestionSelectorDrawer } from "@/components/exams/QuestionSelectorDrawer";
 
 // Definisikan tipe data yang kita butuhkan
 interface Exam {
@@ -365,13 +366,6 @@ export default function ExamsPage() {
 
   // Fungsi untuk membuka katalog soal
   const handleSelectQuestions = () => {
-    // Ambil ID soal yang sudah ada di 'keranjang' (form)
-    const currentlySelectedIds = form.values.manual_questions.map(
-      (q) => q.question_id
-    );
-    // Set state checkbox agar sesuai dengan yang sudah ada di keranjang
-    setSelectedQuestionIds(currentlySelectedIds);
-    // Buka modal katalog
     openQuestionPickerModal();
   };
 
@@ -664,61 +658,33 @@ export default function ExamsPage() {
         </form>
       </Modal>
 
-      <Modal
+      <QuestionSelectorDrawer
         opened={questionPickerModalOpened}
         onClose={closeQuestionPickerModal}
-        title="Pilih Soal Manual"
-        size="lg"
-        centered
-      >
-        {/* --- DROPDOWN FILTER BARU --- */}
-        <Select
-          label="Filter berdasarkan Bank Soal"
-          placeholder="Pilih bank soal untuk menampilkan soal"
-          data={questionBanks}
-          value={pickerBankId}
-          onChange={(value) => {
-            setPickerBankId(value);
-            // Kosongkan centang saat bank soal diganti
-            setSelectedQuestionIds(
-              form.values.manual_questions
-                .map((q) => q.question_id)
-                .filter((id) => questionsInPicker.some((qip) => qip.id === id))
-            );
-          }}
-          clearable
-          searchable
-          mb="md"
-        />
-
-        <ScrollArea h={350}>
-          {questionsInPicker.length > 0 ? (
-            <Checkbox.Group
-              value={selectedQuestionIds.map(String)}
-              onChange={(values) => setSelectedQuestionIds(values.map(Number))}
-            >
-              <Stack>
-                {questionsInPicker.map((question) => (
-                  <Checkbox
-                    key={question.id}
-                    value={question.id.toString()}
-                    label={`${question.id}: ${question.question_text}`}
-                  />
-                ))}
-              </Stack>
-            </Checkbox.Group>
-          ) : (
-            <Text c="dimmed" ta="center">
-              Pilih bank soal untuk melihat daftar soal.
-            </Text>
-          )}
-        </ScrollArea>
-        <Group justify="flex-end" mt="md">
-          <Button onClick={handleConfirmQuestionSelection}>
-            Tambahkan Soal Terpilih
-          </Button>
-        </Group>
-      </Modal>
+        onAddQuestions={(newQuestions) => {
+          // Gabungkan soal baru dengan soal yang sudah ada
+          // Jika soal sudah ada, pertahankan poinnya (atau update jika diinginkan, tapi biasanya dipertahankan)
+          // Di sini kita replace atau merge?
+          // "Shopping Cart" model usually implies adding to existing.
+          
+          const currentQuestions = [...form.values.manual_questions];
+          
+          newQuestions.forEach(nq => {
+            const existingIndex = currentQuestions.findIndex(cq => cq.question_id === nq.question_id);
+            if (existingIndex >= 0) {
+              // Jika sudah ada, update poinnya atau biarkan? 
+              // Mari kita update poinnya jika user mengubah default score di drawer
+              currentQuestions[existingIndex].point = nq.point;
+            } else {
+              currentQuestions.push(nq);
+            }
+          });
+          
+          form.setFieldValue("manual_questions", currentQuestions);
+        }}
+        questionBanks={questionBanks}
+        existingQuestionIds={form.values.manual_questions.map(q => q.question_id)}
+      />
 
       <Stack>
         <PageHeader

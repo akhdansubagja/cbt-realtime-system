@@ -90,4 +90,154 @@ export class QuestionBanksService {
     // Hapus data dari database
     return this.questionBankRepository.delete(id);
   }
+
+  async exportQuestions(
+    bankId: number,
+    format: 'docx' | 'pdf',
+    ids?: number[],
+  ): Promise<Buffer> {
+    const bank = await this.findOne(bankId);
+    if (!bank) {
+      throw new Error('Question Bank not found');
+    }
+
+    let questions = bank.questions || [];
+
+    if (ids && ids.length > 0) {
+      questions = questions.filter((q) => ids.includes(q.id));
+    }
+
+    if (format === 'docx') {
+      return this.generateDocx(bank.name, questions);
+    } else if (format === 'pdf') {
+      return this.generatePdf(bank.name, questions);
+    } else {
+      throw new Error('Unsupported format');
+    }
+  }
+
+  private async generateDocx(
+    title: string,
+    questions: Question[],
+  ): Promise<Buffer> {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      TextRun,
+      HeadingLevel,
+      AlignmentType,
+    } = require('docx');
+
+    const children = [
+      new Paragraph({
+        text: title,
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({ text: '' }), // Spacer
+    ];
+
+    questions.forEach((q, index) => {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${index + 1}. ${q.question_text}`,
+              bold: true,
+            }),
+          ],
+        }),
+      );
+
+      if (q.options && q.options.length > 0) {
+        q.options.forEach((opt) => {
+          children.push(
+            new Paragraph({
+              text: `${opt.key}. ${opt.text}`,
+              indent: { left: 720 }, // 0.5 inch
+            }),
+          );
+        });
+      }
+
+      children.push(new Paragraph({ text: '' })); // Spacer
+    });
+
+    // Add Answer Key Section
+    children.push(
+      new Paragraph({
+        text: 'Kunci Jawaban',
+        heading: HeadingLevel.HEADING_1,
+        pageBreakBefore: true,
+      }),
+    );
+
+    questions.forEach((q, index) => {
+      children.push(
+        new Paragraph({
+          text: `${index + 1}. ${q.correct_answer}`,
+        }),
+      );
+    });
+
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: children,
+        },
+      ],
+    });
+
+    return Packer.toBuffer(doc);
+  }
+
+  private async generatePdf(
+    title: string,
+    questions: Question[],
+  ): Promise<Buffer> {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const PDFDocument = require('pdfkit');
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument();
+      const buffers: Buffer[] = [];
+
+      doc.on('data', (chunk) => buffers.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', (err) => reject(err));
+
+      // Title
+      doc.fontSize(18).text(title, { align: 'center' });
+      doc.moveDown();
+
+      // Questions
+      doc.fontSize(12);
+      questions.forEach((q, index) => {
+        doc.font('Helvetica-Bold').text(`${index + 1}. ${q.question_text}`);
+        doc.font('Helvetica');
+
+        if (q.options && q.options.length > 0) {
+          q.options.forEach((opt) => {
+            doc.text(`${opt.key}. ${opt.text}`, { indent: 20 });
+          });
+        }
+        doc.moveDown();
+      });
+
+      // Answer Key
+      doc.addPage();
+      doc.fontSize(16).text('Kunci Jawaban', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12);
+
+      questions.forEach((q, index) => {
+        doc.text(`${index + 1}. ${q.correct_answer}`);
+      });
+
+      doc.end();
+    });
+  }
 }
