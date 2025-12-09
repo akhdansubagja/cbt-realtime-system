@@ -55,6 +55,19 @@ DONE25.hilangkan tipe soal "essay"
 
 DONE26. terapkan fitur pencarian yang sekarang ada di halaman detail bank soal, yaitu halaman di mana soal soal dari bank soal berada, ke halaman manajemen peserta.
 
+DONE27. buat agar fitur export soal bisa memasukkan gambar dalam pdf maupun word
+
+DONE28. buat agar fitur import cepat soal juga dapat membaca soal dengan kunci jawaban terpisah di bawah nantinya.
+
+29. buat agar dapat menginputkan peserta secara cepat menggunakan gambar dengan nama peserta, ataupun mungkin menggunakan fitur yang sudah ada, yaitu seperti pada halaman detail bank soal, yaitu menggunakan format import dengan preview
+
+30. karena banyaknya aturan format pada fitur import cepat soal, harus ditambahkan seperti logo keterangan "i" biasanya kan ya, nah nanti bisa diklik dan menampilkan popup modal baru yang menjelaskan aturan untuk mengisi soal dengan lebih baik dan benar.
+
+
+
+
+
+
 
 
 

@@ -521,12 +521,14 @@ export default function ExamsPage() {
                   label="Judul Ujian"
                   placeholder="Contoh: Ujian Tengah Semester"
                   {...form.getInputProps("title")}
+                  required
                 />
                 <TextInput
                   withAsterisk
                   label="Kode Ujian"
                   placeholder="Contoh: UTS-2025"
                   {...form.getInputProps("code")}
+                  required
                 />
               </SimpleGrid>
               <SimpleGrid cols={3} mt="md">
@@ -535,6 +537,7 @@ export default function ExamsPage() {
                   label="Durasi (menit)"
                   placeholder="60"
                   {...form.getInputProps("duration_minutes")}
+                  required
                 />
                 <DateTimePicker
                   locale="id"
