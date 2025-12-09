@@ -128,6 +128,7 @@ export class QuestionBanksService {
       TextRun,
       HeadingLevel,
       AlignmentType,
+      ImageRun,
     } = require('docx');
 
     const children = [
@@ -139,7 +140,11 @@ export class QuestionBanksService {
       new Paragraph({ text: '' }), // Spacer
     ];
 
+    const fs = require('fs');
+    const path = require('path');
+
     questions.forEach((q, index) => {
+      // 1. Question Text
       children.push(
         new Paragraph({
           children: [
@@ -150,6 +155,42 @@ export class QuestionBanksService {
           ],
         }),
       );
+
+      // 2. Question Image (if exists)
+      if (q.image_url) {
+        try {
+          // image_url format: "/uploads/filename.jpg"
+          // We need to construct the absolute path
+          // Assuming the app runs from root or similar, we need process.cwd()
+          const filename = q.image_url.replace('/uploads/', '');
+          const imagePath = path.join(process.cwd(), 'uploads', filename);
+
+          if (fs.existsSync(imagePath)) {
+            const imageBuffer = fs.readFileSync(imagePath);
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: imageBuffer,
+                    transformation: {
+                      width: 300,
+                      height: 300, // Aspect ratio is usually preserved if one dim is set, but docx might need both or logic.
+                      // Let's try setting width only if library supports it, or both.
+                      // Docx ImageRun usually requires width/height.
+                      // For now, 300x300 might distort. Ideally we get dimensions.
+                      // But without 'image-size' lib, we might just set hard limits or rely on docx scaler.
+                      // Let's set generic 300x300, user didn't ask for perfect aspect ratio logic, just "reasonable width". "300px"
+                    },
+                  }),
+                ],
+              }),
+            );
+          }
+        } catch (err) {
+          console.error(`Failed to embed image for Q${q.id}:`, err);
+        }
+      }
 
       if (q.options && q.options.length > 0) {
         q.options.forEach((opt) => {

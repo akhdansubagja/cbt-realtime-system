@@ -1,5 +1,5 @@
-import { useLocalStorage } from "@mantine/hooks";
-import { useEffect } from "react";
+// Remove useLocalStorage
+import { useEffect, useState } from "react";
 import {
   TextInput,
   Textarea,
@@ -17,6 +17,7 @@ import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { IconUpload, IconX, IconPhoto, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
+import { saveDraft, loadDraft, deleteDraft } from "@/lib/indexed-db";
 
 export interface ManualQuestionFormValues {
   question_text: string;
@@ -45,14 +46,8 @@ export function ManualQuestionForm({
   const isAddMode = !initialValues;
   const storageKey = `draft-manual-qbank-${bankId}`;
 
-  const [draft, setDraft, removeDraft] = useLocalStorage<string | null>({
-    key: storageKey,
-    defaultValue: null,
-    getInitialValueInEffect: false, // Read immediately
-  });
-
   const form = useForm<ManualQuestionFormValues>({
-    initialValues: initialValues || (isAddMode && draft ? JSON.parse(draft as string) : {
+    initialValues: initialValues || {
       question_text: "",
       question_type: "multiple_choice",
       image_url: "",
@@ -64,7 +59,7 @@ export function ManualQuestionForm({
         { key: "E", text: "" },
       ],
       correct_answer: "",
-    }),
+    },
     validate: {
       question_text: (value) =>
         value.trim().length > 0 ? null : "Teks soal tidak boleh kosong",
@@ -79,22 +74,33 @@ export function ManualQuestionForm({
     },
   });
 
-  // Sync form changes to local storage if in Add mode
+  // 1. Load Draft
   useEffect(() => {
     if (isAddMode && bankId) {
-      // Only store text fields, exclude image_url if it's not needed or to save space, 
-      // but here we just store everything except maybe large blobs if we had them.
-      // The requirement said "Only store text fields".
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { image_url, ...textValues } = form.values;
-      setDraft(JSON.stringify({ ...textValues, image_url: "" })); // Explicitly don't save image_url as per requirement
+       const load = async () => {
+         const draft = await loadDraft<ManualQuestionFormValues>(storageKey);
+         if (draft) {
+           form.setValues(draft);
+         }
+       };
+       load();
     }
-  }, [form.values, isAddMode, bankId, setDraft]);
+  }, [isAddMode, bankId, storageKey]); // Only run once on mount (or if ID changes)
+
+  // 2. Auto-Save Draft
+  useEffect(() => {
+    if (isAddMode && bankId) {
+      const timer = setTimeout(() => {
+          saveDraft(storageKey, form.values);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [form.values, isAddMode, bankId, storageKey]);
 
   const handleSubmit = (values: typeof form.values) => {
     onSubmit(values);
     if (isAddMode && bankId) {
-      removeDraft();
+      deleteDraft(storageKey);
     }
   };
 

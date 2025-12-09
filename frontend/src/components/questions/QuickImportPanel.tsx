@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useLocalStorage } from "@mantine/hooks";
+import { useState, useEffect, useRef } from "react";
+// Remove useLocalStorage
 import {
   Modal,
   Group,
@@ -22,6 +22,11 @@ import {
 import { IconAlertCircle, IconCheck, IconX, IconPhoto, IconTrash } from "@tabler/icons-react";
 import { parseQuestionText, ParsedQuestion } from "@/lib/question-parser";
 import { notifications } from "@mantine/notifications";
+import { saveDraft, loadDraft, deleteDraft } from "@/lib/indexed-db";
+import { useDebouncedCallback } from "@mantine/hooks"; // Use Mantine's debounce hook if available, or custom timeout.
+// Mantine has useDebouncedValue, let's check imports. User code had useDebouncedValue in page.tsx.
+// Let's use a simple timeout for auto-saving or check if useDebouncedCallback is available in @mantine/hooks.
+// To be safe and minimal dependency, I'll use a specific useEffect with setTimeout.
 
 interface QuickImportPanelProps {
   bankId: string | number; // Added bankId
@@ -29,27 +34,61 @@ interface QuickImportPanelProps {
   onCancel: () => void;
 }
 
+interface DraftData {
+  text: string;
+  parsedQuestions: ParsedQuestion[];
+}
+
 export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelProps) {
   const storageKey = `draft-quick-import-qbank-${bankId}`;
-  const [text, setText, removeText] = useLocalStorage({
-    key: storageKey,
-    defaultValue: "",
-    getInitialValueInEffect: false,
-  });
   
+  // State for raw text
+  const [text, setText] = useState("");
+  
+  // State for parsed questions (includes manuals image/files)
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [errorCount, setErrorCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
+  // 1. Load Draft on Mount
   useEffect(() => {
+    const init = async () => {
+      const draft = await loadDraft<DraftData>(storageKey);
+      if (draft) {
+        if (draft.text) setText(draft.text);
+        // Restore images/previews if stored.
+        // File objects stored in IDB will be retrieved as Files/Blobs.
+        // We need to recreate object URLs for previews.
+        if (draft.parsedQuestions) {
+             const restored = draft.parsedQuestions.map(q => ({
+                 ...q,
+                 imagePreviewUrl: q.imageFile ? URL.createObjectURL(q.imageFile) : undefined
+             }));
+             setParsedQuestions(restored);
+        }
+      }
+      setIsDraftLoaded(true);
+    };
+    init();
+  }, [storageKey]);
+
+  // 2. Parse Text Logic (Only runs after draft load to avoid overwriting with empty parsing)
+  useEffect(() => {
+    if (!isDraftLoaded) return;
+
+    // Parse the text
     const parsed = parseQuestionText(text);
-    
+
     setParsedQuestions(prev => {
       return parsed.map((newQ, i) => {
-        // Check if we had a question at this index previously
+        // PRESERVING IMAGES STRATEGY:
+        // If the NEW parsed question matches the OLD one by index, 
+        // OR better, we try to preserve based on index stability which is what the user expects while typing.
+        
         const existingQ = prev[i];
         
-        // If yes, PRESERVE the image data
+        // If existing question exists and has image, keep it
         if (existingQ && existingQ.imageFile) {
           return {
             ...newQ,
@@ -61,8 +100,24 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
       });
     });
     
-    setErrorCount(parsed.filter((q) => !q.isValid).length);
-  }, [text]);
+  }, [text, isDraftLoaded]);
+
+  // 3. Update Error Count
+  useEffect(() => {
+      setErrorCount(parsedQuestions.filter((q) => !q.isValid).length);
+  }, [parsedQuestions]);
+
+  // 4. Auto-Save Draft (Debounced)
+  useEffect(() => {
+    if (!isDraftLoaded) return;
+
+    const timer = setTimeout(() => {
+      // We save both text AND parsedQuestions to preserve the Files attached to them
+      saveDraft(storageKey, { text, parsedQuestions });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [text, parsedQuestions, storageKey, isDraftLoaded]);
 
   const handleFileChange = (index: number, file: File | null) => {
     setParsedQuestions(prev => {
@@ -88,8 +143,10 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
     setIsSaving(true);
     try {
       await onSave(parsedQuestions);
-      setText(""); // Reset form on success (also updates localStorage to empty string)
-      removeText(); // Explicitly remove from storage
+      // Clear Draft on Success
+      await deleteDraft(storageKey);
+      setText(""); 
+      setParsedQuestions([]);
       onCancel();
     } catch (error) {
       // Error handling is done in parent or global handler
