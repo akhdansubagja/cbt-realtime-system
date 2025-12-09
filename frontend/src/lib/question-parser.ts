@@ -10,7 +10,42 @@ export interface ParsedQuestion {
 }
 
 export function parseQuestionText(text: string): ParsedQuestion[] {
-  const lines = text
+  // 1. Separate "Answer Key Block" from "Questions Text"
+  // Keywords: "Answer:", "Answers:", "Jawaban:", "Kunci Jawaban:", "Jwbn:"
+  // Must be followed by a line break or start a new section at the end of the text.
+  let questionBody = text;
+  let answerBlock = "";
+
+  const answerBlockRegex =
+    /\n(?:Answer|Answers|Jawaban|Kunci Jawaban|Jwbn)[:\s]*\n([\s\S]*)$/i;
+  const match = text.match(answerBlockRegex);
+
+  if (match) {
+    questionBody = text.substring(0, match.index).trim();
+    answerBlock = match[1].trim();
+  }
+
+  // 2. Parse Answer Key Block into a Map
+  // Format: "1. A", "2. b", "3 C"
+  const answerMap = new Map<string, string>(); // Index/Number -> Answer Char
+  if (answerBlock) {
+    const answerLines = answerBlock.split("\n");
+    const answerPairRegex = /^(\d+)[\.\)\s]+([a-eA-E])/;
+
+    // Also support single line format: "1. A 2. B 3. C"
+    // Split by numbers if necessary, but simple regex on lines is safest first.
+    // Let's handle both line-based and space-separated flow.
+    const tokens = answerBlock.split(/\s+/); // Split by whitespace to handle "1. A 2. B"
+
+    // Improved logic: Match patterns in the whole block string
+    const globalAnswerRegex = /(\d+)[\.\)\s]+([a-eA-E])/g;
+    let m;
+    while ((m = globalAnswerRegex.exec(answerBlock)) !== null) {
+      answerMap.set(m[1], m[2].toUpperCase());
+    }
+  }
+
+  const lines = questionBody
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line !== "");
@@ -25,8 +60,20 @@ export function parseQuestionText(text: string): ParsedQuestion[] {
   const optionRegex = /^([a-zA-Z])[\.\)]\s*(.+)/; // Matches "a. Option text" or "A) Option text"
   const answerLineRegex = /^ANSWER:\s*([a-zA-Z])/i; // Matches "ANSWER: A"
 
+  let questionCounter = 0;
+
   const finalizeQuestion = (q: Partial<ParsedQuestion>) => {
     if (!q.question_text) return; // Skip empty
+
+    questionCounter++;
+
+    // If no correct answer explicitly marked, check the answer map
+    if (!q.correct_answer) {
+      const mappedAnswer = answerMap.get(String(questionCounter));
+      if (mappedAnswer) {
+        q.correct_answer = mappedAnswer;
+      }
+    }
 
     const isValid =
       !!q.question_text && (q.options?.length ?? 0) >= 2 && !!q.correct_answer;

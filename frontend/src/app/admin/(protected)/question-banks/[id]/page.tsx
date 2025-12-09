@@ -85,7 +85,7 @@ export default function SingleQuestionBankPage() {
   // Delete state removed (using SweetAlert)
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Question>>({
     columnAccessor: "id",
-    direction: "asc",
+    direction: "desc",
   });
 
   // State untuk View Modal
