@@ -135,15 +135,18 @@ export class QuestionsService {
     }
 
     // 3. Update Database
-    const { bank_id, ...rest } = updateQuestionDto;
-    // Merge rest into existing payload, do not redeclare
-    Object.assign(payload, rest);
+    // Use the processed payload (which deals with image_url nulls)
+    const finalPayload: any = { ...payload };
 
-    if (bank_id) {
-      payload.bank = { id: bank_id } as any;
+    // TypeORM throws if 'bank_id' is present but not a column. Remove it.
+    delete finalPayload.bank_id;
+
+    if (updateQuestionDto.bank_id) {
+      finalPayload.bank = { id: updateQuestionDto.bank_id };
     }
 
-    await this.questionRepository.update(id, payload);
+    await this.questionRepository.update(id, finalPayload);
+
     return this.findOne(id);
   }
 

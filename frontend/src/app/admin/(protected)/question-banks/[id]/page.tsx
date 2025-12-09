@@ -82,13 +82,7 @@ export default function SingleQuestionBankPage() {
   const [totalPages, setTotalPages] = useState(1);
   const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [
-    deleteModalOpened,
-    { open: openDeleteModal, close: closeDeleteModal },
-  ] = useDisclosure(false);
-  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(
-    null
-  );
+  // Delete state removed (using SweetAlert)
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Question>>({
     columnAccessor: "id",
     direction: "asc",
@@ -272,33 +266,28 @@ export default function SingleQuestionBankPage() {
     openAddModal();
   };
 
-  const showDeleteModal = (question: Question) => {
-    setQuestionToDelete(question);
-    openDeleteModal();
-  };
+  // showDeleteModal removed
 
   // --- FUNGSI UNTUK MENGHAPUS SOAL ---
-  const handleDeleteQuestion = async () => {
-    if (!questionToDelete) return; // Guard clause
-    try {
-      await api.delete(`/questions/${questionToDelete.id}`);
-      // Refresh data soal untuk halaman saat ini
-      fetchQuestionsForPage(activePage);
-      notifications.show({
-        title: "Berhasil!",
-        message: "Soal telah dihapus.",
-        color: "teal",
-      });
-    } catch (err) {
-      notifications.show({
-        title: "Gagal",
-        message: "Terjadi kesalahan saat menghapus soal.",
-        color: "red",
-      });
-    } finally {
-      // Tutup modal dan reset state
-      setQuestionToDelete(null);
-      closeDeleteModal();
+  const handleDeleteQuestion = async (question: Question) => {
+    const result = await confirmDelete(
+      "Hapus Soal?",
+      "Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak dapat dibatalkan."
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/questions/${question.id}`);
+        // Refresh data soal untuk halaman saat ini
+        fetchQuestionsForPage(activePage);
+        await showSuccessAlert("Berhasil!", "Soal telah dihapus.");
+      } catch (err) {
+        notifications.show({
+          title: "Gagal",
+          message: "Terjadi kesalahan saat menghapus soal.",
+          color: "red",
+        });
+      }
     }
   };
 
@@ -443,32 +432,7 @@ export default function SingleQuestionBankPage() {
     </Group>
   ));
 
-  const rows = questions.map((question) => (
-    <Table.Tr key={question.id}>
-      <Table.Td>{question.id}</Table.Td>
-      <Table.Td>{question.question_text.substring(0, 100)}...</Table.Td>
-      <Table.Td>
-        <Group>
-          {/* --- TAMBAHKAN onClick DI SINI --- */}
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => openEditModal(question)}
-          >
-            Edit
-          </Button>
-          {/* --- DAN TAMBAHKAN onClick DI SINI --- */}
-          <Button
-            size="xs"
-            color="red"
-            onClick={() => showDeleteModal(question)}
-          >
-            Hapus
-          </Button>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
+
 
   const handleExport = (format: 'docx' | 'pdf') => {
     let url = `${process.env.NEXT_PUBLIC_API_URL}/question-banks/${bankId}/export?format=${format}`;
@@ -543,26 +507,7 @@ export default function SingleQuestionBankPage() {
         )}
       </Modal>
 
-      <Modal
-        opened={deleteModalOpened}
-        onClose={closeDeleteModal}
-        title="Konfirmasi Penghapusan"
-        centered
-        size="sm"
-      >
-        <Text>Apakah Anda yakin ingin menghapus soal ini?</Text>
-        <Text fw={700} truncate mt="xs">
-          {questionToDelete?.question_text}
-        </Text>
-        <Group justify="flex-end" mt="xl">
-          <Button variant="default" onClick={closeDeleteModal}>
-            Batal
-          </Button>
-          <Button color="red" onClick={handleDeleteQuestion}>
-            Hapus Soal
-          </Button>
-        </Group>
-      </Modal>
+      {/* Modal Konfirmasi Penghapusan dihapus (ganti SweetAlert) */}
 
       {/* --- MODAL DETAIL SOAL --- */}
       <Modal
@@ -763,7 +708,7 @@ export default function SingleQuestionBankPage() {
                       size="sm"
                       variant="subtle"
                       color="red"
-                      onClick={() => showDeleteModal(question)}
+                      onClick={() => handleDeleteQuestion(question)}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
