@@ -257,8 +257,28 @@ export class QuestionBanksService {
       // Questions
       doc.fontSize(12);
       questions.forEach((q, index) => {
+        const fs = require('fs');
+        const path = require('path');
+
         doc.font('Helvetica-Bold').text(`${index + 1}. ${q.question_text}`);
         doc.font('Helvetica');
+
+        // Embed Image
+        if (q.image_url) {
+          try {
+            // q.image_url is like "/uploads/foo.jpg"
+            const filename = q.image_url.replace('/uploads/', '');
+            const imagePath = path.join(process.cwd(), 'uploads', filename);
+
+            if (fs.existsSync(imagePath)) {
+              doc.moveDown(0.5);
+              doc.image(imagePath, { fit: [200, 200], align: 'left' });
+              doc.moveDown(0.5);
+            }
+          } catch (err) {
+            console.error(`Error embedding image in PDF for Q${q.id}`, err);
+          }
+        }
 
         if (q.options && q.options.length > 0) {
           q.options.forEach((opt) => {
