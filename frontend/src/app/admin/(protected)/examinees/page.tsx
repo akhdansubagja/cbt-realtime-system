@@ -1,10 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
 import {
-  Title,
-  Table,
-  Loader,
   Alert,
   Center,
   Button,
@@ -22,14 +18,18 @@ import {
   Skeleton,
   Switch,
   Badge,
+  Stack,
+  ActionIcon,
+  Flex,
+  Box,
+  Kbd,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
 import Link from "next/link";
-import { useMemo, useRef } from "react";
-import { Stack, ActionIcon, Flex, Box, Kbd } from "@mantine/core";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconEdit,
@@ -50,6 +50,7 @@ import { Batch } from "@/types/batch";
 import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
+import { QuickExamineeImportPanel } from "@/components/examinees/QuickExamineeImportPanel";
 
 interface Examinee {
   id: number;
@@ -57,7 +58,7 @@ interface Examinee {
   created_at: string;
   batch: Batch | null;
   avatar_url: string | null;
-  is_active: boolean; // <-- TAMBAHAN
+  is_active: boolean;
   uniqid: string;
 }
 
@@ -93,6 +94,29 @@ export default function ExamineesPage() {
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const [quickImportOpened, { open: openQuickImport, close: closeQuickImport }] = useDisclosure(false);
+
+  const handleQuickImportSave = async (formData: FormData) => {
+      try {
+          await api.post("/examinees/bulk-with-avatars", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+          });
+          notifications.show({
+            title: "Success",
+            message: "Bulk import completed successfully",
+            color: "teal",
+          });
+          fetchExaminees();
+          closeQuickImport();
+      } catch (err: any) {
+          notifications.show({
+             title: "Error",
+             message: err.response?.data?.message || "Failed to import",
+             color: "red"
+          });
+      }
+  };
 
   const [currentAvatarPreview, setCurrentAvatarPreview] = useState<
     string | null
@@ -445,6 +469,24 @@ export default function ExamineesPage() {
         </form>
       </Modal>
 
+      <Modal 
+         opened={quickImportOpened} 
+         onClose={closeQuickImport} 
+         title="Smart Quick Import" 
+         size="xl" 
+         padding={0} // Full space
+         styles={{ body: { height: '500px' } }}
+      >
+         <Box p="md" h="100%">
+             <QuickExamineeImportPanel 
+                batchId={selectedBatchFilter}
+                batches={batches}
+                onSave={handleQuickImportSave}
+                onCancel={closeQuickImport}
+             />
+         </Box>
+      </Modal>
+
       <Stack>
         <PageHeader
           title="Manajemen Peserta"
@@ -479,17 +521,12 @@ export default function ExamineesPage() {
                   </Button>
                 </>
               )}
-              <Button
-                leftSection={<IconPlus size={16} />}
-                onClick={() => {
-                  setEditingExaminee(null);
-                  setCurrentAvatarPreview(null);
-                  form.reset();
-                  open();
-                }}
-              >
-                Tambah Baru
-              </Button>
+               <Button
+                 leftSection={<IconPlus size={16} />}
+                 onClick={openQuickImport}
+               >
+                 Tambah Peserta
+               </Button>
             </Group>
           }
         />

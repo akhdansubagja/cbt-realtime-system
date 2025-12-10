@@ -20,7 +20,7 @@ import { UpdateExamineeDto } from './dto/update-examinee.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
 import File from 'multer';
-import { CreateBulkExamineesDto } from './dto/create-bulk-examinees.dto';
+import { CreateBulkWithAvatarsDto } from './dto/create-bulk-with-avatars.dto';
 
 @Controller('examinees')
 export class ExamineesController {
@@ -29,11 +29,11 @@ export class ExamineesController {
   @Post('bulk-with-avatars')
   @UseInterceptors(FilesInterceptor('avatars', 50)) // Menerima hingga 50 file
   createBulkWithAvatars(
-    @Body() createBulkExamineesDto: CreateBulkExamineesDto,
+    @Body() createBulkWithAvatarsDto: CreateBulkWithAvatarsDto,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
     return this.examineesService.createBulkWithAvatars(
-      createBulkExamineesDto,
+      createBulkWithAvatarsDto,
       files,
     );
   }

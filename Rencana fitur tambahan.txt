@@ -61,7 +61,7 @@ DONE28. buat agar fitur import cepat soal juga dapat membaca soal dengan kunci j
 
 29. buat agar dapat menginputkan peserta secara cepat menggunakan gambar dengan nama peserta, ataupun mungkin menggunakan fitur yang sudah ada, yaitu seperti pada halaman detail bank soal, yaitu menggunakan format import dengan preview
 
-30. karena banyaknya aturan format pada fitur import cepat soal, harus ditambahkan seperti logo keterangan "i" biasanya kan ya, nah nanti bisa diklik dan menampilkan popup modal baru yang menjelaskan aturan untuk mengisi soal dengan lebih baik dan benar.
+30. karena banyaknya aturan format pada fitur import cepat soal, harus ditambahkan seperti logo bulat dengan huruf "i" biasanya kan ya, nah nanti bisa diklik dan menampilkan popup modal baru yang menjelaskan aturan untuk mengisi soal dengan lebih baik dan benar.
 
 
 
@@ -78,6 +78,7 @@ DONE28. buat agar fitur import cepat soal juga dapat membaca soal dengan kunci j
 OPSIONAL
 1. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
 2. pada halaman utama untuk pesertam tambahkan fitur untuk quiz latihan matematika kabataku, yang angkanya dihasilkan random dari frontend, lalu disediakan juga seperti lembar kosong untuk melakukan penghitungan soal secara manual.
+3. buat animasi pada halaman utama pada saat peserta ingin melaksanakan ujian, misalkan karakter laki laki atau perempuan,
 
 
 

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateExamineeDto } from './dto/create-examinee.dto';
 import { UpdateExamineeDto } from './dto/update-examinee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +13,7 @@ import { Express } from 'express'; // Pastikan ini ada
 import { promises as fs } from 'fs'; // Untuk hapus file (async)
 import { join } from 'path'; // Untuk path file
 import { CreateBulkExamineesDto } from './dto/create-bulk-examinees.dto';
+import { CreateBulkWithAvatarsDto } from './dto/create-bulk-with-avatars.dto';
 
 interface PaginationOptions {
   page: number;
@@ -212,28 +217,39 @@ export class ExamineesService {
   }
 
   async createBulkWithAvatars(
-    createBulkExamineesDto: CreateBulkExamineesDto,
+    createBulkWithAvatarsDto: CreateBulkWithAvatarsDto,
     files: Array<Express.Multer.File>,
   ) {
-    // PERBAIKAN: Baca dari '.names' bukan '["names[]"]'
-    const { names, batch_id } = createBulkExamineesDto;
+    const { data, batch_id } = createBulkWithAvatarsDto;
+
+    let parsedData: { name: string; fileIndex?: number }[] = [];
+    try {
+      parsedData = JSON.parse(data);
+    } catch (e) {
+      throw new BadRequestException('Invalid JSON data format');
+    }
 
     let batch: Batch | null = null;
     if (batch_id) {
-      batch = await this.batchRepository.findOneBy({ id: batch_id });
+      const bId = Number(batch_id);
+      batch = await this.batchRepository.findOneBy({ id: bId });
       if (!batch) {
         throw new NotFoundException(`Batch with ID ${batch_id} not found`);
       }
     }
 
-    // Kode ini sekarang aman karena 'names' dijamin berupa array oleh DTO
-    const newExaminees = names.map((name, index) => {
-      const file = files[index];
+    const newExaminees = parsedData.map((item) => {
+      // Map file based on the index provided in the JSON data
+      // If fileIndex is 0, we take files[0], etc.
+      let avatarPath: string | undefined = undefined;
+      if (item.fileIndex !== undefined && files[item.fileIndex]) {
+        avatarPath = files[item.fileIndex].path;
+      }
 
       return this.examineeRepository.create({
-        name: name,
+        name: item.name,
         batch: batch ?? undefined,
-        avatar_url: file ? file.path : undefined,
+        avatar_url: avatarPath,
         uniqid: this.generateUniqId(),
       });
     });
