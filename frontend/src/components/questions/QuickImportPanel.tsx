@@ -17,9 +17,17 @@ import {
   ActionIcon,
   FileInput,
   Image,
-  Center
+  Center,
 } from "@mantine/core";
-import { IconAlertCircle, IconCheck, IconX, IconPhoto, IconTrash, IconRefresh } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconCheck,
+  IconX,
+  IconPhoto,
+  IconTrash,
+  IconRefresh,
+  IconInfoCircle,
+} from "@tabler/icons-react";
 import { parseQuestionText, ParsedQuestion } from "@/lib/question-parser";
 import { notifications } from "@mantine/notifications";
 import { saveDraft, loadDraft, deleteDraft } from "@/lib/indexed-db";
@@ -39,17 +47,22 @@ interface DraftData {
   parsedQuestions: ParsedQuestion[];
 }
 
-export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelProps) {
+export function QuickImportPanel({
+  bankId,
+  onSave,
+  onCancel,
+}: QuickImportPanelProps) {
   const storageKey = `draft-quick-import-qbank-${bankId}`;
-  
+
   // State for raw text
   const [text, setText] = useState("");
-  
+
   // State for parsed questions (includes manuals image/files)
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[]>([]);
   const [errorCount, setErrorCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [helpOpened, setHelpOpened] = useState(false);
 
   // 1. Load Draft on Mount
   useEffect(() => {
@@ -61,11 +74,13 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
         // File objects stored in IDB will be retrieved as Files/Blobs.
         // We need to recreate object URLs for previews.
         if (draft.parsedQuestions) {
-             const restored = draft.parsedQuestions.map(q => ({
-                 ...q,
-                 imagePreviewUrl: q.imageFile ? URL.createObjectURL(q.imageFile) : undefined
-             }));
-             setParsedQuestions(restored);
+          const restored = draft.parsedQuestions.map((q) => ({
+            ...q,
+            imagePreviewUrl: q.imageFile
+              ? URL.createObjectURL(q.imageFile)
+              : undefined,
+          }));
+          setParsedQuestions(restored);
         }
       }
       setIsDraftLoaded(true);
@@ -80,31 +95,30 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
     // Parse the text
     const parsed = parseQuestionText(text);
 
-    setParsedQuestions(prev => {
+    setParsedQuestions((prev) => {
       return parsed.map((newQ, i) => {
         // PRESERVING IMAGES STRATEGY:
-        // If the NEW parsed question matches the OLD one by index, 
+        // If the NEW parsed question matches the OLD one by index,
         // OR better, we try to preserve based on index stability which is what the user expects while typing.
-        
+
         const existingQ = prev[i];
-        
+
         // If existing question exists and has image, keep it
         if (existingQ && existingQ.imageFile) {
           return {
             ...newQ,
             imageFile: existingQ.imageFile,
-            imagePreviewUrl: existingQ.imagePreviewUrl
+            imagePreviewUrl: existingQ.imagePreviewUrl,
           };
         }
         return newQ;
       });
     });
-    
   }, [text, isDraftLoaded]);
 
   // 3. Update Error Count
   useEffect(() => {
-      setErrorCount(parsedQuestions.filter((q) => !q.isValid).length);
+    setErrorCount(parsedQuestions.filter((q) => !q.isValid).length);
   }, [parsedQuestions]);
 
   // 4. Auto-Save Draft (Debounced)
@@ -120,10 +134,10 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
   }, [text, parsedQuestions, storageKey, isDraftLoaded]);
 
   const handleFileChange = (index: number, file: File | null) => {
-    setParsedQuestions(prev => {
+    setParsedQuestions((prev) => {
       const newQuestions = [...prev];
       const question = { ...newQuestions[index] };
-      
+
       if (file) {
         question.imageFile = file;
         question.imagePreviewUrl = URL.createObjectURL(file);
@@ -131,7 +145,7 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
         question.imageFile = undefined;
         question.imagePreviewUrl = undefined;
       }
-      
+
       newQuestions[index] = question;
       return newQuestions;
     });
@@ -151,35 +165,36 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       const textarea = e.currentTarget;
       const cursor = textarea.selectionStart;
       const value = textarea.value;
-      
+
       // Find start of current line
-      const lastNewLine = value.lastIndexOf('\n', cursor - 1);
+      const lastNewLine = value.lastIndexOf("\n", cursor - 1);
       const currentLine = value.substring(lastNewLine + 1, cursor);
-      
+
       // Regex: Group 1=Space, Group 2=Marker(a,1), Group 3=Separator(.)
       // Added support for ')' as separator based on requirement (Patterns: "1) ", "a) ")
       const match = currentLine.match(/^(\s*)([a-zA-Z0-9]+)([\.\)])\s+(.*)$/);
-      
+
       if (match) {
-        // e.preventDefault(); // Don't prevent default yet, check logic below. 
+        // e.preventDefault(); // Don't prevent default yet, check logic below.
         // Actually we MUST prevent default because we are manually inserting newline+marker
-        
+
         const [fullMatch, indent, marker, separator, content] = match;
-        
+
         // If content is empty (double enter), stop the list
         if (!content.trim()) {
-           e.preventDefault();
+          e.preventDefault();
           const textBeforeLine = value.substring(0, lastNewLine + 1); // Keep previous newline
           const textAfter = value.substring(cursor);
           const newText = textBeforeLine + textAfter; // Remove the empty marker line
           setText(newText);
           // Need to manually set cursor position after render
           setTimeout(() => {
-              textarea.selectionStart = textarea.selectionEnd = textBeforeLine.length;
+            textarea.selectionStart = textarea.selectionEnd =
+              textBeforeLine.length;
           }, 0);
           return;
         }
@@ -187,9 +202,9 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
         e.preventDefault();
 
         // Calculate next marker
-        let nextMarker = '';
+        let nextMarker = "";
         const isNumber = /^\d+$/.test(marker);
-        
+
         if (isNumber) {
           nextMarker = String(parseInt(marker) + 1);
         } else {
@@ -197,16 +212,18 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
           const charCode = marker.charCodeAt(0);
           nextMarker = String.fromCharCode(charCode + 1);
         }
-        
+
         const insertion = `\n${indent}${nextMarker}${separator} `;
-        
+
         // Insert text
-        const newText = value.substring(0, cursor) + insertion + value.substring(cursor);
+        const newText =
+          value.substring(0, cursor) + insertion + value.substring(cursor);
         setText(newText);
-        
+
         // Move cursor
         setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = cursor + insertion.length;
+          textarea.selectionStart = textarea.selectionEnd =
+            cursor + insertion.length;
         }, 0);
       }
     }
@@ -220,7 +237,7 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
       await onSave(parsedQuestions);
       // Clear Draft on Success
       await deleteDraft(storageKey);
-      setText(""); 
+      setText("");
       setParsedQuestions([]);
       onCancel();
     } catch (error) {
@@ -232,30 +249,121 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
 
   return (
     <Stack h="100%">
-      <SimpleGrid cols={2} spacing="md" style={{ flex: 1, minHeight: 0 }}>
-        <Stack h="100%">
-          <Text fw={500}>Paste Text Soal di Sini:</Text>
-          <Textarea 
-            placeholder={`Format A (Suffix):
-1. Ibukota Indonesia adalah...
-a. Bandung
-b. Jakarta ##
-c. Surabaya
-
-Format B (Answer Line):
-1. Ibukota Indonesia adalah...
+      <Modal
+        opened={helpOpened}
+        onClose={() => setHelpOpened(false)}
+        title="Panduan Format Import Soal"
+        size="lg"
+      >
+        <Stack gap="md">
+          <Box>
+            <Text fw={500} size="sm" mb="xs">
+              Format Soal:
+            </Text>
+            <Paper withBorder p="xs" bg="gray.0">
+              <Text
+                component="pre"
+                size="xs"
+                style={{ whiteSpace: "pre-wrap" }}
+              >
+                {`1. Ibukota Indonesia adalah...
+a. Jakarta
+b. Bandung`}
+              </Text>
+            </Paper>
+          </Box>
+          <Box>
+            <Text fw={500} size="sm" mb="xs">
+              Kunci Jawaban (Cara Inline #1):
+            </Text>
+            <Text size="sm" c="dimmed" mb="xs">
+              Tambahkan ## di akhir opsi benar
+            </Text>
+            <Paper withBorder p="xs" bg="gray.0">
+              <Text
+                component="pre"
+                size="xs"
+                style={{ whiteSpace: "pre-wrap" }}
+              >
+                {`1. Ibukota Indonesia adalah...
+A. Bandung
+B. Jakarta##`}
+              </Text>
+            </Paper>
+          </Box>
+          <Box>
+            <Text fw={500} size="sm" mb="xs">
+              Kunci Jawaban (Cara Inline #2):
+            </Text>
+            <Text size="sm" c="dimmed" mb="xs">
+              Tambahkan "Answer: " di akhir soal
+            </Text>
+            <Paper withBorder p="xs" bg="gray.0">
+              <Text
+                component="pre"
+                size="xs"
+                style={{ whiteSpace: "pre-wrap" }}
+              >
+                {`1. Ibukota Indonesia adalah...
 A. Bandung
 B. Jakarta
 ANSWER: B`}
+              </Text>
+            </Paper>
+          </Box>
+          <Box>
+            <Text fw={500} size="sm" mb="xs">
+              Kunci Jawaban (Cara Blok):
+            </Text>
+            <Text size="sm" c="dimmed" mb="xs">
+              Tulis Answer: atau Jawaban: di baris paling bawah
+            </Text>
+            <Paper withBorder p="xs" bg="gray.0">
+              <Text
+                component="pre"
+                size="xs"
+                style={{ whiteSpace: "pre-wrap" }}
+              >
+                {`1. Ibukota Indonesia adalah...
+A. Bandung
+B. Jakarta
+
+2. Ibukota Jawa Barat adalah...
+A. Bandung
+B. Jakarta
+
+Answer:
+1. b
+2. a`}
+              </Text>
+            </Paper>
+          </Box>
+        </Stack>
+      </Modal>
+
+      <SimpleGrid cols={2} spacing="md" style={{ flex: 1, minHeight: 0 }}>
+        <Stack h="100%">
+          <Group justify="space-between">
+            <Text fw={500}>Paste Text Soal di Sini:</Text>
+            <ActionIcon
+              variant="subtle"
+              radius="xl"
+              size="lg"
+              onClick={() => setHelpOpened(true)}
+            >
+              <IconInfoCircle />
+            </ActionIcon>
+          </Group>
+          <Textarea
             value={text}
             onChange={(e) => setText(e.currentTarget.value)}
             onKeyDown={handleKeyDown}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            styles={{ wrapper: { flex: 1 }, input: { height: '100%' } }}
+            style={{ flex: 1, display: "flex", flexDirection: "column" }}
+            styles={{ wrapper: { flex: 1 }, input: { height: "100%" } }}
           />
         </Stack>
 
-        <Stack h="100%" style={{ overflowY: 'auto' }}>
+        <Stack h="100%" style={{ overflowY: "auto" }}>
           <Group justify="space-between">
             <Text fw={500}>Live Preview ({parsedQuestions.length} Soal)</Text>
             {errorCount > 0 && (
@@ -303,18 +411,18 @@ ANSWER: B`}
 
                   {q.imagePreviewUrl && (
                     <Box mb="sm">
-                      <Image 
-                        src={q.imagePreviewUrl} 
-                        h={100} 
-                        w="auto" 
-                        fit="contain" 
+                      <Image
+                        src={q.imagePreviewUrl}
+                        h={100}
+                        w="auto"
+                        fit="contain"
                         radius="sm"
                         mb="xs"
                       />
-                      <Button 
-                        color="red" 
-                        variant="subtle" 
-                        size="xs" 
+                      <Button
+                        color="red"
+                        variant="subtle"
+                        size="xs"
                         onClick={() => handleFileChange(i, null)}
                         leftSection={<IconTrash size={14} />}
                       >
@@ -324,10 +432,10 @@ ANSWER: B`}
                   )}
 
                   {!q.imagePreviewUrl && (
-                    <FileInput 
-                      placeholder="Attach Image (Optional)" 
-                      accept="image/*" 
-                      size="xs" 
+                    <FileInput
+                      placeholder="Attach Image (Optional)"
+                      accept="image/*"
+                      size="xs"
                       mb="sm"
                       leftSection={<IconPhoto size={14} />}
                       onChange={(file) => handleFileChange(i, file)}
@@ -363,22 +471,26 @@ ANSWER: B`}
 
       <Divider />
 
-      <Group justify="flex-end">
-        <Button 
-          variant="subtle" 
-          color="red" 
+      <Group justify="space-between">
+        <Button
+          variant="light"
+          color="red"
           onClick={handleReset}
           leftSection={<IconRefresh size={16} />}
         >
           Reset
         </Button>
-        <Button variant="default" onClick={onCancel}>Batal</Button>
-        <Button 
-          onClick={handleSave} 
-          disabled={errorCount > 0 || parsedQuestions.length === 0}
-        >
-          Simpan Semua ({parsedQuestions.length})
-        </Button>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onCancel}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={errorCount > 0 || parsedQuestions.length === 0}
+          >
+            Simpan Semua ({parsedQuestions.length})
+          </Button>
+        </Group>
       </Group>
     </Stack>
   );

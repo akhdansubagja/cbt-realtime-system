@@ -24,6 +24,7 @@ import {
   IconUpload,
   IconFilePlus,
   IconCamera,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { notifications } from "@mantine/notifications";
@@ -304,17 +305,15 @@ export function QuickExamineeImportPanel({
   };
 
   const handleReset = async () => {
-    if (confirm("Are you sure you want to reset all data?")) {
-      setText("");
-      setAttachedFiles({});
-      setSelectedBatch(null);
-      await deleteDraft(storageKey);
-      notifications.show({
-        title: "Reset",
-        message: "All data cleared",
-        color: "blue",
-      });
-    }
+    setText("");
+    setAttachedFiles({});
+    setSelectedBatch(null);
+    await deleteDraft(storageKey);
+    // notifications.show({
+    //   title: "Reset",
+    //   message: "All data cleared",
+    //   color: "blue",
+    // });
   };
 
   return (
@@ -359,9 +358,7 @@ export function QuickExamineeImportPanel({
         >
           Pilih Foto Massal
         </Button>
-        <Button variant="subtle" color="red" onClick={handleReset}>
-          Reset
-        </Button>
+
       </Group>
 
       <Divider />
@@ -387,9 +384,6 @@ export function QuickExamineeImportPanel({
           <Stack h="100%">
             <Group justify="space-between">
               <Text fw={500}>Daftar Nama</Text>
-              <Text size="xs" c="dimmed">
-                Satu nama per baris
-              </Text>
             </Group>
             <Textarea
               placeholder={`Budi Santoso
@@ -482,17 +476,27 @@ Bagaskara`}
       </Dropzone>
 
       <Divider />
-      <Group justify="flex-end">
-        <Button variant="default" onClick={onCancel}>
-          Batal
-        </Button>
+      <Group justify="space-between">
         <Button
-          onClick={handleSave}
-          loading={isSaving}
-          disabled={cards.length === 0}
+            variant="light"
+            color="red"
+            leftSection={<IconRefresh size={16} />}
+            onClick={handleReset}
         >
-          Simpan ({cards.length})
+            Reset
         </Button>
+        <Group>
+            <Button variant="default" onClick={onCancel}>
+            Batal
+            </Button>
+            <Button
+            onClick={handleSave}
+            loading={isSaving}
+            disabled={cards.length === 0}
+            >
+            Simpan ({cards.length})
+            </Button>
+        </Group>
       </Group>
     </Stack>
   );
