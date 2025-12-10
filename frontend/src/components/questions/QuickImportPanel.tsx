@@ -125,9 +125,17 @@ export function QuickImportPanel({
   useEffect(() => {
     if (!isDraftLoaded) return;
 
-    const timer = setTimeout(() => {
-      // We save both text AND parsedQuestions to preserve the Files attached to them
-      saveDraft(storageKey, { text, parsedQuestions });
+    const timer = setTimeout(async () => {
+      const isTextEmpty = !text || text.trim() === "";
+      // Check if parsedQuestions has any valid data or images
+      const isQuestionsEmpty = parsedQuestions.length === 0;
+
+      if (isTextEmpty && isQuestionsEmpty) {
+        await deleteDraft(storageKey);
+      } else {
+        // We save both text AND parsedQuestions to preserve the Files attached to them
+        await saveDraft(storageKey, { text, parsedQuestions });
+      }
     }, 1000);
 
     return () => clearTimeout(timer);

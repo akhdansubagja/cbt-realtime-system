@@ -140,12 +140,19 @@ export function QuickExamineeImportPanel({
   // 3. Auto-Save
   useEffect(() => {
     if (!isDraftLoaded) return;
-    const timer = setTimeout(() => {
-      saveDraft(storageKey, {
-        text,
-        files: attachedFiles,
-        batchId: selectedBatch,
-      });
+    const timer = setTimeout(async () => {
+      const isTextEmpty = !text || text.trim() === "";
+      const isFilesEmpty = Object.keys(attachedFiles).length === 0;
+
+      if (isTextEmpty && isFilesEmpty) {
+        await deleteDraft(storageKey);
+      } else {
+        await saveDraft(storageKey, {
+          text,
+          files: attachedFiles,
+          batchId: selectedBatch,
+        });
+      }
     }, 1000);
     return () => clearTimeout(timer);
   }, [text, attachedFiles, selectedBatch, isDraftLoaded, storageKey]);
