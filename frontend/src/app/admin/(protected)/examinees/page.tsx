@@ -472,7 +472,7 @@ export default function ExamineesPage() {
       <Modal 
          opened={quickImportOpened} 
          onClose={closeQuickImport} 
-         title="Smart Quick Import" 
+         title="Tambah Peserta" 
          size="xl" 
          padding={0} // Full space
          styles={{ body: { height: '500px' } }}
