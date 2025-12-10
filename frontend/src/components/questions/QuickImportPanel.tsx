@@ -19,7 +19,7 @@ import {
   Image,
   Center
 } from "@mantine/core";
-import { IconAlertCircle, IconCheck, IconX, IconPhoto, IconTrash } from "@tabler/icons-react";
+import { IconAlertCircle, IconCheck, IconX, IconPhoto, IconTrash, IconRefresh } from "@tabler/icons-react";
 import { parseQuestionText, ParsedQuestion } from "@/lib/question-parser";
 import { notifications } from "@mantine/notifications";
 import { saveDraft, loadDraft, deleteDraft } from "@/lib/indexed-db";
@@ -137,6 +137,81 @@ export function QuickImportPanel({ bankId, onSave, onCancel }: QuickImportPanelP
     });
   };
 
+  const handleReset = async () => {
+    setText("");
+    setParsedQuestions([]);
+    // Clearing the DB is enough, state is cleared.
+    await deleteDraft(storageKey);
+    notifications.show({
+      title: "Reset Berhasil",
+      message: "Draft soal telah dikosongkan.",
+      color: "blue",
+      icon: <IconRefresh size={16} />,
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const textarea = e.currentTarget;
+      const cursor = textarea.selectionStart;
+      const value = textarea.value;
+      
+      // Find start of current line
+      const lastNewLine = value.lastIndexOf('\n', cursor - 1);
+      const currentLine = value.substring(lastNewLine + 1, cursor);
+      
+      // Regex: Group 1=Space, Group 2=Marker(a,1), Group 3=Separator(.)
+      // Added support for ')' as separator based on requirement (Patterns: "1) ", "a) ")
+      const match = currentLine.match(/^(\s*)([a-zA-Z0-9]+)([\.\)])\s+(.*)$/);
+      
+      if (match) {
+        // e.preventDefault(); // Don't prevent default yet, check logic below. 
+        // Actually we MUST prevent default because we are manually inserting newline+marker
+        
+        const [fullMatch, indent, marker, separator, content] = match;
+        
+        // If content is empty (double enter), stop the list
+        if (!content.trim()) {
+           e.preventDefault();
+          const textBeforeLine = value.substring(0, lastNewLine + 1); // Keep previous newline
+          const textAfter = value.substring(cursor);
+          const newText = textBeforeLine + textAfter; // Remove the empty marker line
+          setText(newText);
+          // Need to manually set cursor position after render
+          setTimeout(() => {
+              textarea.selectionStart = textarea.selectionEnd = textBeforeLine.length;
+          }, 0);
+          return;
+        }
+
+        e.preventDefault();
+
+        // Calculate next marker
+        let nextMarker = '';
+        const isNumber = /^\d+$/.test(marker);
+        
+        if (isNumber) {
+          nextMarker = String(parseInt(marker) + 1);
+        } else {
+          // Handle alphabet (a->b, A->B)
+          const charCode = marker.charCodeAt(0);
+          nextMarker = String.fromCharCode(charCode + 1);
+        }
+        
+        const insertion = `\n${indent}${nextMarker}${separator} `;
+        
+        // Insert text
+        const newText = value.substring(0, cursor) + insertion + value.substring(cursor);
+        setText(newText);
+        
+        // Move cursor
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = cursor + insertion.length;
+        }, 0);
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (errorCount > 0) return;
 
@@ -174,6 +249,7 @@ B. Jakarta
 ANSWER: B`}
             value={text}
             onChange={(e) => setText(e.currentTarget.value)}
+            onKeyDown={handleKeyDown}
             style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
             styles={{ wrapper: { flex: 1 }, input: { height: '100%' } }}
           />
@@ -288,6 +364,14 @@ ANSWER: B`}
       <Divider />
 
       <Group justify="flex-end">
+        <Button 
+          variant="subtle" 
+          color="red" 
+          onClick={handleReset}
+          leftSection={<IconRefresh size={16} />}
+        >
+          Reset
+        </Button>
         <Button variant="default" onClick={onCancel}>Batal</Button>
         <Button 
           onClick={handleSave} 
