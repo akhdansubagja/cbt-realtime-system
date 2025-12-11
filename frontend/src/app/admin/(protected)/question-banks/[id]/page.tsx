@@ -94,7 +94,7 @@ export default function SingleQuestionBankPage() {
 
   // State for Add Modal (Unified)
   const [addModalOpened, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
-  const [activeTab, setActiveTab] = useState<string | null>("quick-import");
+
 
   const handleRowClick = ({ record }: { record: Question }) => {
     setViewQuestion(record);
@@ -262,7 +262,6 @@ export default function SingleQuestionBankPage() {
   };
 
   const handleOpenAddModal = () => {
-    setActiveTab("quick-import");
     openAddModal();
   };
 
@@ -452,36 +451,15 @@ export default function SingleQuestionBankPage() {
         opened={addModalOpened}
         onClose={closeAddModal}
         title="Tambah Soal Baru"
-        size="xl"
+        size="90%"
         centered
-        styles={{ body: { height: '80vh', display: 'flex', flexDirection: 'column' } }}
+        styles={{ body: { height: '90vh', display: 'flex', flexDirection: 'column' } }}
       >
-        <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Tabs.List>
-            <Tabs.Tab value="quick-import" leftSection={<IconBolt size={14} />}>
-              Import Cepat
-            </Tabs.Tab>
-            <Tabs.Tab value="manual" leftSection={<IconEdit size={14} />}>
-              Input Manual
-            </Tabs.Tab>
-          </Tabs.List>
-
-          <Tabs.Panel value="quick-import" pt="xs" style={{ flex: 1, minHeight: 0 }}>
-            <QuickImportPanel 
-              bankId={bankId}
-              onSave={handleBulkImport} 
-              onCancel={closeAddModal} 
-            />
-          </Tabs.Panel>
-
-          <Tabs.Panel value="manual" pt="xs">
-            <ManualQuestionForm 
-              bankId={bankId}
-              onSubmit={handleManualSubmit}
-              onCancel={closeAddModal}
-            />
-          </Tabs.Panel>
-        </Tabs>
+        <QuickImportPanel 
+          bankId={bankId}
+          onSave={handleBulkImport} 
+          onCancel={closeAddModal} 
+        />
       </Modal>
 
       {/* ... Other Modals ... */}

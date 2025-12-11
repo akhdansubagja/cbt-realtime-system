@@ -88,9 +88,12 @@ export function QuickImportPanel({
   useEffect(() => {
     const element = questionRefs.current[activeQuestionIndex];
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Re-trigger scroll when content changes (parsedQuestions updates)
+      // "nearest" ensures that if the card grows (e.g. adding options) and goes off-screen, it bumps into view.
+      element.scrollIntoView({ behavior: "auto", block: "nearest" });
     }
-  }, [activeQuestionIndex]);
+  }, [activeQuestionIndex, parsedQuestions]);
+
 
   // 1. Load Draft on Mount
   useEffect(() => {
@@ -379,7 +382,7 @@ Answer:
 
       <SimpleGrid cols={2} spacing="md" style={{ flex: 1, minHeight: 0 }}>
         <Stack h="100%" style={{ overflow: 'hidden' }}>
-          <Group justify="space-between">
+          <Group justify="space-between" h={40}>
             <Text fw={500}>Paste Text Soal di Sini:</Text>
             <ActionIcon
               variant="subtle"
@@ -400,12 +403,15 @@ Answer:
             onKeyUp={updateActiveQuestion}
             onClick={updateActiveQuestion}
             style={{ flex: 1, display: "flex", flexDirection: "column" }}
-            styles={{ wrapper: { flex: 1 }, input: { height: "100%", resize: "none", overflowY: "auto" } }}
+            styles={{ 
+              wrapper: { flex: 1, display: 'flex', flexDirection: 'column' }, 
+              input: { flex: 1, resize: "none", overflowY: "auto", height: "100%" } 
+            }}
           />
         </Stack>
 
         <Stack h="100%" style={{ overflowY: "hidden" }}>
-          <Group justify="space-between">
+          <Group justify="space-between" h={40}>
             <Text fw={500}>Live Preview ({parsedQuestions.length} Soal)</Text>
             {errorCount > 0 && (
               <Badge color="red" leftSection={<IconAlertCircle size={14} />}>
