@@ -75,6 +75,8 @@ DONE35. perbaiki permasalahan caching local storage indexdb yang tidak berjalan 
 
 DONE36. perbaiki fitur auto formating supaya dapat memformat angka
 
+37. buat grafik di halaman detail peserta, lalu buat agar peserta bisa diexport datanya ke dalam pdf
+
 
 
 
