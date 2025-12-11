@@ -69,9 +69,11 @@ DONE31. buat pada fitur import cepat soal, supaya ditambahkan fitur yang dapat m
 
 33. perbaiki card table pada halaman detai batch 
 
-34. buat agar pada modal untuk quick import peserta, maupun import cepat soal, supaya kedua bagian yaitu untuk input teks dan juga preview, mempunyai scroll barnya sendiri, lalu dibuat responsif, maksudnya ketika sedang mengetik atau membuat soal maupun peserta, jadi di bagian previewnya menampilkan bagian yang sedang diketik, jadi seperti otomatis bergerak tanpa perlu untuk menggerakan scroll barnya secara manual nantinya, tujuannya adalah supaya mempermudah admin atau user dalam membuat soal ujian maupun menambahkan peserta, karena dapat langsung melihat previewnya dan tanpa perlu melakukan scrolling untuk melihat hasilnya, karena pada saat ini jika soal atau peserta yang ditambahkan ada banyak, perbedaan ukuran panjang bagian input dan bagian preview akan semakin panjang, dan akan menyulitkan jika harus melakukan scroll berulang.
+DONE34. buat agar pada modal untuk quick import peserta, maupun import cepat soal, supaya kedua bagian yaitu untuk input teks dan juga preview, mempunyai scroll barnya sendiri, lalu dibuat responsif, maksudnya ketika sedang mengetik atau membuat soal maupun peserta, jadi di bagian previewnya menampilkan bagian yang sedang diketik, jadi seperti otomatis bergerak tanpa perlu untuk menggerakan scroll barnya secara manual nantinya, tujuannya adalah supaya mempermudah admin atau user dalam membuat soal ujian maupun menambahkan peserta, karena dapat langsung melihat previewnya dan tanpa perlu melakukan scrolling untuk melihat hasilnya, karena pada saat ini jika soal atau peserta yang ditambahkan ada banyak, perbedaan ukuran panjang bagian input dan bagian preview akan semakin panjang, dan akan menyulitkan jika harus melakukan scroll berulang.
 
 DONE35. perbaiki permasalahan caching local storage indexdb yang tidak berjalan dengan baik, karena membiarkan browser menjadi cepat penuh penyimpanannya.
+
+36. perbaiki fitur auto formating supaya dapat memformat angka
 
 
 

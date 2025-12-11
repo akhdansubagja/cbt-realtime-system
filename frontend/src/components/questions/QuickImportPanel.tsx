@@ -228,12 +228,37 @@ export function QuickImportPanel({
           e.preventDefault();
           const textBeforeLine = value.substring(0, lastNewLine + 1); // Keep previous newline
           const textAfter = value.substring(cursor);
-          const newText = textBeforeLine + textAfter; // Remove the empty marker line
+          
+          let newText = textBeforeLine + textAfter; // Default: Just remove the empty marker
+          let newCursorPos = textBeforeLine.length;
+
+          // SPECIAL FEATURE: If we are clearing a letter marker (a., b., c...), 
+          // assumes we finished options, so auto-generate Next Question Number.
+          const isLetterMarker = /^[a-zA-Z]+$/.test(marker);
+          
+          if (isLetterMarker) {
+             // Look backwards for the last number marker (e.g. "1.")
+             // Regex finds "Start of line, whitespace, digits, dot/paren"
+             const questionMatches = [...textBeforeLine.matchAll(/^\s*(\d+)([\.\)])/gm)];
+             
+             if (questionMatches.length > 0) {
+               const lastMatch = questionMatches[questionMatches.length - 1];
+               const lastNumber = parseInt(lastMatch[1]);
+               const matchedSeparator = lastMatch[2]; // Use same separator (. or ))
+               
+               const nextNumber = lastNumber + 1;
+               // Add a blank line before the new question for better formatting
+               const nextQuestionBlock = `\n${nextNumber}${matchedSeparator} `;
+               
+               newText = textBeforeLine + nextQuestionBlock + textAfter;
+               newCursorPos = textBeforeLine.length + nextQuestionBlock.length;
+             }
+          }
+
           setText(newText);
           // Need to manually set cursor position after render
           setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd =
-              textBeforeLine.length;
+            textarea.selectionStart = textarea.selectionEnd = newCursorPos;
           }, 0);
           return;
         }
