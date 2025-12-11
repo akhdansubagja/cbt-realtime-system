@@ -114,9 +114,9 @@ export function parseQuestionText(text: string): ParsedQuestion[] {
       let isCorrect = false;
 
       // Check for Suffix (Format A)
-      if (text.endsWith("##") || text.endsWith("**")) {
+      if (text.endsWith(";") || text.endsWith("**")) {
         isCorrect = true;
-        text = text.replace(/##|\*\*/, "").trim();
+        text = text.replace(/;|\*\*/, "").trim();
       }
 
       if (currentQuestion.question_text) {

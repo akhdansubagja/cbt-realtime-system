@@ -270,7 +270,8 @@ export function QuickImportPanel({
         const isNumber = /^\d+$/.test(marker);
 
         if (isNumber) {
-          nextMarker = String(parseInt(marker) + 1);
+          // If previous was a number (Question), next should be first Option 'a'
+          nextMarker = "a";
         } else {
           // Handle alphabet (a->b, A->B)
           const charCode = marker.charCodeAt(0);
@@ -338,10 +339,10 @@ b. Bandung`}
           </Box>
           <Box>
             <Text fw={500} size="sm" mb="xs">
-              Kunci Jawaban (Cara Inline #1):
+              Kunci Jawaban Cara Inline #1 (Recomended):
             </Text>
             <Text size="sm" c="dimmed" mb="xs">
-              Tambahkan ## di akhir opsi benar
+              Tambahkan ; (titik koma) di akhir opsi benar
             </Text>
             <Paper withBorder p="xs" bg="gray.0">
               <Text
@@ -351,13 +352,13 @@ b. Bandung`}
               >
                 {`1. Ibukota Indonesia adalah...
 A. Bandung
-B. Jakarta##`}
+B. Jakarta;`}
               </Text>
             </Paper>
           </Box>
           <Box>
             <Text fw={500} size="sm" mb="xs">
-              Kunci Jawaban (Cara Inline #2):
+              Kunci Jawaban Cara Inline #2:
             </Text>
             <Text size="sm" c="dimmed" mb="xs">
               Tambahkan "Answer: " di akhir soal
@@ -377,7 +378,7 @@ ANSWER: B`}
           </Box>
           <Box>
             <Text fw={500} size="sm" mb="xs">
-              Kunci Jawaban (Cara Blok):
+              Kunci Jawaban Cara Blok:
             </Text>
             <Text size="sm" c="dimmed" mb="xs">
               Tulis Answer: atau Jawaban: di baris paling bawah

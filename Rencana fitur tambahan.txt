@@ -73,7 +73,7 @@ DONE34. buat agar pada modal untuk quick import peserta, maupun import cepat soa
 
 DONE35. perbaiki permasalahan caching local storage indexdb yang tidak berjalan dengan baik, karena membiarkan browser menjadi cepat penuh penyimpanannya.
 
-36. perbaiki fitur auto formating supaya dapat memformat angka
+DONE36. perbaiki fitur auto formating supaya dapat memformat angka
 
 
 
