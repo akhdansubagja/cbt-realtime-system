@@ -72,6 +72,25 @@ export function QuickExamineeImportPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
+  const [activeLine, setActiveLine] = useState(0);
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const updateActiveLine = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+    // Count newlines to determine current line index
+    const currentLineIndex = textBeforeCursor.split("\n").length - 1;
+    setActiveLine(currentLineIndex);
+  };
+
+  useEffect(() => {
+    const element = cardRefs.current[activeLine];
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [activeLine, cards.length]);
+
   // Hidden input refs
   const bulkInputRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
@@ -284,6 +303,11 @@ export function QuickExamineeImportPanel({
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setText(newText);
+    
+    // FIX: Immediate Sync during typing
+    const cursor = e.target.selectionStart;
+    const currentLineIndex = newText.substring(0, cursor).split("\n").length - 1;
+    setActiveLine(currentLineIndex);
 
     // Bug Fix: Prune orphan images
     const lineCount = newText
@@ -365,7 +389,6 @@ export function QuickExamineeImportPanel({
         >
           Pilih Foto Massal
         </Button>
-
       </Group>
 
       <Divider />
@@ -382,13 +405,13 @@ export function QuickExamineeImportPanel({
         maxSize={5 * 1024 ** 2}
         accept={IMAGE_MIME_TYPE}
         activateOnClick={false}
-        style={{ flex: 1, display: "flex", flexDirection: "column" }}
+        style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}
         styles={{
-          inner: { flex: 1, display: "flex", flexDirection: "column" },
+          inner: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
         }}
       >
         <SimpleGrid cols={2} spacing="md" style={{ flex: 1, minHeight: 0 }}>
-          <Stack h="100%">
+          <Stack h="100%" style={{ overflow: 'hidden' }}>
             <Group justify="space-between">
               <Text fw={500}>Daftar Nama</Text>
             </Group>
@@ -398,10 +421,12 @@ Siti Hasanah
 Bagaskara`}
               value={text}
               onChange={handleTextChange}
+              onKeyUp={updateActiveLine}
+              onClick={updateActiveLine}
               style={{ flex: 1, display: "flex", flexDirection: "column" }}
               styles={{
                 wrapper: { flex: 1 },
-                input: { height: "100%", fontFamily: "monospace" },
+                input: { height: "100%", resize: "none", overflowY: "auto", fontFamily: "monospace" },
               }}
             />
           </Stack>
@@ -416,7 +441,22 @@ Bagaskara`}
                   </Text>
                 )}
                 {cards.map((card) => (
-                  <Paper key={card.id} p="xs" withBorder radius="md">
+                  <Paper
+                    key={card.id}
+                    p="xs"
+                    withBorder
+                    radius="md"
+                    ref={(el) => {
+                      cardRefs.current[card.index] = el;
+                    }}
+                    style={{
+                      borderColor:
+                        card.index === activeLine
+                          ? "var(--mantine-color-blue-5)"
+                          : undefined,
+                      transition: "border-color 0.2s ease",
+                    }}
+                  >
                     <Group>
                       <Avatar
                         src={card.imagePreviewUrl}

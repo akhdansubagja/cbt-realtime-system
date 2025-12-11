@@ -64,6 +64,34 @@ export function QuickImportPanel({
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
   const [helpOpened, setHelpOpened] = useState(false);
 
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const updateActiveQuestion = (
+    e: React.SyntheticEvent<HTMLTextAreaElement>
+  ) => {
+    const textarea = e.currentTarget;
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+
+    // Regex to match question numbers (e.g. "1. ", "5) ")
+    // We count how many question start markers exist before the cursor
+    // This assumes the parser logic which usually keys on these
+    const matches = textBeforeCursor.match(/^\s*\d+[\.\)]/gm);
+    const count = matches ? matches.length : 0;
+    
+    // Index is count - 1 (if count 1, index 0). If 0, stays 0
+    const newIndex = count > 0 ? count - 1 : 0;
+    setActiveQuestionIndex(newIndex);
+  };
+
+  useEffect(() => {
+    const element = questionRefs.current[activeQuestionIndex];
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [activeQuestionIndex]);
+
   // 1. Load Draft on Mount
   useEffect(() => {
     const init = async () => {
@@ -350,7 +378,7 @@ Answer:
       </Modal>
 
       <SimpleGrid cols={2} spacing="md" style={{ flex: 1, minHeight: 0 }}>
-        <Stack h="100%">
+        <Stack h="100%" style={{ overflow: 'hidden' }}>
           <Group justify="space-between">
             <Text fw={500}>Paste Text Soal di Sini:</Text>
             <ActionIcon
@@ -364,14 +392,19 @@ Answer:
           </Group>
           <Textarea
             value={text}
-            onChange={(e) => setText(e.currentTarget.value)}
+            onChange={(e) => {
+              setText(e.currentTarget.value);
+              updateActiveQuestion(e);
+            }}
             onKeyDown={handleKeyDown}
+            onKeyUp={updateActiveQuestion}
+            onClick={updateActiveQuestion}
             style={{ flex: 1, display: "flex", flexDirection: "column" }}
-            styles={{ wrapper: { flex: 1 }, input: { height: "100%" } }}
+            styles={{ wrapper: { flex: 1 }, input: { height: "100%", resize: "none", overflowY: "auto" } }}
           />
         </Stack>
 
-        <Stack h="100%" style={{ overflowY: "auto" }}>
+        <Stack h="100%" style={{ overflowY: "hidden" }}>
           <Group justify="space-between">
             <Text fw={500}>Live Preview ({parsedQuestions.length} Soal)</Text>
             {errorCount > 0 && (
@@ -395,10 +428,17 @@ Answer:
                   withBorder
                   p="sm"
                   radius="md"
+                  ref={(el) => {
+                    questionRefs.current[i] = el;
+                  }}
                   style={{
-                    borderColor: q.isValid
-                      ? undefined
-                      : "var(--mantine-color-red-5)",
+                    borderColor:
+                      i === activeQuestionIndex
+                        ? "var(--mantine-color-blue-5)"
+                        : q.isValid
+                        ? undefined
+                        : "var(--mantine-color-red-5)",
+                     transition: "border-color 0.2s ease",
                   }}
                 >
                   <Group justify="space-between" mb="xs" align="flex-start">
