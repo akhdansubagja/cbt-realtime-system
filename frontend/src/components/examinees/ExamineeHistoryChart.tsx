@@ -51,7 +51,11 @@ export function ExamineeHistoryChart({
       </Title>
       
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+        <BarChart 
+          data={data} 
+          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          barCategoryGap="20%"
+        >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? theme.colors.dark[4] : theme.colors.gray[2]} />
           <XAxis 
             dataKey="name" 
@@ -79,7 +83,7 @@ export function ExamineeHistoryChart({
             dataKey="Nilai"
             fill={theme.colors[theme.primaryColor][6]}
             radius={[6, 6, 0, 0]}
-            barSize={60}
+            // Removed fixed barSize to allow it to expand with gap
           />
         </BarChart>
       </ResponsiveContainer>

@@ -51,17 +51,9 @@ import { confirmDelete, showSuccessAlert } from "@/lib/swal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { QuickExamineeImportPanel } from "@/components/examinees/QuickExamineeImportPanel";
+import { ExamineeFormModal } from "@/components/examinees/ExamineeFormModal";
 
-interface Examinee {
-  id: number;
-  name: string;
-  created_at: string;
-  batch: Batch | null;
-  avatar_url: string | null;
-  is_active: boolean;
-  uniqid: string;
-  workplace?: string | null;
-}
+import { Examinee } from "@/types/examinee";
 
 export default function ExamineesPage() {
   const [examinees, setExaminees] = useState<Examinee[]>([]);
@@ -119,22 +111,7 @@ export default function ExamineesPage() {
       }
   };
 
-  const [currentAvatarPreview, setCurrentAvatarPreview] = useState<
-    string | null
-  >(null);
 
-  const form = useForm({
-    initialValues: {
-      name: "",
-      workplace: "",
-      batch_id: null as string | null,
-      avatar: null as File | null,
-    },
-    validate: {
-      name: (value) =>
-        value.trim().length > 0 ? null : "Nama peserta tidak boleh kosong",
-    },
-  });
 
   const fetchBatches = async () => {
     try {
@@ -197,17 +174,6 @@ export default function ExamineesPage() {
 
   const openEditModal = (examinee: Examinee) => {
     setEditingExaminee(examinee);
-    if (examinee.avatar_url) {
-      setCurrentAvatarPreview(`http://localhost:3000/${examinee.avatar_url}`);
-    } else {
-      setCurrentAvatarPreview(null);
-    }
-    form.setValues({
-      name: examinee.name,
-      workplace: examinee.workplace || "",
-      batch_id: examinee.batch?.id ? String(examinee.batch.id) : null,
-      avatar: null,
-    });
     open();
   };
 
@@ -337,50 +303,7 @@ export default function ExamineesPage() {
     }
   };
 
-  const handleSubmit = async (values: typeof form.values) => {
-    try {
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("workplace", values.workplace);
 
-      if (values.batch_id) {
-        formData.append("batch_id", values.batch_id);
-      }
-      if (values.avatar) {
-        formData.append("avatar", values.avatar);
-      }
-
-      if (editingExaminee) {
-        await api.patch(`/examinees/${editingExaminee.id}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } else {
-        await api.post("/examinees", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      }
-
-      await fetchExaminees();
-
-      notifications.show({
-        title: "Berhasil!",
-        message: editingExaminee
-          ? "Data peserta telah diperbarui."
-          : "Peserta baru telah ditambahkan.",
-        color: "teal",
-      });
-
-      close();
-      form.reset();
-      setEditingExaminee(null);
-    } catch (err) {
-      notifications.show({
-        title: "Gagal",
-        message: "Terjadi kesalahan.",
-        color: "red",
-      });
-    }
-  };
 
   const handleAvatarClick = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -389,10 +312,7 @@ export default function ExamineesPage() {
     }
   };
 
-  const batchOptions = batches.map((batch) => ({
-    value: String(batch.id),
-    label: batch.name,
-  }));
+
 
   return (
     <>
@@ -406,80 +326,16 @@ export default function ExamineesPage() {
         <Image src={selectedImage} alt="Avatar Peserta" />
       </Modal>
 
-      <Modal
+      <ExamineeFormModal
         opened={opened}
         onClose={() => {
           close();
           setEditingExaminee(null);
-          form.reset();
         }}
-        title={editingExaminee ? "Edit Peserta" : "Tambah Peserta Baru"}
-        centered
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack>
-            <TextInput
-              withAsterisk
-              label="Nama Lengkap Peserta"
-              placeholder="Contoh: Budi Santoso"
-              {...form.getInputProps("name")}
-            />
-            
-            
-
-            {editingExaminee && currentAvatarPreview && !form.values.avatar && (
-              <Center>
-                <Stack align="center" gap="xs">
-                  <Text size="sm" c="dimmed">
-                    Avatar Saat Ini:
-                  </Text>
-                  <Avatar src={currentAvatarPreview} size="xl" radius="md" />
-                </Stack>
-              </Center>
-            )}
-
-            {form.values.avatar && (
-              <Center>
-                <Stack align="center" gap="xs">
-                  <Text size="sm" c="teal">
-                    Akan diganti menjadi:
-                  </Text>
-                  <Avatar
-                    src={URL.createObjectURL(form.values.avatar)}
-                    size="xl"
-                    radius="md"
-                  />
-                </Stack>
-              </Center>
-            )}
-            <FileInput
-              label="Foto Avatar (Opsional)"
-              placeholder="Pilih gambar..."
-              accept="image/png,image/jpeg"
-              {...form.getInputProps("avatar")}
-            />
-            <Select
-              label="Batch"
-              placeholder="Pilih batch (Opsional)"
-              data={batchOptions}
-              value={form.values.batch_id ? String(form.values.batch_id) : null}
-              {...form.getInputProps("batch_id")}
-              clearable
-            />
-            <TextInput
-              label="Institusi / Tempat Kerja (Opsional)"
-              placeholder="Contoh: Universitas Indonesia / PT. Maju Jaya"
-              {...form.getInputProps("workplace")}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="default" onClick={close}>
-                Batal
-              </Button>
-              <Button type="submit">Simpan</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
+        onSuccess={fetchExaminees}
+        initialExaminee={editingExaminee}
+        batches={batches}
+      />
 
       <Modal 
          opened={quickImportOpened} 
