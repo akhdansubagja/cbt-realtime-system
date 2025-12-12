@@ -25,6 +25,8 @@ import { DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
 import { PageHeader } from '@/components/layout/PageHeader';
 
+import { ExamineeHistoryChart, ChartData } from '@/components/examinees/ExamineeHistoryChart';
+
 export default function ExamineeDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -77,6 +79,19 @@ export default function ExamineeDetailPage() {
       : 0
   };
 
+  // Prepare chart data
+  const chartData: ChartData[] = history
+    .filter(h => h.status === 'finished' && h.final_score !== null)
+    .sort((a, b) => {
+      const dateA = new Date(a.start_time || a.created_at).getTime();
+      const dateB = new Date(b.start_time || b.created_at).getTime();
+      return dateA - dateB;
+    })
+    .map(h => ({
+      name: h.exam?.title || `Ujian #${h.exam_id}`,
+      Nilai: h.final_score || 0,
+    }));
+
   if (loading) {
     return <Loader />;
   }
@@ -115,6 +130,8 @@ export default function ExamineeDetailPage() {
       <Stack gap="sm">
         <ExamineeProfileCard examinee={examinee} stats={stats} />
         
+        <ExamineeHistoryChart data={chartData} />
+
         <Stack gap="xs">
             <Title order={4}>Riwayat Ujian Lengkap</Title>
             <ExamineeHistoryTable 

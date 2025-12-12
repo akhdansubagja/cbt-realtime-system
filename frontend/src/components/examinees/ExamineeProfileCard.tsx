@@ -32,17 +32,16 @@ export function ExamineeProfileCard({
 }: ExamineeProfileCardProps) {
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === "dark";
-  const statsBg = isDark ? "var(--mantine-color-dark-6)" : "var(--mantine-color-gray-0)";
+  const statsBg = isDark
+    ? "var(--mantine-color-dark-6)"
+    : "var(--mantine-color-gray-0)";
 
   return (
     <Card withBorder shadow="sm" radius="md" padding="lg">
       <Card.Section withBorder inheritPadding py="xs">
         <Group justify="space-between">
           <Text fw={500}>Profil Peserta</Text>
-          <Badge
-            color={examinee.is_active ? "teal" : "red"}
-            variant="light"
-          >
+          <Badge color={examinee.is_active ? "teal" : "red"} variant="light">
             {examinee.is_active ? "Aktif" : "Tidak Aktif"}
           </Badge>
         </Group>
@@ -104,20 +103,56 @@ export function ExamineeProfileCard({
             </Text>
           </div>
         </Group>
-        
+
+        <Group wrap="nowrap">
+          <ThemeIcon variant="light" color="orange" size="md">
+            <IconSchool style={{ width: rem(16), height: rem(16) }} />
+          </ThemeIcon>
+          <div>
+            <Text size="xs" c="dimmed">
+              Institusi / Tempat Kerja
+            </Text>
+            <Text size="sm" fw={500}>
+              {examinee.workplace || "-"}
+            </Text>
+          </div>
+        </Group>
+
         {stats && (
-           <Group grow>
-             <Stack gap={0} align="center" bg={statsBg} p="xs" style={{ borderRadius: '8px' }}>
-                <Text size="xs" c="dimmed">Total Ujian</Text>
-                <Text fw={700} size="lg">{stats.totalExams}</Text>
-             </Stack>
-             <Stack gap={0} align="center" bg={statsBg} p="xs" style={{ borderRadius: '8px' }}>
-                <Text size="xs" c="dimmed">Rata-rata</Text>
-                <Text fw={700} size="lg" c={stats.averageScore >= 75 ? 'teal' : 'orange'}>
-                    {stats.averageScore.toFixed(1)}
-                </Text>
-             </Stack>
-           </Group>
+          <Group grow>
+            <Stack
+              gap={0}
+              align="center"
+              bg={statsBg}
+              p="xs"
+              style={{ borderRadius: "8px" }}
+            >
+              <Text size="xs" c="dimmed">
+                Total Ujian
+              </Text>
+              <Text fw={700} size="lg">
+                {stats.totalExams}
+              </Text>
+            </Stack>
+            <Stack
+              gap={0}
+              align="center"
+              bg={statsBg}
+              p="xs"
+              style={{ borderRadius: "8px" }}
+            >
+              <Text size="xs" c="dimmed">
+                Rata-rata
+              </Text>
+              <Text
+                fw={700}
+                size="lg"
+                c={stats.averageScore >= 75 ? "teal" : "orange"}
+              >
+                {stats.averageScore.toFixed(1)}
+              </Text>
+            </Stack>
+          </Group>
         )}
       </Stack>
     </Card>

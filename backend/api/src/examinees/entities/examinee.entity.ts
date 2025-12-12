@@ -26,6 +26,9 @@ export class Examinee {
   @Column({ nullable: true })
   avatar_url: string;
 
+  @Column({ nullable: true })
+  workplace: string;
+
   @Column({ default: true })
   is_active: boolean;
 

@@ -60,6 +60,7 @@ interface Examinee {
   avatar_url: string | null;
   is_active: boolean;
   uniqid: string;
+  workplace?: string | null;
 }
 
 export default function ExamineesPage() {
@@ -125,6 +126,7 @@ export default function ExamineesPage() {
   const form = useForm({
     initialValues: {
       name: "",
+      workplace: "",
       batch_id: null as string | null,
       avatar: null as File | null,
     },
@@ -202,6 +204,7 @@ export default function ExamineesPage() {
     }
     form.setValues({
       name: examinee.name,
+      workplace: examinee.workplace || "",
       batch_id: examinee.batch?.id ? String(examinee.batch.id) : null,
       avatar: null,
     });
@@ -338,6 +341,7 @@ export default function ExamineesPage() {
     try {
       const formData = new FormData();
       formData.append("name", values.name);
+      formData.append("workplace", values.workplace);
 
       if (values.batch_id) {
         formData.append("batch_id", values.batch_id);
@@ -420,6 +424,9 @@ export default function ExamineesPage() {
               placeholder="Contoh: Budi Santoso"
               {...form.getInputProps("name")}
             />
+            
+            
+
             {editingExaminee && currentAvatarPreview && !form.values.avatar && (
               <Center>
                 <Stack align="center" gap="xs">
@@ -458,6 +465,11 @@ export default function ExamineesPage() {
               value={form.values.batch_id ? String(form.values.batch_id) : null}
               {...form.getInputProps("batch_id")}
               clearable
+            />
+            <TextInput
+              label="Institusi / Tempat Kerja (Opsional)"
+              placeholder="Contoh: Universitas Indonesia / PT. Maju Jaya"
+              {...form.getInputProps("workplace")}
             />
             <Group justify="flex-end" mt="md">
               <Button variant="default" onClick={close}>
