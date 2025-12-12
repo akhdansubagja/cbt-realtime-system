@@ -492,7 +492,7 @@ export default function ExamineesPage() {
           title="Manajemen Peserta"
           breadcrumbs={[
             { label: "Admin", href: "/admin/dashboard" },
-            { label: "Peserta", href: "/admin/examinees" },
+            { label: "Manajemen Peserta", href: "/admin/examinees" },
           ]}
           actions={
             <Group>

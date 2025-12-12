@@ -292,7 +292,7 @@ export default function BatchesPage() {
         title="Manajemen Batch"
         breadcrumbs={[
           { label: "Admin", href: "/admin/dashboard" },
-          { label: "Batch", href: "/admin/batches" },
+          { label: "Manajemen Batch", href: "/admin/batches" },
         ]}
         actions={
           <Group>

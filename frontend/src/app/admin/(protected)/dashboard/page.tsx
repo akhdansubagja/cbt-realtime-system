@@ -158,7 +158,7 @@ export default function DashboardPage() {
             Dashboard Overview
           </Title>
           <Text mt="xs" c="white" style={{ opacity: 0.9 }}>
-            Selamat datang kembali di panel admin CBT Realtime System.
+            Selamat datang di panel admin CBT Realtime System.
           </Text>
         </Paper>
       </motion.div>
@@ -183,7 +183,7 @@ export default function DashboardPage() {
         ))}
       </SimpleGrid>
 
-      {/* Charts & Activity Section */}
+      {/* Charts & Activity Section
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -197,9 +197,9 @@ export default function DashboardPage() {
              <RecentActivity />
           </Grid.Col>
         </Grid>
-      </motion.div>
+      </motion.div> */}
 
-      {/* Server Status Section */}
+      {/* Server Status Section
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                </Group>
             </Group>
          </Card>
-      </motion.div>
+      </motion.div> */}
     </Stack>
   );
 }

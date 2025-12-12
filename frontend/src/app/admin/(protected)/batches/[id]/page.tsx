@@ -30,6 +30,7 @@ import { IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { BulkAddExamineesModal } from "@/components/examinees/BulkAddExamineesModal";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function BatchDetailPage() {
   const params = useParams();
@@ -156,32 +157,32 @@ export default function BatchDetailPage() {
           }}
           lockedBatchId={batchId} // <-- Kirim ID batch ke modal
         />
-        <Breadcrumbs mb="md">
-          <Anchor component={Link} href="/admin/batches">
-            Manajemen Batch
-          </Anchor>
-          <Text>{batch.name}</Text>
-        </Breadcrumbs>
-
-        <Group justify="space-between" mb="md">
-          <Title order={2}>{batch.name}</Title>
-          <Group>
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={openBulkModal}
-            >
-              Tambah Peserta
-            </Button>
-            <Button
-              leftSection={<IconFileExport size={16} />}
-              onClick={handleExport}
-              loading={isExporting}
-              variant="outline"
-            >
-              Export ke Excel
-            </Button>
-          </Group>
-        </Group>
+        <PageHeader
+          title={batch.name}
+          breadcrumbs={[
+            { label: "Admin", href: "/admin/dashboard" },
+            { label: "Manajemen Batch", href: "/admin/batches" },
+            { label: batch.name, href: `#` },
+          ]}
+          actions={
+            <Group>
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={openBulkModal}
+              >
+                Tambah Peserta
+              </Button>
+              <Button
+                leftSection={<IconFileExport size={16} />}
+                onClick={handleExport}
+                loading={isExporting}
+                variant="outline"
+              >
+                Export ke Excel
+              </Button>
+            </Group>
+          }
+        />
 
         {/* <InteractiveBatchChartV2 batchId={batch.id} key={`chart-${refreshKey}`} /> */}
 

@@ -557,7 +557,7 @@ export default function SingleQuestionBankPage() {
           title={bankData?.name || "Detail Bank Soal"}
           breadcrumbs={[
             { label: "Admin", href: "/admin/dashboard" },
-            { label: "Bank Soal", href: "/admin/question-banks" },
+            { label: "Manajemen Bank Soal", href: "/admin/question-banks" },
             { label: bankData?.name || "Detail", href: "#" },
           ]}
           actions={

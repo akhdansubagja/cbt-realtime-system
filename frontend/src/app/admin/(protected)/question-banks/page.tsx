@@ -294,7 +294,7 @@ export default function QuestionBanksPage() {
           title="Manajemen Bank Soal"
           breadcrumbs={[
             { label: "Admin", href: "/admin/dashboard" },
-            { label: "Bank Soal", href: "/admin/question-banks" },
+            { label: "Manajemen Bank Soal", href: "/admin/question-banks" },
           ]}
           actions={
             <Group>

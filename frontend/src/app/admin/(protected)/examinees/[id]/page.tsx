@@ -23,6 +23,7 @@ import { ExamineeProfileCard } from '@/components/examinees/ExamineeProfileCard'
 import { ExamineeHistoryTable } from '@/components/examinees/ExamineeHistoryTable';
 import { DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function ExamineeDetailPage() {
   const params = useParams();
@@ -102,16 +103,16 @@ export default function ExamineeDetailPage() {
 
   return (
     <Stack gap="lg">
-      <Breadcrumbs>
-        <Anchor component={Link} href="/admin/examinees">
-          Manajemen Peserta
-        </Anchor>
-        <Text>{examinee.name}</Text>
-      </Breadcrumbs>
+      <PageHeader
+        title="Detail Peserta"
+        breadcrumbs={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Manajemen Peserta", href: "/admin/examinees" },
+          { label: examinee.name, href: `/admin/examinees/${examinee.id}` },
+        ]}
+      />
 
-      <Title order={2}>Detail Peserta</Title>
-
-      <Stack gap="lg">
+      <Stack gap="sm">
         <ExamineeProfileCard examinee={examinee} stats={stats} />
         
         <Stack gap="xs">

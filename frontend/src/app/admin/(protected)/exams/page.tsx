@@ -575,14 +575,16 @@ export default function ExamsPage() {
                     (q) => q.id === item.question_id
                   );
                   return (
-                    <Group key={index} mt="xs" grow>
+                    <Group key={index} mt="xs" align="center" wrap="nowrap">
                       <Text size="sm" style={{ flex: 3 }} truncate>
                         {questionDetail
-                          ? `${questionDetail.id}: ${questionDetail.question_text}`
-                          : `Soal ID: ${item.question_id}`}
+                          ? `${questionDetail.question_text}`
+                          : `${item.question_id}`}
                       </Text>
                       <NumberInput
                         placeholder="Poin"
+                        w={70}
+                        min={0}
                         {...form.getInputProps(
                           `manual_questions.${index}.point`
                         )}
@@ -624,7 +626,7 @@ export default function ExamsPage() {
                 </Button>
               </Group>
               {form.values.random_rules.map((item, index) => (
-                <Group key={index} mt="xs" grow>
+                <Group key={index} mt="xs" align="center" wrap="nowrap">
                   <Select
                     placeholder="Pilih Bank Soal"
                     data={questionBanks}
@@ -694,7 +696,7 @@ export default function ExamsPage() {
           title="Manajemen Ujian"
           breadcrumbs={[
             { label: "Admin", href: "/admin/dashboard" },
-            { label: "Ujian", href: "/admin/exams" },
+            { label: "Manajemen Ujian", href: "/admin/exams" },
           ]}
           actions={
             <Group>
