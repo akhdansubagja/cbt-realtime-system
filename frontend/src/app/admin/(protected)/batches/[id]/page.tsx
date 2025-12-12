@@ -18,6 +18,7 @@ import {
   IconAlertCircle,
   IconUserSearch,
   IconFileExport,
+  IconPrinter,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
@@ -31,6 +32,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { BulkAddExamineesModal } from "@/components/examinees/BulkAddExamineesModal";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { BatchReportModal } from "@/components/batches/BatchReportModal";
 
 export default function BatchDetailPage() {
   const params = useParams();
@@ -38,6 +40,8 @@ export default function BatchDetailPage() {
   const batchId = parseInt(id, 10);
   const router = useRouter();
   const [bulkModalOpened, { open: openBulkModal, close: closeBulkModal }] =
+    useDisclosure(false);
+  const [reportModalOpened, { open: openReportModal, close: closeReportModal }] =
     useDisclosure(false);
 
   const [batch, setBatch] = useState<Batch | null>(null);
@@ -144,6 +148,8 @@ export default function BatchDetailPage() {
     </Table.Tr>
   ));
 
+
+
   return (
     <>
       <Stack>
@@ -157,6 +163,14 @@ export default function BatchDetailPage() {
           }}
           lockedBatchId={batchId} // <-- Kirim ID batch ke modal
         />
+
+        <BatchReportModal
+            opened={reportModalOpened}
+            onClose={closeReportModal}
+            batchId={batchId}
+            batchName={batch.name}
+        />
+
         <PageHeader
           title={batch.name}
           breadcrumbs={[
@@ -171,6 +185,13 @@ export default function BatchDetailPage() {
                 onClick={openBulkModal}
               >
                 Tambah Peserta
+              </Button>
+              <Button
+                 leftSection={<IconPrinter size={16} />}
+                 onClick={openReportModal}
+                 color="indigo"
+              >
+                  Cetak PDF
               </Button>
               <Button
                 leftSection={<IconFileExport size={16} />}

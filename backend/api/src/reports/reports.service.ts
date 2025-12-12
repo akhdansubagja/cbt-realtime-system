@@ -46,9 +46,10 @@ export class ReportsService {
       )
       .where('examinee.batch_id = :batchId', { batchId })
       .addSelect('examinee.avatar_url', 'examinee_avatar_url')
+      .addSelect('examinee.workplace', 'examinee_workplace')
       .addSelect('COUNT(participant.id)', 'examCount')
       .addSelect('COALESCE(SUM(participant.final_score), 0)', 'totalScore')
-      .groupBy('examinee.id, examinee.avatar_url')
+      .groupBy('examinee.id, examinee.avatar_url, examinee.workplace')
       .orderBy('examinee.name', 'ASC') // <-- PERBAIKAN: Urut abjad
       .getRawMany();
     const rawUniqueExams = await this.getBatchUniqueExams(batchId);
@@ -105,6 +106,7 @@ export class ReportsService {
           id: examineeId,
           name: examinee.examinee_name,
           avatar: examinee.examinee_avatar_url,
+          workplace: examinee.examinee_workplace,
         },
         examCount: examCount,
         totalScore: totalScore,

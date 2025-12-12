@@ -1,6 +1,6 @@
 // frontend/src/types/batchParticipantReport.ts
 
-import { UniqueExam } from './uniqueExam'; // <-- Saya berasumsi path impor ini benar
+import { UniqueExam } from "./uniqueExam"; // <-- Saya berasumsi path impor ini benar
 
 // Tipe untuk satu entri skor (misal: Ujian A, nilai 90)
 interface ParticipantScoreDetail {
@@ -14,6 +14,7 @@ export interface ParticipantScore {
     id: number;
     name: string;
     avatar: string | null;
+    workplace: string | null;
   };
   examCount: number;
   totalScore: number;
