@@ -199,37 +199,49 @@ export default function BatchReportPage() {
               >
                 {/* INPUTS HEADER STATIC TEXT */}
                 <div
-                    style={{
-                        color: "white",
-                        fontSize: "24pt",
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        width: "100%",
-                        textTransform: "uppercase",
-                        marginBottom: "5px",
-                        lineHeight: 1.2
-                    }}
-                >
-                    {header1}
-                </div>
+    style={{
+        color: "white",
+        fontSize: "24pt",
+        fontWeight: "bold",
+        textAlign: "center",
+        width: "100%",
+        textTransform: "uppercase",
+        marginBottom: "5px",
+        lineHeight: 1.2,
+        textShadow: `
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000
+        `
+    }}
+>
+    {header1}
+</div>
                 <div
-                    style={{
-                        color: "white",
-                        fontSize: "20pt",
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        width: "100%",
-                        textTransform: "uppercase",
-                        lineHeight: 1.2
-                    }}
-                >
-                    {header2}
-                </div>
+    style={{
+        color: "white",
+        fontSize: "20pt",
+        fontWeight: "bold",
+        textAlign: "center",
+        width: "100%",
+        textTransform: "uppercase",
+        lineHeight: 1.2,
+        textShadow: `
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000
+        `
+    }}
+>
+    {header2}
+</div>
                 
                 <div
                   style={{
                     backgroundColor: "white",
-                    color: "#103c6b",
+                    color: "#000000ff",
                     padding: "5px 20px",
                     borderRadius: "20px",
                     marginTop: "15px",
@@ -240,7 +252,7 @@ export default function BatchReportPage() {
                 >
                   <div
                     style={{
-                      color: "#103c6b",
+                      color: "#000000ff",
                       fontSize: "14pt",
                       fontWeight: "bold",
                       textAlign: "center",
@@ -283,12 +295,12 @@ export default function BatchReportPage() {
                     {examColumns.map((num) => (
                       <th
                         key={num}
-                        style={{ width: "60px", paddingBottom: "10px" }}
+                        style={{ width: "70px", paddingBottom: "10px" }}
                       >
-                        <div style={{ fontSize: "10pt", fontWeight: "bold" }}>
+                        <div style={{ fontSize: "12pt", fontWeight: "bold" }}>
                           Tes
                         </div>
-                        <div style={{ fontSize: "10pt", fontWeight: "bold" }}>
+                        <div style={{ fontSize: "12pt", fontWeight: "bold" }}>
                           ke-{num}
                         </div>
                       </th>
@@ -303,10 +315,10 @@ export default function BatchReportPage() {
                       <td style={{ verticalAlign: "middle" }}>
                         <div
                           style={{
-                            width: "40px",
-                            height: "50px",
+                            width: "60px",
+                            height: "70px",
                             overflow: "hidden",
-                            border: "1px solid #ccc",
+                            border: "1px solid #000000ff",
                           }}
                         >
                           {p.examinee.avatar ? (
@@ -385,7 +397,7 @@ export default function BatchReportPage() {
                                   width: "50px",
                                   height: "30px",
                                   backgroundColor: "white",
-                                  border: "1px solid #ccc",
+                                  border: "1px solid #313131ff",
                                   borderRadius: "8px",
                                   display: "flex",
                                   alignItems: "center",
@@ -412,7 +424,7 @@ export default function BatchReportPage() {
                             width: "100%",
                             height: "30px",
                             backgroundColor: "white",
-                            border: "1px solid #ccc",
+                            border: "1px solid #313131ff",
                             borderRadius: "8px",
                             display: "flex",
                             alignItems: "center",
@@ -431,6 +443,17 @@ export default function BatchReportPage() {
                 </tbody>
               </table>
             </div>
+            {/* FOOTER DECORATION */}
+             <div
+              style={{
+                height: "50px",
+                backgroundColor: "#103c6b",
+                borderTopLeftRadius: "50% 20px",
+                borderTopRightRadius: "50% 20px",
+                marginTop: "auto", 
+                width: "100%",
+              }}
+            ></div>
           </div>
       </Box>
     </Stack>
