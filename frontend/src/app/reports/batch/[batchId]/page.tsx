@@ -322,15 +322,14 @@ export default function BatchReportPage() {
                           }}
                         >
                           {p.examinee.avatar ? (
-                            <img
-                              src={`http://localhost:3000/${p.examinee.avatar}`}
-                              alt="avt"
+                            <div
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "cover",
+                                backgroundImage: `url(http://localhost:3000/${p.examinee.avatar})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
                               }}
-                              crossOrigin="anonymous" 
                             />
                           ) : (
                             <div
