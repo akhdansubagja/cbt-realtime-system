@@ -65,7 +65,7 @@ DONE30. karena banyaknya aturan format pada fitur import cepat soal, harus ditam
 
 DONE31. buat pada fitur import cepat soal, supaya ditambahkan fitur yang dapat mempermudah membuat soal, maksudnya seperti ini, misalkan pada saat ingin menginputkan jawaban, misalkan saya ketik "a. kucing", lalu saya klik enter di keyboard, nah secara otomatis sistem langsung membuat "b. " nah lalu jika saya klik enter lagi tanpa mengisi misalkan yang tadi "b. anjing" lalu saya klik enter 2x, maka akan nonaktif fiturnya, karena ini memang fitur yang hampir ada di mana mana pada sebuah text editor.
 
-32. perbaiki modal untuk pengisian soal pada ujian di halaman manajemen ujian.
+DONE32. perbaiki modal untuk pengisian soal pada ujian di halaman manajemen ujian.
 
 DONE33. perbaiki card table pada halaman detai batch 
 
@@ -75,9 +75,11 @@ DONE35. perbaiki permasalahan caching local storage indexdb yang tidak berjalan 
 
 DONE36. perbaiki fitur auto formating supaya dapat memformat angka
 
-37. buat grafik di halaman detail peserta, lalu buat agar peserta bisa diexport datanya ke dalam pdf
+DONE37. buat grafik di halaman detail peserta, lalu buat agar peserta bisa diexport datanya ke dalam pdf
 
-38. tambahkan kolom baru pada table examinee atau peserta, yaitu kolom pekerjaan
+DONE38. tambahkan kolom baru pada table examinee atau peserta, yaitu kolom pekerjaan
+
+39. buat kolom baru di halaman manajemen bank soal, yaitu kolom jumlah soal
 
 
 

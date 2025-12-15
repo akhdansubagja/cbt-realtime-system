@@ -32,7 +32,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { BulkAddExamineesModal } from "@/components/examinees/BulkAddExamineesModal";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { BatchReportModal } from "@/components/batches/BatchReportModal";
+/* REMOVED: BatchReportModal import */
 
 export default function BatchDetailPage() {
   const params = useParams();
@@ -41,8 +41,7 @@ export default function BatchDetailPage() {
   const router = useRouter();
   const [bulkModalOpened, { open: openBulkModal, close: closeBulkModal }] =
     useDisclosure(false);
-  const [reportModalOpened, { open: openReportModal, close: closeReportModal }] =
-    useDisclosure(false);
+  /* REMOVED: reportModalOpened */
 
   const [batch, setBatch] = useState<Batch | null>(null);
   const [loading, setLoading] = useState(true);
@@ -164,12 +163,7 @@ export default function BatchDetailPage() {
           lockedBatchId={batchId} // <-- Kirim ID batch ke modal
         />
 
-        <BatchReportModal
-            opened={reportModalOpened}
-            onClose={closeReportModal}
-            batchId={batchId}
-            batchName={batch.name}
-        />
+        {/* REMOVED: BatchReportModal usage */}
 
         <PageHeader
           title={batch.name}
@@ -188,7 +182,9 @@ export default function BatchDetailPage() {
               </Button>
               <Button
                  leftSection={<IconPrinter size={16} />}
-                 onClick={openReportModal}
+                 component="a"
+                 href={`/reports/batch/${batchId}`}
+                 target="_blank"
                  color="indigo"
               >
                   Cetak PDF
