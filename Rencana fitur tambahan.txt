@@ -79,7 +79,9 @@ DONE37. buat grafik di halaman detail peserta, lalu buat agar peserta bisa diexp
 
 DONE38. tambahkan kolom baru pada table examinee atau peserta, yaitu kolom pekerjaan
 
-39. buat kolom baru di halaman manajemen bank soal, yaitu kolom jumlah soal
+DONE39. buat kolom baru di halaman manajemen bank soal, yaitu kolom jumlah soal
+
+40. ubah tempat halaman untuk melakukan download pdf dari suatu batch supaya terproteksi, dan diharuskan login
 
 
 

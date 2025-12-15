@@ -43,6 +43,7 @@ interface QuestionBank {
   name: string;
   description: string;
   created_at: string;
+  total_questions: number;
 }
 
 export default function QuestionBanksPage() {
@@ -385,8 +386,15 @@ export default function QuestionBanksPage() {
                   accessor: "created_at",
                   title: "Tanggal Dibuat",
                   sortable: true,
+                  width: 150,
                   render: (record) =>
                     dayjs(record.created_at).format("DD MMM YYYY"),
+                },
+                {
+                  accessor: "total_questions",
+                  title: "Jumlah Soal",
+                  sortable: false,
+                  textAlign: "center",
                 },
                 {
                   accessor: "actions",

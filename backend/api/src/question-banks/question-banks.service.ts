@@ -28,7 +28,14 @@ export class QuestionBanksService {
   }
 
   findAll() {
-    return this.questionBankRepository.find({ order: { name: 'ASC' } });
+    return this.questionBankRepository
+      .createQueryBuilder('question_bank')
+      .loadRelationCountAndMap(
+        'question_bank.total_questions',
+        'question_bank.questions',
+      )
+      .orderBy('question_bank.name', 'ASC')
+      .getMany();
   }
 
   findOne(id: number) {
