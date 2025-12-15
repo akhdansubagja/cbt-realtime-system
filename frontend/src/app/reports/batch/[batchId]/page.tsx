@@ -7,16 +7,19 @@ import {
   Text,
   Box,
   LoadingOverlay,
+  Modal,
+  TextInput,
 } from "@mantine/core";
 import { useEffect, useState, useRef } from "react";
 import { BatchParticipantReportData } from "@/types/batchParticipantReport";
 import { Batch } from "@/types/batch";
-import { IconDownload } from "@tabler/icons-react";
+import { IconDownload, IconEdit } from "@tabler/icons-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import api from "@/lib/axios";
 import { notifications } from "@mantine/notifications";
 import { useParams } from "next/navigation";
+import { useDisclosure } from "@mantine/hooks";
 
 export default function BatchReportPage() {
   const params = useParams();
@@ -30,7 +33,8 @@ export default function BatchReportPage() {
   // Editable headers state
   const [header1, setHeader1] = useState("DAFTAR PENILAIAN SISWA/I TIK");
   const [header2, setHeader2] = useState("APBD ANGKATAN KE-3");
-  const [header3, setHeader3] = useState(""); 
+  const [header3, setHeader3] = useState("");
+  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false); 
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -122,20 +126,34 @@ export default function BatchReportPage() {
 
   return (
     <Stack h="100vh" gap={0} bg="#f1f3f5">
+      <Modal opened={editOpened} onClose={closeEdit} title="Edit Header Laporan">
+        <Stack>
+            <TextInput label="Header 1" value={header1} onChange={(e) => setHeader1(e.target.value)} />
+            <TextInput label="Header 2" value={header2} onChange={(e) => setHeader2(e.target.value)} />
+            <TextInput label="Header 3" value={header3} onChange={(e) => setHeader3(e.target.value)} />
+            <Button onClick={closeEdit}>Simpan</Button>
+        </Stack>
+      </Modal>
+
       {/* Toolbar */}
       <Box p="md" bg="white" style={{ borderBottom: '1px solid #eee' }}>
         <Group justify="space-between">
             <Text size="sm" c="dimmed">
-                Halaman ini khusus untuk mencetak laporan. Edit judul langsung pada preview di bawah.
+                Halaman ini khusus untuk mencetak laporan.
             </Text>
-            <Button
-                leftSection={<IconDownload size={16} />}
-                onClick={handleExportPDF}
-                loading={exporting}
-                color="red"
-            >
-                Download PDF
-            </Button>
+            <Group>
+              <Button leftSection={<IconEdit size={16} />} onClick={openEdit} variant="outline">
+                  Edit Header
+              </Button>
+              <Button
+                  leftSection={<IconDownload size={16} />}
+                  onClick={handleExportPDF}
+                  loading={exporting}
+                  color="red"
+              >
+                  Download PDF
+              </Button>
+            </Group>
         </Group>
       </Box>
 
@@ -179,38 +197,35 @@ export default function BatchReportPage() {
                   alignItems: "center",
                 }}
               >
-                {/* INPUTS HEADER EDITABLE */}
-                <input
-                  value={header1}
-                  onChange={(e) => setHeader1(e.target.value)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "white",
-                    fontSize: "24pt",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    width: "100%",
-                    outline: "none",
-                    textTransform: "uppercase",
-                    marginBottom: "5px",
-                  }}
-                />
-                <input
-                  value={header2}
-                  onChange={(e) => setHeader2(e.target.value)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "white",
-                    fontSize: "20pt",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    width: "100%",
-                    outline: "none",
-                    textTransform: "uppercase",
-                  }}
-                />
+                {/* INPUTS HEADER STATIC TEXT */}
+                <div
+                    style={{
+                        color: "white",
+                        fontSize: "24pt",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        width: "100%",
+                        textTransform: "uppercase",
+                        marginBottom: "5px",
+                        lineHeight: 1.2
+                    }}
+                >
+                    {header1}
+                </div>
+                <div
+                    style={{
+                        color: "white",
+                        fontSize: "20pt",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        width: "100%",
+                        textTransform: "uppercase",
+                        lineHeight: 1.2
+                    }}
+                >
+                    {header2}
+                </div>
+                
                 <div
                   style={{
                     backgroundColor: "white",
@@ -223,22 +238,18 @@ export default function BatchReportPage() {
                     boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <input
-                    value={header3}
-                    onChange={(e) => setHeader3(e.target.value)}
+                  <div
                     style={{
-                      background: "transparent",
-                      border: "none",
                       color: "#103c6b",
                       fontSize: "14pt",
                       fontWeight: "bold",
                       textAlign: "center",
-                      minWidth: "300px", // Increased minWidth slightly
-                      width: `${Math.max(300, header3.length * 15)}px`, // Dynamic width attempt
-                      outline: "none",
+                      minWidth: "300px",
                       textTransform: "uppercase",
                     }}
-                  />
+                  >
+                    {header3}
+                  </div>
                 </div>
               </div>
             </div>
