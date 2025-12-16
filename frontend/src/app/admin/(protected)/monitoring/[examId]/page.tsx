@@ -264,6 +264,33 @@ export default function MonitoringPage() {
     fetchInitialData();
   }, [examId]);
 
+  // Helper Sort Function
+  const sortParticipants = (list: ParticipantScore[]) => {
+    return [...list].sort((a, b) => {
+      // 1. Score (Highest first)
+      const scoreA = a.score ?? -9999; // Treat null as very low
+      const scoreB = b.score ?? -9999;
+      
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+
+      // 2. Duration (Lowest/Fastest first)
+      // Duration = (finished_at || now) - start_time
+      const getDuration = (p: ParticipantScore) => {
+        if (!p.start_time) return Infinity; // Not started -> Put at bottom
+        const start = new Date(p.start_time).getTime();
+        const end = p.finished_at ? new Date(p.finished_at).getTime() : Date.now();
+        return Math.max(0, end - start);
+      };
+
+      const durA = getDuration(a);
+      const durB = getDuration(b);
+
+      return durA - durB;
+    });
+  };
+
   // 2. Hubungkan ke WebSocket
   useEffect(() => {
     if (!examId) return;
@@ -293,16 +320,8 @@ export default function MonitoringPage() {
             p.id === data.participantId ? { ...p, score: data.newScore } : p
           );
 
-          // 2. Urutkan ulang array berdasarkan skor (tertinggi di atas)
-          //    Peserta dengan skor null akan ditaruh di bawah
-          updatedParticipants.sort((a, b) => {
-            const scoreA = a.score ?? -Infinity; // Anggap null sebagai skor terendah
-            const scoreB = b.score ?? -Infinity;
-            return scoreB - scoreA; // Urutkan descending
-          });
-
-          // 3. Kembalikan array yang sudah terurut
-          return updatedParticipants;
+          // 2. Urutkan ulang
+          return sortParticipants(updatedParticipants);
         });
       }
     );
@@ -337,7 +356,7 @@ export default function MonitoringPage() {
         }
 
         // Sort
-        newList.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+        const sortedList = sortParticipants(newList);
         
         // Update batch options if needed
         const batchName = updatedParticipant.batch || "Umum";
@@ -348,7 +367,7 @@ export default function MonitoringPage() {
             return prev;
         });
 
-        return newList;
+        return sortedList;
       });
     });
 
@@ -358,8 +377,8 @@ export default function MonitoringPage() {
         console.log("Menerima update status:", data);
 
         // Perbarui state 'master' (allParticipants)
-        setAllParticipants((currentParticipants) =>
-          currentParticipants.map((p) =>
+        setAllParticipants((currentParticipants) => {
+          const updatedList = currentParticipants.map((p) =>
             p.id === data.participantId
               ? {
                   ...p,
@@ -367,8 +386,10 @@ export default function MonitoringPage() {
                   finished_at: data.finished_at, // Update waktu selesai
                 }
               : p
-          )
-        );
+          );
+          // Sort juga saat status update (karena duration mungkin finalize)
+          return sortParticipants(updatedList);
+        });
       }
     );
 
@@ -407,8 +428,8 @@ export default function MonitoringPage() {
       filtered = filtered.filter((p) => p.batch === selectedBatch);
     }
 
-    // Urutkan ulang hasil filter (ini juga menangani pengurutan awal!)
-    filtered.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+    // Urutkan ulang hasil filter menggunakan Helper
+    filtered = sortParticipants(filtered);
 
     // Simpan hasil filter ke state yang akan ditampilkan
     setFilteredParticipants(filtered);
