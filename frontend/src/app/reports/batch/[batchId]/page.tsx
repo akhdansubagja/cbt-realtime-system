@@ -326,7 +326,9 @@ export default function BatchReportPage() {
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                backgroundImage: `url(http://localhost:3000/${p.examinee.avatar})`,
+                                backgroundImage: `url(http://localhost:3000/${
+                                  p.examinee.original_avatar_url || p.examinee.avatar
+                                })`,
                                 backgroundSize: "cover",
                                 backgroundPosition: "center",
                               }}

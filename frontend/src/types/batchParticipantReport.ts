@@ -14,6 +14,7 @@ export interface ParticipantScore {
     id: number;
     name: string;
     avatar: string | null;
+    original_avatar_url?: string | null; // Add fallback URL
     workplace: string | null;
   };
   examCount: number;

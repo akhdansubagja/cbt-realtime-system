@@ -27,6 +27,9 @@ export class Examinee {
   avatar_url: string;
 
   @Column({ nullable: true })
+  original_avatar_url: string;
+
+  @Column({ nullable: true })
   workplace: string;
 
   @Column({ default: true })

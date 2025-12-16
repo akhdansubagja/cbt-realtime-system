@@ -11,9 +11,10 @@ import { Repository, ILike } from 'typeorm';
 import { Batch } from 'src/batches/entities/batch.entity';
 import { Express } from 'express'; // Pastikan ini ada
 import { promises as fs } from 'fs'; // Untuk hapus file (async)
-import { join } from 'path'; // Untuk path file
+import { join, dirname, extname } from 'path'; // Untuk path file
 import { CreateBulkExamineesDto } from './dto/create-bulk-examinees.dto';
 import { CreateBulkWithAvatarsDto } from './dto/create-bulk-with-avatars.dto';
+import sharp from 'sharp';
 
 interface PaginationOptions {
   page: number;
@@ -64,9 +65,19 @@ export class ExamineesService {
     const examinee = this.examineeRepository.create({
       ...restDto,
       batch: batch ?? undefined,
-      avatar_url: file ? file.path : undefined,
+      // Jika ada file, kita akan process nanti, set sementara undefined atau handle terpisah
+      // Tapi karena TypeORM create hanya instance object, kita bisa set null dulu
+      avatar_url: undefined,
+      original_avatar_url: undefined,
       uniqid: this.generateUniqId(),
     });
+
+    // Handle Image Processing
+    if (file) {
+      const processed = await this.processAvatar(file);
+      examinee.avatar_url = processed.thumbnailPath; // Thumbnail untuk UI
+      examinee.original_avatar_url = processed.originalPath; // Original untuk PDF
+    }
 
     return this.examineeRepository.save(examinee);
   }
@@ -156,21 +167,23 @@ export class ExamineesService {
     if (file) {
       // 1. File baru diunggah, hapus file lama jika ada
       if (existingExaminee.avatar_url) {
-        try {
-          await fs.unlink(join(process.cwd(), existingExaminee.avatar_url));
-        } catch (err) {
-          console.error('Gagal menghapus file lama:', err.message);
-        }
+        await this.deleteFileSafely(existingExaminee.avatar_url);
       }
-      // 2. Set avatar_url ke path file baru
-      updatePayload.avatar_url = file.path;
+      if (existingExaminee.original_avatar_url) {
+        await this.deleteFileSafely(existingExaminee.original_avatar_url);
+      }
+
+      // 2. Proses file baru
+      const processed = await this.processAvatar(file);
+      updatePayload.avatar_url = processed.thumbnailPath;
+      updatePayload.original_avatar_url = processed.originalPath;
     }
 
     const examinee = await this.examineeRepository.preload({
       id: id,
       ...updatePayload,
       ...restDto,
-      batch: batch ?? undefined, // <-- Perbarui relasi batch (gunakan undefined bukan null)
+      batch: batch ?? undefined,
     });
 
     if (!examinee) {
@@ -185,19 +198,16 @@ export class ExamineesService {
     // 1. Cari data peserta dulu sebelum dihapus untuk mendapatkan nama filenya
     const examinee = await this.examineeRepository.findOne({
       where: { id },
-      select: ['id', 'avatar_url'], // Kita hanya butuh info url-nya
+      select: ['id', 'avatar_url', 'original_avatar_url'], // Kita hanya butuh info url-nya
     });
 
     // 2. Jika peserta ada dan memiliki avatar, hapus file fisiknya
-    if (examinee && examinee.avatar_url) {
-      try {
-        // Menggunakan join(process.cwd(), ...) sama seperti di fungsi update
-        await fs.unlink(join(process.cwd(), examinee.avatar_url));
-      } catch (err) {
-        // Kita log error tapi jangan hentikan proses delete database
-        console.error(
-          `Gagal menghapus file fisik (mungkin sudah hilang): ${err.message}`,
-        );
+    if (examinee) {
+      if (examinee.avatar_url) {
+        await this.deleteFileSafely(examinee.avatar_url);
+      }
+      if (examinee.original_avatar_url) {
+        await this.deleteFileSafely(examinee.original_avatar_url);
       }
     }
 
@@ -238,23 +248,33 @@ export class ExamineesService {
       }
     }
 
-    const newExaminees = parsedData.map((item) => {
-      // Map file based on the index provided in the JSON data
-      // If fileIndex is 0, we take files[0], etc.
+    const savedExaminees: Examinee[] = [];
+
+    for (let i = 0; i < parsedData.length; i++) {
+      const item = parsedData[i];
+
+      // Prepare examinee object
       let avatarPath: string | undefined = undefined;
+      let originalAvatarPath: string | undefined = undefined;
+
       if (item.fileIndex !== undefined && files[item.fileIndex]) {
-        avatarPath = files[item.fileIndex].path;
+        const processed = await this.processAvatar(files[item.fileIndex]);
+        avatarPath = processed.thumbnailPath;
+        originalAvatarPath = processed.originalPath;
       }
 
-      return this.examineeRepository.create({
+      const ex = this.examineeRepository.create({
         name: item.name,
         batch: batch ?? undefined,
         avatar_url: avatarPath,
+        original_avatar_url: originalAvatarPath,
         uniqid: this.generateUniqId(),
       });
-    });
 
-    return this.examineeRepository.save(newExaminees);
+      savedExaminees.push(ex);
+    }
+
+    return this.examineeRepository.save(savedExaminees);
   }
 
   async updateBulkStatus(ids: number[], isActive: boolean) {
@@ -279,5 +299,55 @@ export class ExamineesService {
       .execute();
 
     return { message: 'Batch status updated successfully' };
+  }
+
+  // --- HELPER UNTUK IMAGE PROCESSING ---
+  private async processAvatar(
+    file: Express.Multer.File,
+  ): Promise<{ originalPath: string; thumbnailPath: string }> {
+    // 1. Tentukan path
+    // File asli dari multer (file.path) biasanya di 'uploads/...'
+    const originalPath = file.path;
+
+    // Kita buat thumbnail path. Misal: uploads/thumbnails/filename-thumb.ext
+    // Pastikan direktori ada? Biasanya multer settingan di module.
+    // Kita asumsikan folder upload root sudah ada.
+    // Untuk amannya, kita taruh thumbnail di folder yang sama tapi suffix beda
+    const dir = dirname(originalPath);
+    const ext = extname(originalPath);
+    const filename = originalPath.split('/').pop()?.replace(ext, '') || 'file';
+    const thumbnailFilename = `${filename}-thumb${ext}`;
+    const thumbnailPath = join(dir, thumbnailFilename);
+
+    try {
+      // Sharp process
+      await sharp(originalPath)
+        .resize(300, 300, {
+          fit: 'cover',
+          position: 'center',
+        })
+        .jpeg({ quality: 80 }) // Convert to jpeg for consistency/compression or keep original format
+        .toFile(thumbnailPath);
+
+      return {
+        originalPath, // Simpan path asli
+        thumbnailPath, // Simpan path thumbnail
+      };
+    } catch (error) {
+      console.error('Gagal memproses gambar dengan sharp:', error);
+      // Fallback: gunakan original untuk keduanya jika gagal resize
+      return {
+        originalPath,
+        thumbnailPath: originalPath,
+      };
+    }
+  }
+
+  private async deleteFileSafely(path: string) {
+    try {
+      await fs.unlink(join(process.cwd(), path));
+    } catch (err) {
+      // Ignore error if file missing
+    }
   }
 }
