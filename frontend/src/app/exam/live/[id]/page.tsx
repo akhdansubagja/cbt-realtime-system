@@ -520,18 +520,26 @@ export default function LiveExamPage() {
                   Daftar Soal
                 </Button>
 
-                <Button
-                  variant="filled"
-                  color="violet"
-                  rightSection={<IconArrowRight size={18} />}
-                  onClick={() => setCurrentQuestionIndex((p) => p + 1)}
-                  disabled={
-                    currentQuestionIndex ===
-                    examData.exam.exam_questions.length - 1
-                  }
-                >
-                  Selanjutnya
-                </Button>
+                {currentQuestionIndex ===
+                examData.exam.exam_questions.length - 1 ? (
+                  <Button
+                    variant="filled"
+                    color="red"
+                    rightSection={<IconCheck size={18} />}
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    Selesai
+                  </Button>
+                ) : (
+                  <Button
+                    variant="filled"
+                    color="violet"
+                    rightSection={<IconArrowRight size={18} />}
+                    onClick={() => setCurrentQuestionIndex((p) => p + 1)}
+                  >
+                    Selanjutnya
+                  </Button>
+                )}
               </Flex>
             </Paper>
           </Container>
