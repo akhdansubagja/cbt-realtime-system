@@ -9,6 +9,7 @@ import {
   CreateDateColumn,
   Column,
   OneToMany, // <-- Import OneToMany
+  Unique, // <-- Import Unique
 } from 'typeorm';
 import { ParticipantExamQuestion } from './participant-exam-question.entity'; // <-- Import entity baru
 
@@ -18,6 +19,7 @@ export enum ParticipantStatus {
 }
 
 @Entity({ name: 'participants' })
+@Unique(['examinee', 'exam', 'attempt_number']) // Composite Unique Key
 export class Participant {
   @PrimaryGeneratedColumn()
   id: number;
@@ -41,6 +43,17 @@ export class Participant {
     default: ParticipantStatus.STARTED,
   })
   status: ParticipantStatus;
+
+  // --- NEW COLUMNS FOR MULTI-ATTEMPT ---
+  @Column({ type: 'int', default: 1 })
+  attempt_number: number;
+
+  @Column({ type: 'boolean', default: false })
+  is_retake: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  admin_notes: string;
+  // -------------------------------------
 
   @Column({ type: 'int', nullable: true })
   final_score: number;

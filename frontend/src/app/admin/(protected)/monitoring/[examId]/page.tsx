@@ -40,7 +40,14 @@ import {
   IconClock,
   IconCheck,
   IconFilter,
+  IconDotsVertical, // New
+  IconRefresh, // New
+  IconEdit, // New
+  IconTrash, // New
 } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { Menu, Modal, TextInput, NumberInput, Switch } from "@mantine/core";
+import Swal from "sweetalert2"; // Ensure Swal is available or use Mantine confirmation
 
 interface ParticipantScore {
   id: number;
@@ -50,6 +57,8 @@ interface ParticipantScore {
   start_time?: string;
   finished_at?: string; // Tambahkan field finished_at
   batch?: string; // Tambahkan field batch
+  attempt_number?: number;
+  is_retake?: boolean;
 }
 
 interface ExamInfo {
@@ -122,6 +131,90 @@ export default function MonitoringPage() {
       setSelectedBatch(batchParam);
     }
   }, [batchParam]);
+
+  // --- ACTIONS STATE ---
+  const [openedEdit, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [editingParticipant, setEditingParticipant] = useState<ParticipantScore | null>(null);
+  const [editForm, setEditForm] = useState({
+    status: "",
+    admin_notes: "",
+  });
+
+  // --- HANDLERS ---
+  const handleRetake = async (id: number, name: string) => {
+    const result = await Swal.fire({
+      title: "Izinkan Ujian Ulang?",
+      text: `Data ujian lama ${name} akan diarsipkan sebagai history. Siswa akan mendapatkan sesi baru.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, Izinkan!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.post(`/participants/${id}/retake`);
+        Swal.fire("Berhasil!", "Sesi ujian baru telah dibuat.", "success");
+        // Reload data? Or wait for socket? Usually reload is safer for new session ID.
+        window.location.reload(); 
+      } catch (error) {
+        Swal.fire("Gagal", "Terjadi kesalahan saat memproses retake.", "error");
+      }
+    }
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+     const result = await Swal.fire({
+      title: "Hapus Peserta?",
+      text: `Anda yakin ingin menghapus data ${name}? Tindakan ini tidak dapat dibatalkan.`,
+      icon: "error",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/participants/${id}`);
+        Swal.fire("Terhapus!", "Data peserta telah dihapus.", "success");
+        setAllParticipants(prev => prev.filter(p => p.id !== id));
+      } catch (error) {
+        Swal.fire("Gagal", "Gagal menghapus peserta.", "error");
+      }
+    }
+  };
+
+  const handleEditClick = (p: ParticipantScore) => {
+    setEditingParticipant(p);
+    setEditForm({
+      status: p.status,
+      admin_notes: "", // Load existing notes if we had them in interface, currently assume empty or fetch
+    });
+    openEdit();
+  };
+
+  const  saveEdit = async () => {
+    if (!editingParticipant) return;
+    try {
+      await api.patch(`/participants/${editingParticipant.id}`, {
+        status: editForm.status,
+        admin_notes: editForm.admin_notes
+      });
+      Swal.fire("Berhasil", "Data peserta diperbarui.", "success");
+      
+      // Update local state optimistic
+      setAllParticipants(prev => prev.map(p => 
+        p.id === editingParticipant.id ? { ...p, status: editForm.status as any } : p
+      ));
+      closeEdit();
+    } catch (error) {
+      Swal.fire("Error", "Gagal menyimpan perubahan.", "error");
+    }
+  };
   
   // 1. Ambil data awal peserta
   useEffect(() => {
@@ -146,6 +239,8 @@ export default function MonitoringPage() {
               finished_at: p.finished_at, // Map finished_at
               // Sekarang backend sudah mengirimkan data batch!
               batch: p.examinee.batch?.name || "Umum",
+              attempt_number: p.attempt_number,
+              is_retake: p.is_retake,
             };
         });
 
@@ -215,26 +310,37 @@ export default function MonitoringPage() {
     socket.on("new-participant", (newParticipantData: any) => {
       console.log("Peserta baru bergabung:", newParticipantData);
       
-      const newParticipant: ParticipantScore = {
-        id: newParticipantData.id,
-        name: newParticipantData.name,
-        score: newParticipantData.score ?? null,
-        status: "started", // Asumsikan baru bergabung = started
-        start_time: newParticipantData.start_time, // Ambil waktu mulai dari event
-        // Pastikan data batch juga diambil untuk peserta baru (jika tersedia di event)
-        // Note: Backend socket event mungkin perlu diupdate juga jika belum mengirim batch
-        batch: newParticipantData.examinee?.batch?.name || "Umum", 
-      };
-
       setAllParticipants((currentParticipants) => {
-        if (currentParticipants.some((p) => p.id === newParticipant.id)) {
-          return currentParticipants;
+        // Cek jika peserta sudah ada di list (berdasarkan ID) - UPDATE datanya jika sudah ada
+        const existingIndex = currentParticipants.findIndex(p => p.id === newParticipantData.id);
+        
+        const updatedParticipant: ParticipantScore = {
+          id: newParticipantData.id,
+          name: newParticipantData.name || newParticipantData.examinee?.name || "Unknown",
+          score: newParticipantData.score ?? null,
+          status: newParticipantData.status || "started",
+          start_time: newParticipantData.start_time, // Penting: pastikan ini ada
+          finished_at: newParticipantData.finished_at,
+          batch: newParticipantData.batch || newParticipantData.examinee?.batch?.name || "Umum", 
+          attempt_number: newParticipantData.attempt_number,
+          is_retake: newParticipantData.is_retake
+        };
+
+        let newList;
+        if (existingIndex >= 0) {
+            // Update existing
+            newList = [...currentParticipants];
+            newList[existingIndex] = { ...newList[existingIndex], ...updatedParticipant };
+        } else {
+            // Append new
+            newList = [...currentParticipants, updatedParticipant];
         }
-        const newList = [...currentParticipants, newParticipant];
+
+        // Sort
         newList.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
         
-        // Update opsi batch jika ada batch baru yang belum ada di list
-        const batchName = newParticipant.batch || "Umum";
+        // Update batch options if needed
+        const batchName = updatedParticipant.batch || "Umum";
         setBatchOptions(prev => {
             if (!prev.includes(batchName)) {
                 return [...prev, batchName].sort();
@@ -538,6 +644,7 @@ export default function MonitoringPage() {
                           {p.name}
                         </Text>
                         <Group gap={6}>
+                          {/* STATUS BADGE */}
                           <Badge
                             size="sm"
                             variant="light"
@@ -554,9 +661,18 @@ export default function MonitoringPage() {
                               ? "Selesai"
                               : "Mengerjakan"}
                           </Badge>
+
+                          {/* BATCH CARD */}
                           <Badge size="sm" variant="outline" color="gray">
                             {p.batch || "Umum"}
                           </Badge>
+
+                          {/* ATTEMPT BADGE (NEW) */}
+                          {(p.attempt_number && p.attempt_number > 1) && (
+                            <Badge size="sm" variant="filled" color="orange">
+                              Attempt #{p.attempt_number}
+                            </Badge>
+                          )}
                         </Group>
                       </Box>
                     </Group>
@@ -583,14 +699,14 @@ export default function MonitoringPage() {
                         </Text>
                       </Box>
                       <Box ta="right" mr="md">
-                         <Text size="xs" c="dimmed" fw={600} tt="uppercase">Durasi</Text>
+                         <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">Durasi</Text>
                          <DurationTimer 
                             startTime={p.start_time} 
                             status={p.status} 
                             finishedAt={p.finished_at} 
                          />
                       </Box>
-                      <Box ta="right">
+                      <Box ta="right" mr="md">
                         <Text size="xs" c="dimmed" fw={600} tt="uppercase">
                           Skor
                         </Text>
@@ -603,10 +719,42 @@ export default function MonitoringPage() {
                           {p.score ?? "-"}
                         </Text>
                       </Box>
+
+                      {/* ACTION MENU (NEW) */}
+                      <Menu shadow="md" width={200} position="bottom-end">
+                        <Menu.Target>
+                          <ActionIcon variant="subtle" color="gray">
+                            <IconDotsVertical size={20} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Label>Aksi Peserta</Menu.Label>
+                          <Menu.Item 
+                            leftSection={<IconRefresh size={14} />}
+                            onClick={() => handleRetake(p.id, p.name)}
+                          >
+                            Izinkan Ujian Ulang
+                          </Menu.Item>
+                          <Menu.Item 
+                            leftSection={<IconEdit size={14} />}
+                            onClick={() => handleEditClick(p)}
+                          >
+                            Edit Data
+                          </Menu.Item>
+                          <Menu.Divider />
+                          <Menu.Item 
+                            color="red" 
+                            leftSection={<IconTrash size={14} />}
+                            onClick={() => handleDelete(p.id, p.name)}
+                          >
+                            Hapus Peserta
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
                     </Group>
                   </Flex>
                 </Paper>
-              </motion.div>
+                </motion.div> // Closing div was part of original loop structure
             );
           })}
         </Stack>
@@ -624,6 +772,25 @@ export default function MonitoringPage() {
           </Stack>
         </Center>
       )}
+
+      {/* MODAL EDIT */}
+      <Modal opened={openedEdit} onClose={closeEdit} title="Edit Data Peserta">
+        <Stack>
+          <Select
+            label="Status"
+            data={['started', 'finished']}
+            value={editForm.status}
+            onChange={(val) => setEditForm({ ...editForm, status: val || 'started' })}
+          />
+          <TextInput
+            label="Catatan Admin"
+            placeholder="Alasan perubahan..."
+            value={editForm.admin_notes}
+            onChange={(e) => setEditForm({ ...editForm, admin_notes: e.target.value })}
+          />
+          <Button onClick={saveEdit}>Simpan Perubahan</Button>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

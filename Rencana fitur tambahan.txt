@@ -83,8 +83,15 @@ DONE39. buat kolom baru di halaman manajemen bank soal, yaitu kolom jumlah soal
 
 40. ubah tempat halaman untuk melakukan download pdf dari suatu batch supaya terproteksi, dan diharuskan login
 
+DONE41. Buat agar data ujian dari suatu pesertsa bisa dilakukan untuk CRUD
 
+42. buat supaya tombol di akhir soal menjadi tombol selesaikan ujian
 
+43. buat sorting berdasarkan nilai dan juga durasi secara live.
+
+DONE44. buat agar lebih flexibel, supaya seorang peserta diberikan kesempatan ulang untuk mengisi ujian. (remedial)
+
+45. buat agar sistem dapat melakukan kompresi pada gambar, atau setidaknya buat agar sistem tidak mengalami lagging ketika sedang membuka banyak
 
 
 
@@ -97,8 +104,9 @@ DONE39. buat kolom baru di halaman manajemen bank soal, yaitu kolom jumlah soal
 
 OPSIONAL
 1. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
-2. pada halaman utama untuk pesertam tambahkan fitur untuk quiz latihan matematika kabataku, yang angkanya dihasilkan random dari frontend, lalu disediakan juga seperti lembar kosong untuk melakukan penghitungan soal secara manual.
+2. pada halaman utama untuk peserta tambahkan fitur untuk quiz latihan matematika kabataku, yang angkanya dihasilkan random dari frontend, lalu disediakan juga seperti lembar kosong untuk melakukan penghitungan soal secara manual.
 3. buat animasi pada halaman utama pada saat peserta ingin melaksanakan ujian, misalkan karakter laki laki atau perempuan,
+4. buat agar sistem bisa menambahkan soal essai.
 
 
 

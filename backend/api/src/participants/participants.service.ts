@@ -84,9 +84,11 @@ export class ParticipantsService {
       );
 
     // Cari sesi yang ada
+    // Cari sesi yang ada (AMBIL YANG TERAKHIR / LATEST ATTEMPT)
     const existingParticipant = await this.participantRepository.findOne({
       where: { examinee: { id: examinee.id }, exam: { id: exam.id } },
       relations: ['examinee', 'exam'],
+      order: { attempt_number: 'DESC' }, // <-- Penting: Ambil attempt terakhir
     });
 
     let participantForToken: Participant;
@@ -498,5 +500,66 @@ export class ParticipantsService {
         currentScore,
       );
     }
+  }
+
+  // --- FITUR BARU: RETAKE & CRUD ---
+
+  async allowRetake(participantId: number) {
+    // 1. Ambil data session terakhir
+    const lastSession = await this.participantRepository.findOne({
+      where: { id: participantId },
+      relations: ['examinee', 'exam'],
+    });
+
+    if (!lastSession) {
+      throw new NotFoundException('Data peserta tidak ditemukan');
+    }
+
+    // 2. Cek apakah sudah ada attempt yang lebih tinggi (mencegah duplikat attempt jika request double)
+    const nextAttemptNumber = (lastSession.attempt_number || 1) + 1;
+    const newerSession = await this.participantRepository.findOne({
+      where: {
+        examinee: { id: lastSession.examinee.id },
+        exam: { id: lastSession.exam.id },
+        attempt_number: nextAttemptNumber,
+      },
+    });
+
+    if (newerSession) {
+      return newerSession; // Return yang sudah ada
+    }
+
+    // 3. Buat session baru (Attempt baru)
+    const newSession = this.participantRepository.create({
+      examinee: lastSession.examinee,
+      exam: lastSession.exam,
+      attempt_number: nextAttemptNumber,
+      is_retake: true,
+      status: ParticipantStatus.STARTED, // Reset status
+      final_score: 0,
+    });
+
+    return this.participantRepository.save(newSession);
+  }
+
+  async update(id: number, updateData: any) {
+    const participant = await this.participantRepository.findOneBy({ id });
+    if (!participant) throw new NotFoundException('Participant not found');
+
+    // Update fields
+    if (updateData.status) participant.status = updateData.status;
+    if (updateData.admin_notes !== undefined)
+      participant.admin_notes = updateData.admin_notes;
+    // Bisa tambahkan logic lain, misal tambah durasi (extra_time) - perlu kolom di DB jika belum ada.
+    // Saat ini hanya status dan notes.
+
+    return this.participantRepository.save(participant);
+  }
+
+  async remove(id: number) {
+    const participant = await this.participantRepository.findOneBy({ id });
+    if (!participant) throw new NotFoundException('Participant not found');
+
+    return this.participantRepository.remove(participant);
   }
 }

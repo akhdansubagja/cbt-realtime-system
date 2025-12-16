@@ -3,7 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Examinee } from 'src/examinees/entities/examinee.entity';
 import { Repository } from 'typeorm';
-import { Participant } from 'src/participants/entities/participant.entity';
+import {
+  Participant,
+  ParticipantStatus,
+} from 'src/participants/entities/participant.entity';
 import * as ExcelJS from 'exceljs';
 
 const createAcronym = (title: string) => {
@@ -36,83 +39,74 @@ export class ReportsService {
    * Diurutkan berdasarkan NAMA, dan sekarang juga MENGAMBIL avatar_url
    */
   async getBatchParticipantReport(batchId: number) {
-    const examineesWithAggregates = await this.examineeRepository
-      .createQueryBuilder('examinee')
-      .leftJoin(
-        'examinee.participants',
-        'participant',
-        'participant.status = :status',
-        { status: 'finished' },
-      )
-      .where('examinee.batch_id = :batchId', { batchId })
-      .addSelect('examinee.avatar_url', 'examinee_avatar_url')
-      .addSelect('examinee.workplace', 'examinee_workplace')
-      .addSelect('COUNT(participant.id)', 'examCount')
-      .addSelect('COALESCE(SUM(participant.final_score), 0)', 'totalScore')
-      .groupBy('examinee.id, examinee.avatar_url, examinee.workplace')
-      .orderBy('examinee.name', 'ASC') // <-- PERBAIKAN: Urut abjad
-      .getRawMany();
-    const rawUniqueExams = await this.getBatchUniqueExams(batchId);
+    // 1. Ambil data cleaned (hanya latest attempt)
+    const filteredParticipants = await this.getFilteredParticipants(batchId);
 
-    // Buat versi 'shortTitle' dari title
-    const uniqueExams = rawUniqueExams.map((exam) => ({
-      ...exam,
-      shortTitle: createAcronym(exam.title), // <-- Gunakan helper baru
-    }));
-    const allScoresRaw = await this.participantRepository
-      .createQueryBuilder('participant')
-      .innerJoin('participant.examinee', 'examinee')
-      .where('examinee.batch_id = :batchId', { batchId })
-      .andWhere('participant.status = :status', { status: 'finished' })
-      .select([
-        'participant.examinee_id AS "examineeId"',
-        'participant.exam_id AS "examId"',
-        'participant.final_score AS "score"',
-      ])
-      .getRawMany();
-    const scoresMap = new Map<number, Map<number, number>>();
-    for (const score of allScoresRaw) {
-      // Dapatkan peta untuk peserta ini
-      let examineeMap = scoresMap.get(score.examineeId);
-
-      // Jika peta-nya belum ada, buat baru dan set ke map utama
-      if (!examineeMap) {
-        examineeMap = new Map<number, number>();
-        scoresMap.set(score.examineeId, examineeMap);
+    // 2. Tentukan Unique Exams dari data participant yg ada
+    const uniqueExamsMap = new Map<
+      number,
+      { id: number; title: string; shortTitle: string }
+    >();
+    filteredParticipants.forEach((p) => {
+      if (!uniqueExamsMap.has(p.exam.id)) {
+        uniqueExamsMap.set(p.exam.id, {
+          id: p.exam.id,
+          title: p.exam.title,
+          shortTitle: createAcronym(p.exam.title),
+        });
       }
+    });
+    // Sort Exams (by title)
+    const uniqueExams = Array.from(uniqueExamsMap.values()).sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
 
-      // Sekarang 'examineeMap' dijamin terdefinisi, kita bisa set skornya
-      examineeMap.set(score.examId, score.score);
-    }
+    // 3. Susun Score Map: examineeId -> (examId -> score) dan Aggregate
+    const scoresMap = new Map<number, Map<number, number>>();
+    const aggregateMap = new Map<number, { count: number; total: number }>();
 
-    // 5. Gabungkan data agregat dengan data skor individu
-    const participantScores = examineesWithAggregates.map((examinee) => {
-      // getRawMany() akan mengembalikan nama kolom sbg 'examinee_id', 'examinee_name', dll.
-      const examineeId = examinee.examinee_id;
-      const examineeScores = scoresMap.get(examineeId) || new Map();
+    filteredParticipants.forEach((p) => {
+      // Score Map
+      if (!scoresMap.has(p.examinee.id))
+        scoresMap.set(p.examinee.id, new Map());
+      scoresMap.get(p.examinee.id)?.set(p.exam.id, p.final_score || 0);
 
-      // Buat array skor individu sesuai urutan uniqueExams
-      const scores = uniqueExams.map((exam) => ({
-        examId: exam.id, // exam.id berasal dari getBatchUniqueExams
-        score: examineeScores.get(exam.id) || null, // null jika peserta tidak ambil ujian tsb
+      // Aggregate
+      if (!aggregateMap.has(p.examinee.id))
+        aggregateMap.set(p.examinee.id, { count: 0, total: 0 });
+      const agg = aggregateMap.get(p.examinee.id)!;
+      agg.count++;
+      agg.total += p.final_score || 0;
+    });
+
+    // 4. Ambil SEMUA Examinee di batch ini (untuk listing lengkap)
+    const allExaminees = await this.examineeRepository.find({
+      where: { batch: { id: batchId } },
+      order: { name: 'ASC' },
+    });
+
+    // 5. Build Final Response
+    const participantScores = allExaminees.map((examinee) => {
+      const agg = aggregateMap.get(examinee.id) || { count: 0, total: 0 };
+      const myScores = scoresMap.get(examinee.id); // Map<examId, score>
+
+      const scoresList = uniqueExams.map((exam) => ({
+        examId: exam.id,
+        score: myScores?.has(exam.id) ? myScores.get(exam.id)! : null,
       }));
-
-      // getRawMany() mengembalikan string, kita perlu parseInt
-      const examCount = parseInt(examinee.examCount, 10);
-      const totalScore = parseInt(examinee.totalScore, 10);
 
       return {
         examinee: {
-          id: examineeId,
-          name: examinee.examinee_name,
-          avatar: examinee.examinee_avatar_url,
-          workplace: examinee.examinee_workplace,
+          id: examinee.id,
+          name: examinee.name,
+          avatar: examinee.avatar_url,
+          workplace: examinee.workplace,
         },
-        examCount: examCount,
-        totalScore: totalScore,
+        examCount: agg.count,
+        totalScore: agg.total,
         averageScore:
-          examCount > 0 ? parseFloat((totalScore / examCount).toFixed(2)) : 0,
-        scores: scores, // <-- Ini array baru yang berisi skor individu
+          agg.count > 0 ? parseFloat((agg.total / agg.count).toFixed(2)) : 0,
+        scores: scoresList,
       };
     });
 
@@ -127,19 +121,39 @@ export class ReportsService {
    * Menghitung nilai rata-rata batch untuk setiap ujian yang diambil.
    */
   async getBatchAverageReport(batchId: number) {
-    return this.participantRepository
-      .createQueryBuilder('participant')
-      .innerJoin('participant.examinee', 'examinee')
-      .innerJoin('participant.exam', 'exam')
-      .where('examinee.batch_id = :batchId', { batchId })
-      .andWhere('participant.status = :status', { status: 'finished' })
-      .select('exam.id', 'examId') // <-- Tambahkan ID ujian
-      .addSelect('exam.title', 'examTitle')
-      .addSelect('ROUND(AVG(participant.final_score), 2)', 'averageScore')
-      .groupBy('exam.id')
-      .addGroupBy('exam.title')
-      .orderBy('exam.title', 'ASC')
-      .getRawMany();
+    const filteredParticipants = await this.getFilteredParticipants(batchId);
+
+    // Group by Exam and sum/count
+    const examAggregates = new Map<
+      number,
+      { title: string; count: number; total: number }
+    >();
+
+    filteredParticipants.forEach((p) => {
+      if (!examAggregates.has(p.exam.id)) {
+        examAggregates.set(p.exam.id, {
+          title: p.exam.title,
+          count: 0,
+          total: 0,
+        });
+      }
+      const agg = examAggregates.get(p.exam.id)!;
+      agg.count++;
+      agg.total += p.final_score || 0;
+    });
+
+    const report = Array.from(examAggregates.entries()).map(
+      ([examId, data]) => ({
+        examId: examId,
+        examTitle: data.title,
+        averageScore: (data.total / data.count).toFixed(2),
+      }),
+    );
+
+    // Sort by Title
+    report.sort((a, b) => a.examTitle.localeCompare(b.examTitle));
+
+    return report;
   }
 
   /**
@@ -147,18 +161,21 @@ export class ReportsService {
    * Memperbaiki error SQL 'examinee.name'
    */
   async getBatchUniqueExams(batchId: number) {
-    return (
-      this.participantRepository
-        .createQueryBuilder('participant')
-        .innerJoin('participant.examinee', 'examinee')
-        .innerJoin('participant.exam', 'exam')
-        .where('examinee.batch_id = :batchId', { batchId })
-        .andWhere('participant.status = :status', { status: 'finished' })
-        .select(['exam.id AS id', 'exam.title AS title'])
-        .groupBy('exam.id, exam.title')
-        // PERBAIKAN: Mengurutkan berdasarkan 'exam.title', bukan 'examinee.name'
-        .orderBy('exam.title', 'ASC')
-        .getRawMany()
+    // Reuse filtered participants to ensure consistency
+    const filteredParticipants = await this.getFilteredParticipants(batchId);
+
+    const uniqueExamsMap = new Map<number, { id: number; title: string }>();
+    filteredParticipants.forEach((p) => {
+      if (!uniqueExamsMap.has(p.exam.id)) {
+        uniqueExamsMap.set(p.exam.id, {
+          id: p.exam.id,
+          title: p.exam.title,
+        });
+      }
+    });
+
+    return Array.from(uniqueExamsMap.values()).sort((a, b) =>
+      a.title.localeCompare(b.title),
     );
   }
 
@@ -167,23 +184,27 @@ export class ReportsService {
    * Sekarang juga MENGAMBIL avatar_url
    */
   async getBatchExamPerformance(batchId: number, examId: number) {
-    return this.examineeRepository
-      .createQueryBuilder('examinee')
-      .leftJoin(
-        'examinee.participants',
-        'participant',
-        'participant.exam_id = :examId AND participant.status = :status',
-        { examId, status: 'finished' },
-      )
-      .where('examinee.batch_id = :batchId', { batchId })
-      .select([
-        'examinee.name AS name',
-        'COALESCE(participant.final_score, 0) AS score',
-        'examinee.avatar_url AS avatar_url', // <-- PERBAIKAN: Tambah avatar
-      ])
-      .groupBy('examinee.id, participant.final_score, examinee.avatar_url')
-      .orderBy('examinee.name', 'ASC') // <-- PERBAIKAN: Urut abjad
-      .getRawMany();
+    const filtered = await this.getFilteredParticipants(batchId);
+    const examParticipants = new Map<number, Participant>();
+
+    // Filter specifically for this exam
+    filtered.forEach((p) => {
+      if (p.exam.id === +examId) examParticipants.set(p.examinee.id, p);
+    });
+
+    const allExaminees = await this.examineeRepository.find({
+      where: { batch: { id: batchId } },
+      order: { name: 'ASC' },
+    });
+
+    return allExaminees.map((examinee) => {
+      const p = examParticipants.get(examinee.id);
+      return {
+        name: examinee.name,
+        score: p ? p.final_score || 0 : 0,
+        avatar_url: examinee.avatar_url,
+      };
+    });
   }
 
   /**
@@ -279,5 +300,33 @@ export class ReportsService {
 
     // 4. Kembalikan sebagai Buffer
     return workbook.xlsx.writeBuffer() as unknown as Promise<Buffer>;
+  }
+
+  // --- HELPER: Deduplicate attempts (Select Latest) ---
+  private async getFilteredParticipants(
+    batchId: number,
+  ): Promise<Participant[]> {
+    const rawParticipants = await this.participantRepository.find({
+      where: {
+        examinee: { batch: { id: batchId } },
+        status: ParticipantStatus.FINISHED,
+      },
+      relations: ['examinee', 'exam'],
+    });
+
+    const latestAttempts = new Map<string, Participant>();
+
+    rawParticipants.forEach((p) => {
+      const key = `${p.examinee.id}_${p.exam.id}`;
+      const existing = latestAttempts.get(key);
+      const currentAttempt = p.attempt_number || 1;
+      const existingAttempt = existing ? existing.attempt_number || 1 : 0;
+
+      if (currentAttempt > existingAttempt) {
+        latestAttempts.set(key, p);
+      }
+    });
+
+    return Array.from(latestAttempts.values());
   }
 }

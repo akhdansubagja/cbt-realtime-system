@@ -59,4 +59,24 @@ export class ParticipantsController {
   findAllByExaminee(@Param('examineeId') examineeId: number) {
     return this.participantsService.findAllByExaminee(examineeId);
   }
+
+  // --- ADMIN ENDPOINTS ---
+
+  @Post(':id/retake')
+  // @UseGuards(AdminGuard) // Idealnya diproteksi oleh AdminGuard
+  allowRetake(@Param('id') id: string) {
+    return this.participantsService.allowRetake(+id);
+  }
+
+  @Patch(':id')
+  // @UseGuards(AdminGuard)
+  update(@Param('id') id: string, @Body() updateData: any) {
+    return this.participantsService.update(+id, updateData);
+  }
+
+  @Delete(':id')
+  // @UseGuards(AdminGuard)
+  remove(@Param('id') id: string) {
+    return this.participantsService.remove(+id);
+  }
 }
