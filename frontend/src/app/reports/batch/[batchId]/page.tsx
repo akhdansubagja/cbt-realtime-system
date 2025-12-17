@@ -444,9 +444,9 @@ export default function BatchReportPage() {
                     });
 
                     // Create canvas for "Cover" cropping (High resolution for sharpness)
-                    // Target box is ~60px x 70px. Using 4x scale.
-                    const targetW = 60 * 4;
-                    const targetH = 70 * 4;
+                    // Target box is ~60px x 70px. Using 6x scale to match "Preview" clarity.
+                    const targetW = 60 * 6;
+                    const targetH = 70 * 6;
                     const canvas = document.createElement("canvas");
                     canvas.width = targetW;
                     canvas.height = targetH;
@@ -485,7 +485,7 @@ export default function BatchReportPage() {
                         ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
                         
                         // Result
-                        const base64 = canvas.toDataURL("image/png", 1.0); // Max quality
+                        const base64 = canvas.toDataURL("image/jpeg", 1.0); // Maximum quality JPEG
                         item.examinee.avatar = base64;
                         item.examinee.original_avatar_url = base64;
                     }
@@ -530,12 +530,12 @@ export default function BatchReportPage() {
         setTimeout(resolve, 1000); 
       });
 
-      // 3. Capture with html2canvas (Ultra High Quality)
+      // 3. Capture with html2canvas (Print Quality)
       const element = hiddenContainer.firstElementChild as HTMLElement;
       if (!element) throw new Error("Render failed");
 
       const canvas = await html2canvas(element, {
-        scale: 4, // Ultra High DPI (approx 400dpi)
+        scale: 4, // 4x scale (approx 400dpi) for vector-like clear text
         useCORS: true, // Important for avatars
         backgroundColor: "#ffffff",
         allowTaint: true,
@@ -545,7 +545,9 @@ export default function BatchReportPage() {
         }
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      // Switch to JPEG to reduce file size drastically (PNG is huge for full page photos)
+      // Quality 1.0 ensures best possible appearance while still being smaller than PNG
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
       // 4. Generate PDF
       const pdf = new jsPDF({
@@ -557,7 +559,7 @@ export default function BatchReportPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Laporan_${batch.name.replace(/\s+/g, "_")}.pdf`);
 
       notifications.show({
