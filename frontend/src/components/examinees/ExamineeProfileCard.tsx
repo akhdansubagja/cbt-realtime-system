@@ -51,7 +51,7 @@ export function ExamineeProfileCard({
         <Avatar
           src={
             examinee.avatar_url
-              ? `http://localhost:3000/${examinee.avatar_url}`
+              ? `${process.env.NEXT_PUBLIC_API_URL}/${examinee.avatar_url}`
               : null
           }
           size={200}

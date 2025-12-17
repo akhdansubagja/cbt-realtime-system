@@ -307,7 +307,7 @@ export default function ExamineesPage() {
 
   const handleAvatarClick = (imageUrl: string | null) => {
     if (imageUrl) {
-      setSelectedImage(`http://localhost:3000/${imageUrl}`);
+      setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${imageUrl}`);
       openImageModal();
     }
   };
@@ -477,7 +477,7 @@ export default function ExamineesPage() {
                       <Avatar
                         src={
                           examinee.avatar_url
-                            ? `http://localhost:3000/${examinee.avatar_url}`
+                            ? `${process.env.NEXT_PUBLIC_API_URL}/${examinee.avatar_url}`
                             : null
                         }
                         radius="xl"

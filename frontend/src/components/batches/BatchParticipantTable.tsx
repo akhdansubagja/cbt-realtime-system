@@ -107,7 +107,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
 
   const handleAvatarClick = (imageUrl: string | null) => {
     if (imageUrl) {
-      setSelectedImage(`http://localhost:3000/${imageUrl}`);
+      setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${imageUrl}`);
       openImageModal();
     }
   };
@@ -249,7 +249,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
                   // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
                   src={
                     record.examinee.avatar
-                      ? `http://localhost:3000/${record.examinee.avatar}`
+                      ? `${process.env.NEXT_PUBLIC_API_URL}/${record.examinee.avatar}`
                       : null
                   }
                   size="md"

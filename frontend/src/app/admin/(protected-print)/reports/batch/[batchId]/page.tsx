@@ -209,7 +209,7 @@ const BatchReportDocument = ({
                             // If relative URL, prepend localhost.
                             (p.examinee.original_avatar_url || p.examinee.avatar)?.startsWith("data:")
                                 ? (p.examinee.original_avatar_url || p.examinee.avatar)
-                                : `http://localhost:3000/${p.examinee.original_avatar_url || p.examinee.avatar}`
+                                : `${process.env.NEXT_PUBLIC_API_URL}/${p.examinee.original_avatar_url || p.examinee.avatar}`
                         }
                         alt={p.examinee.name}
                         style={{
@@ -431,7 +431,7 @@ export default function BatchReportPage() {
                 try {
                     const fullUrl = avatarUrl.startsWith('http') 
                         ? avatarUrl 
-                        : `http://localhost:3000/${avatarUrl}`; // Ensure correct base
+                        : `${process.env.NEXT_PUBLIC_API_URL}/${avatarUrl}`; // Ensure correct base
                     
                     // Load image
                     const img = new Image();

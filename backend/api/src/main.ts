@@ -7,13 +7,12 @@ import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
-
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // 1. PANGGIL CORS PERTAMA KALI
   app.enableCors({
-    origin: 'http://localhost:3001', // Izinkan frontend Anda
+    origin: true, // Izinkan frontend Anda
     credentials: true,
   });
 

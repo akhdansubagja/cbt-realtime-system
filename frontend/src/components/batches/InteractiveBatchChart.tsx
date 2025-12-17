@@ -252,7 +252,7 @@ const BatchChartVisual = ({
             const avatarSrc = avatarUrl?.startsWith("data:")
                 ? avatarUrl
                 : avatarUrl
-                ? `http://localhost:3000/${avatarUrl}`
+                ? `${process.env.NEXT_PUBLIC_API_URL}/${avatarUrl}`
                 : null;
 
             const startX = x + barWidth + 10;
@@ -434,7 +434,7 @@ export function InteractiveBatchChart({
                 // Ensure absolute URL (simple check)
                 const imageUrl = item.avatar_url.startsWith("http") 
                     ? item.avatar_url 
-                    : `http://localhost:3000/${item.avatar_url}`;
+                    : `${process.env.NEXT_PUBLIC_API_URL}/${item.avatar_url}`;
                     
                 const response = await fetch(imageUrl);
                 const blob = await response.blob();

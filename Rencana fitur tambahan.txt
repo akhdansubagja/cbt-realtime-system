@@ -113,6 +113,7 @@ OPSIONAL
 3. buat animasi pada halaman utama pada saat peserta ingin melaksanakan ujian, misalkan karakter laki laki atau perempuan,
 4. buat agar sistem bisa menambahkan soal essai.
 5. buat agar sistem dapat menampilkan review hasil ujian, yang mana berarti lengkap dengan sebuah jawabannya.
+6. pada saat ini sistem menggunakan cron job untuk mendeteksi peserta yang sedang melaksanakan ujian, untuk skalabilitas, hal ini perlu diperhatikan.
 
 
 

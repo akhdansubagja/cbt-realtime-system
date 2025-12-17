@@ -63,7 +63,7 @@ export function ExamineeFormModal({
         });
         setCurrentAvatarPreview(
           initialExaminee.avatar_url
-            ? `http://localhost:3000/${initialExaminee.avatar_url}`
+            ? `${process.env.NEXT_PUBLIC_API_URL}/${initialExaminee.avatar_url}`
             : null
         );
       } else {
