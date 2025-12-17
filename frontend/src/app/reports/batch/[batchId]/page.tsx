@@ -443,16 +443,20 @@ export default function BatchReportPage() {
                         img.onerror = (e) => reject(e);
                     });
 
-                    // Create canvas for "Cover" cropping (3x resolution for sharpness)
-                    // Target box is ~60px x 70px
-                    const targetW = 60 * 3;
-                    const targetH = 70 * 3;
+                    // Create canvas for "Cover" cropping (High resolution for sharpness)
+                    // Target box is ~60px x 70px. Using 4x scale.
+                    const targetW = 60 * 4;
+                    const targetH = 70 * 4;
                     const canvas = document.createElement("canvas");
                     canvas.width = targetW;
                     canvas.height = targetH;
                     const ctx = canvas.getContext("2d");
 
                     if (ctx) {
+                        // High quality smoothing settings
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = "high";
+
                         // Calculate "Cover" dimensions
                         const imgRatio = img.width / img.height;
                         const targetRatio = targetW / targetH;
@@ -481,7 +485,7 @@ export default function BatchReportPage() {
                         ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
                         
                         // Result
-                        const base64 = canvas.toDataURL("image/png");
+                        const base64 = canvas.toDataURL("image/png", 1.0); // Max quality
                         item.examinee.avatar = base64;
                         item.examinee.original_avatar_url = base64;
                     }
@@ -526,12 +530,12 @@ export default function BatchReportPage() {
         setTimeout(resolve, 1000); 
       });
 
-      // 3. Capture with html2canvas (High Quality)
+      // 3. Capture with html2canvas (Ultra High Quality)
       const element = hiddenContainer.firstElementChild as HTMLElement;
       if (!element) throw new Error("Render failed");
 
       const canvas = await html2canvas(element, {
-        scale: 3, // High DPI (approx 300dpi if 1=96dpi)
+        scale: 4, // Ultra High DPI (approx 400dpi)
         useCORS: true, // Important for avatars
         backgroundColor: "#ffffff",
         allowTaint: true,
