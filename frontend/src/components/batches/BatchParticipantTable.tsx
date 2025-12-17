@@ -3,6 +3,7 @@
 
 import api from "@/lib/axios";
 import { BatchParticipantReportData } from "@/types/batchParticipantReport";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
 import {
   Alert,
   Button,
@@ -46,7 +47,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   const router = useRouter();
 
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10; // Bisa dibuat dinamis jika mau
+  const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
   const [query, setQuery] = useState(""); // Untuk fitur search
 
   const [sortStatus, setSortStatus] = useState<
@@ -84,10 +85,10 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
     }
 
     // 3. Pagination
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize;
     return filtered.slice(from, to);
-  }, [data, query, sortStatus, page]);
+  }, [data, query, sortStatus, page, pageSize]);
 
   // Hitung total record setelah difilter (untuk pagination)
   const totalRecords = useMemo(() => {
@@ -99,9 +100,10 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   }, [data, query]);
 
   // Reset halaman ke 1 jika user melakukan search
+  // Reset halaman ke 1 jika user melakukan search
   useEffect(() => {
     setPage(1);
-  }, [query]);
+  }, [query, pageSize]);
 
   const handleAvatarClick = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -189,13 +191,13 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             styles={{
               input: {
                 backgroundColor: "rgba(255, 255, 255, 1)",
-                color: "white",
+                color: "black",
                 border: "1px solid rgba(255, 255, 255, 0.3)",
                 '&::placeholder': {
-                  color: "rgba(255, 255, 255, 0.7)"
+                  color: "rgba(0, 0, 0, 0.5)"
                 },
                 '&:focus': {
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
+                  backgroundColor: "rgba(255, 255, 255, 1)",
                   borderColor: "white"
                 }
               }
@@ -229,9 +231,11 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
         horizontalSpacing="lg"
         records={records}
         totalRecords={totalRecords}
-        recordsPerPage={PAGE_SIZE}
+        recordsPerPage={pageSize}
         page={page}
         onPageChange={(p) => setPage(p)}
+        recordsPerPageOptions={PAGE_SIZES}
+        onRecordsPerPageChange={setPageSize}
         sortStatus={sortStatus}
         onSortStatusChange={setSortStatus}
         columns={[

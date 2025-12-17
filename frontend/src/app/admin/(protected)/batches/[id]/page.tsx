@@ -183,9 +183,7 @@ export default function BatchDetailPage() {
               <Button
                  leftSection={<IconPrinter size={16} />}
                  component="a"
-                 href={`/reports/batch/${batchId}`}
-                 target="_blank"
-                 color="indigo"
+                 href={`/admin/reports/batch/${batchId}`}
               >
                   Cetak PDF
               </Button>

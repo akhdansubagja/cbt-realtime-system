@@ -612,7 +612,6 @@ export default function BatchReportPage() {
                   leftSection={<IconDownload size={16} />}
                   onClick={handleExportPDF}
                   loading={exporting}
-                  color="red"
               >
                   Download PDF
               </Button>
