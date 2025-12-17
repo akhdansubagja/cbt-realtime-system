@@ -1,13 +1,7 @@
 // src/participants/participants.service.ts
-
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  ForbiddenException,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+import { LessThan } from 'typeorm';
 import { Exam } from 'src/exams/entities/exam.entity';
 import { Examinee } from 'src/examinees/entities/examinee.entity';
 import { Repository, Not, In } from 'typeorm';
@@ -22,6 +16,15 @@ import { Question } from 'src/questions/entities/question.entity';
 import { LiveExamGateway } from 'src/live-exam/live-exam.gateway';
 import { AuthService } from 'src/auth/auth.service';
 import { ParticipantsController } from './participants.controller';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  ParseIntPipe,
+  Logger,
+} from '@nestjs/common';
+import { from } from 'rxjs';
 
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
@@ -60,6 +63,45 @@ export class ParticipantsService {
     private readonly liveExamGateway: LiveExamGateway,
     private readonly authService: AuthService,
   ) {}
+
+  private readonly logger = new Logger(ParticipantsService.name);
+
+  // --- CRON JOB: AUTO-FINISH EXAMS ---
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  async handleExpiredExams() {
+    // 1. Cari peserta yang statusnya STARTED dan waktu estimasi selesai sudah lewat
+    //    Kita cari yang (start_time + duration) < now
+    //    Karena query builder agak kompleks dengan date arithmetic, kita bisa filter di memory
+    //    atau query yang started saja lalu cek satu per satu (untuk safety).
+    //    Untuk performa lebih baik, bisa pakai raw query, tpi ini MVP.
+    //    Kita ambil yang 'started' dulu.
+
+    // OPTIMISASI: Ambil participants yang 'started' dan exam-nya punya durasi.
+    const activeParticipants = await this.participantRepository.find({
+      where: { status: ParticipantStatus.STARTED },
+      relations: ['exam'],
+    });
+
+    const now = new Date();
+
+    for (const p of activeParticipants) {
+      if (!p.start_time || !p.exam) continue;
+
+      const durationMs = p.exam.duration_minutes * 60 * 1000;
+      const expectedEndTime = new Date(p.start_time.getTime() + durationMs);
+
+      // Beri buffer toleransi misal 10 detik agar tidak terlalu agresif
+      // Jika sekarang > expectedEndTime, maka force finish.
+      if (now > expectedEndTime) {
+        this.logger.log(
+          `Auto-finishing exam for participant ${p.id} (Expired at ${expectedEndTime})`,
+        );
+        // Force finish dengan waktu selesai yang diset ke LIMIT (expectedEndTime)
+        // agar durasi pas sesuai limit.
+        await this.finishExam(p.id, expectedEndTime);
+      }
+    }
+  }
 
   async joinExam(joinExamDto: JoinExamDto) {
     // Validasi (tidak berubah)
@@ -204,7 +246,7 @@ export class ParticipantsService {
     await this.recalculateAndBroadcastScore(data.participantId);
   }
 
-  async finishExam(participantId: number) {
+  async finishExam(participantId: number, finishedAtDate?: Date) {
     const correctAnswers = await this.answerRepository.find({
       where: {
         participant: { id: participantId },
@@ -226,7 +268,7 @@ export class ParticipantsService {
 
     participant.status = ParticipantStatus.FINISHED;
     participant.final_score = totalScore;
-    participant.finished_at = new Date(); // Set waktu selesai
+    participant.finished_at = finishedAtDate || new Date(); // Set waktu selesai (bisa manual date)
     const savedParticipant = await this.participantRepository.save(participant); // Simpan perubahan
 
     console.log(

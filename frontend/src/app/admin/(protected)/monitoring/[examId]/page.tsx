@@ -44,6 +44,7 @@ import {
   IconRefresh, // New
   IconEdit, // New
   IconTrash, // New
+  IconAlertCircle, // New
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { Menu, Modal, TextInput, NumberInput, Switch } from "@mantine/core";
@@ -64,19 +65,50 @@ interface ParticipantScore {
 interface ExamInfo {
   title: string;
   code: string;
+  duration: number; // in minutes
 }
 
 // Komponen Timer untuk menghitung durasi secara real-time
-const DurationTimer = ({ startTime, status, finishedAt }: { startTime?: string; status: string; finishedAt?: string }) => {
+const DurationTimer = ({ startTime, status, finishedAt, limitMinutes }: { startTime?: string; status: string; finishedAt?: string; limitMinutes?: number }) => {
   const [duration, setDuration] = useState<string>("-");
+  const [isOverLimit, setIsOverLimit] = useState(false);
 
   useEffect(() => {
     if (!startTime) return;
 
     const calculateDuration = () => {
       const start = new Date(startTime).getTime();
-      const end = status === 'finished' && finishedAt ? new Date(finishedAt).getTime() : Date.now();
-      const diff = Math.max(0, Math.floor((end - start) / 1000));
+      let end: number;
+
+      if (status === 'finished') {
+          if (finishedAt) {
+              end = new Date(finishedAt).getTime();
+          } else if (limitMinutes) {
+               // Fallback: If finished but no timestamp, assume partial/auto-close at limit
+               // But usually we just want to show the LIMIT duration.
+               // So we force diff = limitSeconds
+               end = start + (limitMinutes * 60 * 1000); 
+          } else {
+              end = Date.now(); // Should not happen ideally
+          }
+      } else {
+          end = Date.now();
+      }
+      
+      let diff = Math.max(0, Math.floor((end - start) / 1000));
+
+      // CLAMP LOGIC (For running status OR fallback calculation)
+      // If we used the fallback above, diff is naturally limitSeconds.
+      // If still running, we clamp.
+      if (limitMinutes) {
+          const limitSeconds = limitMinutes * 60;
+           if (diff >= limitSeconds) {
+              diff = limitSeconds;
+              setIsOverLimit(true);
+          } else {
+              setIsOverLimit(false);
+          }
+      }
 
       const hours = Math.floor(diff / 3600);
       const minutes = Math.floor((diff % 3600) / 60);
@@ -91,13 +123,22 @@ const DurationTimer = ({ startTime, status, finishedAt }: { startTime?: string; 
 
     calculateDuration(); // Hitung langsung
 
-    if (status === 'started') {
+    if (status === 'started' && !isOverLimit) { // Stop ticking if over limit
       const interval = setInterval(calculateDuration, 1000);
       return () => clearInterval(interval);
     }
-  }, [startTime, status, finishedAt]);
+  }, [startTime, status, finishedAt, limitMinutes, isOverLimit]);
 
-  return <Text size="sm" fw={500}>{duration}</Text>;
+  return (
+    <Group gap={4}>
+        <Text size="sm" fw={500} c={isOverLimit ? "red" : undefined}>{duration}</Text>
+        {isOverLimit && (
+             <Tooltip label="Waktu Habis (Menunggu sistem/refresh)">
+                <IconAlertCircle size={14} color="red" />
+             </Tooltip>
+        )}
+    </Group>
+  );
 };
 
 export default function MonitoringPage() {
@@ -245,7 +286,11 @@ export default function MonitoringPage() {
         });
 
         setAllParticipants(initialScores);
-        setExamInfo({ title: examRes.data.title, code: examRes.data.code });
+        setExamInfo({ 
+            title: examRes.data.title, 
+            code: examRes.data.code,
+            duration: examRes.data.duration // Asumsi field dari API
+        });
 
         // Ekstrak daftar batch unik untuk filter dari data peserta yang ada
         const uniqueBatches = Array.from(
@@ -716,16 +761,18 @@ export default function MonitoringPage() {
                         <Text size="sm" fw={500}>
                           {p.finished_at
                             ? dayjs(p.finished_at).format("D MMM YYYY, HH:mm:ss")
-                            : "-"}
+                            : (p.status === 'finished' && p.start_time && examInfo?.duration) 
+                                ? dayjs(p.start_time).add(examInfo.duration, 'minute').format("D MMM YYYY, HH:mm:ss") + " (Auto)"
+                                : "-"}
                         </Text>
                       </Box>
                       <Box ta="right" mr="md">
                          <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">Durasi</Text>
                          <DurationTimer 
-                            startTime={p.start_time} 
-                            status={p.status} 
-                            finishedAt={p.finished_at} 
-                         />
+                            startTime={p.start_time}                             status={p.status} 
+                             finishedAt={p.finished_at} 
+                             limitMinutes={examInfo?.duration}
+                          />
                       </Box>
                       <Box ta="right" mr="md">
                         <Text size="xs" c="dimmed" fw={600} tt="uppercase">

@@ -81,7 +81,7 @@ DONE38. tambahkan kolom baru pada table examinee atau peserta, yaitu kolom peker
 
 DONE39. buat kolom baru di halaman manajemen bank soal, yaitu kolom jumlah soal
 
-40. ubah tempat halaman untuk melakukan download pdf dari suatu batch supaya terproteksi, dan diharuskan login
+DONE40. ubah tempat halaman untuk melakukan download pdf dari suatu batch supaya terproteksi, dan diharuskan login
 
 DONE41. Buat agar data ujian dari suatu pesertsa bisa dilakukan untuk CRUD
 
@@ -93,10 +93,13 @@ DONE44. buat agar lebih flexibel, supaya seorang peserta diberikan kesempatan ul
 
 DONE45. buat agar sistem dapat melakukan kompresi pada gambar, atau setidaknya buat agar sistem tidak mengalami lagging ketika sedang membuka banyak
 
-46. perbaiki agar sistem dapat mendeteksi pada saat ingin mengexport ke dalam pdf ataupun ganbar supaya tidak menggunakan html2canvas
+DONE46. perbaiki agar sistem dapat mendeteksi pada saat ingin mengexport ke dalam pdf ataupun ganbar supaya tidak menggunakan html2canvas, atau menggunakan konsep khusus, seperti menggunakan phantom rendering.
 
+47. buat agar sistem dapat mengatur ujian, wajib untuk dikerjakan semua soal atau tidaknya.
 
+DONE48. buat agar sistem dapat menyelesaikan ujian berdasarkan waktu yang sedang berjalan
 
+49. buat agar pada modal untuk membuat sebuah ujian, agar ditambahkan opsi untuk mengotomatisasi agar nilai selalu berjumlah 100 secara total, sekalipun soalnya bukan yangu bisa membentuk angka 100.
 
 
 
@@ -109,6 +112,7 @@ OPSIONAL
 2. pada halaman utama untuk peserta tambahkan fitur untuk quiz latihan matematika kabataku, yang angkanya dihasilkan random dari frontend, lalu disediakan juga seperti lembar kosong untuk melakukan penghitungan soal secara manual.
 3. buat animasi pada halaman utama pada saat peserta ingin melaksanakan ujian, misalkan karakter laki laki atau perempuan,
 4. buat agar sistem bisa menambahkan soal essai.
+5. buat agar sistem dapat menampilkan review hasil ujian, yang mana berarti lengkap dengan sebuah jawabannya.
 
 
 

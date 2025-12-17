@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 // Import semua Entity
 import { User } from './users/entities/user.entity';
@@ -66,7 +66,8 @@ import { ReportsModule } from './reports/reports.module';
     UsersModule,
     LiveExamModule,
     KafkaModule,
-    AuthModule, 
+    AuthModule,
+    ScheduleModule.forRoot(),
 
     // Baru daftarkan modul yang membutuhkan 'service' tersebut
     QuestionBanksModule,
