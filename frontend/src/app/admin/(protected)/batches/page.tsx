@@ -33,7 +33,7 @@ import api from "@/lib/axios";
 import { Batch } from "@/types/batch";
 import Link from "next/link";
 import { useForm } from "@mantine/form"; // <-- Tambahkan ini
-import { useDisclosure } from "@mantine/hooks"; // <-- Tambahkan ini
+import { useDisclosure, useMediaQuery } from "@mantine/hooks"; // <-- Tambahkan ini
 import { notifications } from "@mantine/notifications"; // <-- Tambahkan ini
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
@@ -61,6 +61,7 @@ export default function BatchesPage() {
   // State Modal & Router
   const [opened, { open, close }] = useDisclosure(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
+  const isDesktop = useMediaQuery('(min-width: 48em)');
   const router = useRouter();
 
   const filteredBatches = batches.filter((batch) =>
@@ -295,12 +296,13 @@ export default function BatchesPage() {
           { label: "Manajemen Batch", href: "/admin/batches" },
         ]}
         actions={
-          <Group>
+          <Group justify="flex-start" gap="xs" wrap="wrap">
             {selectedRecords.length > 0 && (
               <Button
                 color="red"
                 leftSection={<IconTrash size={16} />}
                 onClick={handleBulkDelete}
+                size="sm"
               >
                 Hapus ({selectedRecords.length})
               </Button>
@@ -312,6 +314,7 @@ export default function BatchesPage() {
                 form.reset();
                 open();
               }}
+              size="sm"
             >
               Tambah Batch
             </Button>
@@ -326,7 +329,7 @@ export default function BatchesPage() {
         leftSection={<IconSearch size={16} />}
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
-        style={{ flex: 2 }}
+        mb="md"
       />
 
       {/* TABEL MODERN */}
@@ -351,6 +354,7 @@ export default function BatchesPage() {
           selectedRecords={selectedRecords}
           onSelectedRecordsChange={setSelectedRecords}
           isRecordSelectable={(record) => true}
+          scrollAreaProps={{ type: 'scroll', scrollbars: 'x' }}
           // Sorting
           sortStatus={sortStatus}
           onSortStatusChange={setSortStatus}
@@ -362,12 +366,20 @@ export default function BatchesPage() {
           // Definisi Kolom
           columns={[
             { accessor: "name", title: "Nama Batch", sortable: true },
-            {
+             // Short CreatedAt (hidden on sm+)
+            ...(!isDesktop ? [{
               accessor: "createdAt",
-              title: "Tanggal Dibuat",
+              title: "Dibuat",
               sortable: true,
-              render: ({ createdAt }) => dayjs(createdAt).format("DD MMM YYYY"),
-            },
+              render: ({ createdAt }: Batch) => dayjs(createdAt).format("DD/MM/YY"),
+            }] : []),
+            // Full CreatedAt (visible on sm+)
+            ...(isDesktop ? [{
+             accessor: "createdAtFull",
+             title: "Tanggal Dibuat",
+             sortable: true,
+             render: ({ createdAt }: Batch) => dayjs(createdAt).format("DD MMM YYYY"),
+            }] : []),
             {
               accessor: "status",
               title: "Status",

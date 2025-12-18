@@ -590,7 +590,7 @@ export default function MonitoringPage() {
   return (
     <Stack gap="lg">
       {/* --- HEADER BARU --- */}
-      <Flex justify="space-between" align="center">
+      <Flex direction={{ base: "column", sm: "row" }} justify="space-between" align={{ base: "flex-start", sm: "center" }} gap="md">
         <Group>
           <ActionIcon
             variant="light"
@@ -619,8 +619,8 @@ export default function MonitoringPage() {
 
       {/* --- KONTROL FILTER & EKSPOR BARU --- */}
       <Paper withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="flex-end" gap="md" wrap="wrap">
-          <Group style={{ flex: 1 }}>
+        <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "stretch", md: "flex-end" }} gap="md">
+          <Flex direction={{ base: "column", sm: "row" }} gap="md" style={{ flex: 1 }}>
             <DatePickerInput
               type="range"
               label="Filter Tanggal"
@@ -648,7 +648,7 @@ export default function MonitoringPage() {
                 radius="md"
                 leftSection={<IconFilter size={16} />}
             />
-          </Group>
+          </Flex>
           <Button
             leftSection={<IconFileExport size={16} />}
             onClick={handleExport}
@@ -656,6 +656,8 @@ export default function MonitoringPage() {
             variant="light"
             color="violet"
             radius="md"
+            fullWidth={false} // Default value
+            w={{ base: "100%", md: "auto" }} // Full width on mobile
           >
             Ekspor Excel
           </Button>
@@ -688,8 +690,8 @@ export default function MonitoringPage() {
                   p="md"
                   radius="md"
                 >
-                  <Flex align="center" justify="space-between" gap="md">
-                    <Group style={{ flex: 1 }}>
+                  <Flex direction={{ base: "column", md: "row" }} align={{ base: "stretch", md: "center" }} justify="space-between" gap="md">
+                    <Group style={{ flex: 1 }} align="flex-start" wrap="nowrap">
                       <Flex
                         align="center"
                         justify="center"
@@ -700,16 +702,17 @@ export default function MonitoringPage() {
                           background: iconBg,
                           color: iconColor,
                           fontWeight: 700,
+                          flexShrink: 0
                         }}
                       >
                         #{index + 1}
                       </Flex>
                       
-                      <Box>
-                        <Text fw={600} size="lg">
+                      <Box style={{ minWidth: 0, flex: 1 }}> {/* minWidth 0 prevents overflow */}
+                        <Text fw={600} size="lg" truncate>
                           {p.name}
                         </Text>
-                        <Group gap={6}>
+                        <Group gap={6} wrap="wrap"> {/* Allow wrap */}
                           {/* STATUS BADGE */}
                           <Badge
                             size="sm"
@@ -743,90 +746,110 @@ export default function MonitoringPage() {
                       </Box>
                     </Group>
 
-                    <Group>
-                      <Box ta="right" mr="md">
-                        <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">
-                          Mulai
-                        </Text>
-                        <Text size="sm" fw={500}>
-                          {p.start_time
+                    {/* Stats Grid for Mobile / Row for Desktop */}
+                    <Flex 
+                         gap="md" 
+                         direction={{ base: "column", sm: "row" }} 
+                         align={{ base: "flex-start", sm: "center" }}
+                         wrap="wrap"
+                         justify={{ base: "flex-start", md: "flex-end" }}
+                         mt={{ base: "xs", md: 0 }}
+                         style={{ borderTop: "0px" }} // Placeholder style override
+                    >
+                         {/* Wrapper for Time Stats */}
+                         <Flex gap="xl" align="flex-start" w={{ base: "100%", sm: "auto" }} justify={{ base: "space-between", sm: "flex-start" }}>
+                            <Box ta={{ base: "left", sm: "right" }}>
+                              <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">
+                                Mulai
+                              </Text>
+                              <Text size="sm" fw={500}>
+                                {p.start_time
                             ? dayjs(p.start_time).format("D MMM YYYY, HH:mm:ss")
-                            : "-"}
-                        </Text>
-                      </Box>
-                      <Box ta="right" mr="md">
-                        <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">
-                          Selesai
-                        </Text>
-                        <Text size="sm" fw={500}>
-                          {p.finished_at
+                                  : "-"}
+                              </Text>
+                            </Box>
+                            
+                            <Box ta={{ base: "left", sm: "right" }}>
+                              <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">
+                                Selesai
+                              </Text>
+                              <Text size="sm" fw={500}>
+                                {p.finished_at
                             ? dayjs(p.finished_at).format("D MMM YYYY, HH:mm:ss")
-                            : (p.status === 'finished' && p.start_time && examInfo?.duration) 
-                                ? dayjs(p.start_time).add(examInfo.duration, 'minute').format("D MMM YYYY, HH:mm:ss") + " (Auto)"
-                                : "-"}
-                        </Text>
-                      </Box>
-                      <Box ta="right" mr="md">
-                         <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">Durasi</Text>
-                         <DurationTimer 
-                            startTime={p.start_time}                             status={p.status} 
-                             finishedAt={p.finished_at} 
-                             limitMinutes={examInfo?.duration}
-                          />
-                      </Box>
-                      <Box ta="right" mr="md">
-                        <Text size="xs" c="dimmed" fw={600} tt="uppercase">
-                          Skor
-                        </Text>
-                        <Text
-                          fz={28}
-                          fw={800}
-                          c={p.score !== null ? "violet" : "dimmed"}
-                          style={{ lineHeight: 1 }}
-                        >
-                          {p.score ?? "-"}
-                        </Text>
-                      </Box>
+                                  : (p.status === 'finished' && p.start_time && examInfo?.duration) 
+                                      ? dayjs(p.start_time).add(examInfo.duration, 'minute').format("HH:mm")
+                                      : "-"}
+                              </Text>
+                            </Box>
 
-                      {/* ACTION MENU (NEW) */}
-                      <Menu shadow="md" width={200} position="bottom-end">
-                        <Menu.Target>
-                          <ActionIcon variant="subtle" color="gray">
-                            <IconDotsVertical size={20} />
-                          </ActionIcon>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          <Menu.Label>Aksi Peserta</Menu.Label>
-                          <Menu.Item 
-                            leftSection={<IconRefresh size={14} />}
-                            onClick={() => handleRetake(p.id, p.name)}
-                          >
-                            Izinkan Ujian Ulang
-                          </Menu.Item>
-                          {/* <Menu.Item 
-                            leftSection={<IconEdit size={14} />}
-                            onClick={() => handleEditClick(p)}
-                          >
-                            Edit Data
-                          </Menu.Item> */}
-                          <Menu.Divider />
-                          <Menu.Item 
-                            color="red" 
-                            leftSection={<IconTrash size={14} />}
-                            onClick={() => handleDelete(p.id, p.name)}
-                          >
-                            Hapus Peserta
-                          </Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Group>
+                            <Box ta={{ base: "left", sm: "right" }}>
+                               <Text size="xs" c="dimmed" fw={600} tt="uppercase" ta="left">Durasi</Text>
+                               <DurationTimer 
+                                  startTime={p.start_time}                             status={p.status} 
+                                   finishedAt={p.finished_at} 
+                                   limitMinutes={examInfo?.duration}
+                                />
+                            </Box>
+                         </Flex>
+
+                        {/* Wrapper for Score and Actions */}
+                        <Group w={{ base: "100%", sm: "auto" }} justify="space-between" mt={{ base: "xs", sm: 0 }}>
+                            <Box ta={{ base: "left", sm: "right" }} style={{ flexGrow: 1, textAlign: "right" }}>
+                                <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+                                  Skor
+                                </Text>
+                                <Text
+                                  fz={28}
+                                  fw={800}
+                                  c={p.score !== null ? "violet" : "dimmed"}
+                                  style={{ lineHeight: 1 }}
+                                >
+                                  {p.score ?? "-"}
+                                </Text>
+                            </Box>
+                            
+                            {/* ACTION MENU */}
+                            <Menu shadow="md" width={200} position="bottom-end">
+                              <Menu.Target>
+                                <ActionIcon variant="subtle" color="gray" size="lg">
+                                  <IconDotsVertical size={20} />
+                                </ActionIcon>
+                              </Menu.Target>
+                              <Menu.Dropdown>
+                                <Menu.Label>Aksi Peserta</Menu.Label>
+                                <Menu.Item 
+                                  leftSection={<IconRefresh size={14} />}
+                                  onClick={() => handleRetake(p.id, p.name)}
+                                >
+                                  Reset / Ujian Ulang
+                                </Menu.Item>
+                                
+                                <Menu.Divider />
+                                <Menu.Item
+                                  leftSection={<IconEdit size={14} />}
+                                  onClick={() => handleEditClick(p)}
+                                >
+                                  Edit Status / Catatan
+                                </Menu.Item>
+                                <Menu.Item
+                                  leftSection={<IconTrash size={14} />}
+                                  color="red"
+                                  onClick={() => handleDelete(p.id, p.name)}
+                                >
+                                  Hapus Data
+                                </Menu.Item>
+                              </Menu.Dropdown>
+                            </Menu>
+                        </Group>
+                    </Flex>
                   </Flex>
                 </Paper>
-                </motion.div> // Closing div was part of original loop structure
+              </motion.div>
             );
           })}
         </Stack>
-      </AnimatePresence>
+      </AnimatePresence> 
+
 
       {!loading && filteredParticipants.length === 0 && (
         <Center mt="xl" p="xl">

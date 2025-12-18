@@ -24,7 +24,7 @@ import {
   Box,
   Kbd,
 } from "@mantine/core";
-import { useDisclosure, useHotkeys } from "@mantine/hooks";
+import { useDisclosure, useHotkeys, useMediaQuery } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
@@ -61,6 +61,7 @@ export default function ExamineesPage() {
   const [error, setError] = useState("");
   const [batches, setBatches] = useState<Batch[]>([]);
   const [opened, { open, close }] = useDisclosure(false);
+  const isDesktop = useMediaQuery('(min-width: 48em)');
   const [editingExaminee, setEditingExaminee] = useState<Examinee | null>(null);
   const [activePage, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -363,13 +364,14 @@ export default function ExamineesPage() {
             { label: "Manajemen Peserta", href: "/admin/examinees" },
           ]}
           actions={
-            <Group>
+            <Group justify="flex-start" gap="xs" wrap="wrap">
               {selectedRecords.length > 0 && (
                 <>
                   <Button
                     color="green"
                     leftSection={<IconCheck size={16} />}
                     onClick={() => handleBulkStatusUpdate(true)}
+                    size="sm"
                   >
                     Aktifkan ({selectedRecords.length})
                   </Button>
@@ -377,6 +379,7 @@ export default function ExamineesPage() {
                     color="orange"
                     leftSection={<IconX size={16} />}
                     onClick={() => handleBulkStatusUpdate(false)}
+                    size="sm"
                   >
                     Nonaktifkan ({selectedRecords.length})
                   </Button>
@@ -384,6 +387,7 @@ export default function ExamineesPage() {
                     color="red"
                     leftSection={<IconTrash size={16} />}
                     onClick={handleBulkDelete}
+                    size="sm"
                   >
                     Hapus ({selectedRecords.length})
                   </Button>
@@ -392,6 +396,7 @@ export default function ExamineesPage() {
                <Button
                  leftSection={<IconPlus size={16} />}
                  onClick={openQuickImport}
+                 size="sm"
                >
                  Tambah Peserta
                </Button>
@@ -399,13 +404,13 @@ export default function ExamineesPage() {
           }
         />
 
-        <Group align="end" grow>
+        <Flex gap="md" direction={{ base: 'column', sm: 'row' }} align={{ base: 'stretch', sm: 'flex-end' }}>
           <TextInput
             style={{ flex: 2 }}
             ref={searchInputRef}
             placeholder="Cari nama peserta..."
             leftSection={<IconSearch size={16} />}
-            rightSection={<Kbd>/</Kbd>}
+            rightSection={<Kbd hiddenFrom="sm">/</Kbd>}
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
             label="Pencarian"
@@ -435,7 +440,7 @@ export default function ExamineesPage() {
             clearable
             leftSection={<IconFilter size={16} />}
           />
-        </Group>
+        </Flex>
 
         <Box>
           {loading && examinees.length === 0 ? (
@@ -467,6 +472,7 @@ export default function ExamineesPage() {
               isRecordSelectable={(record) => true}
               idAccessor="id"
               fetching={loading}
+              scrollAreaProps={{ type: 'scroll', scrollbars: 'x' }}
               columns={[
                 {
                   accessor: "avatar_url",
@@ -523,26 +529,35 @@ export default function ExamineesPage() {
                         onChange={() => handleStatusToggle(examinee)}
                         color="teal"
                         size="md"
-                        onLabel="AKTIF"
-                        offLabel="NONAKTIF"
+                        // onLabel="AKTIF"
+                        // offLabel="NONAKTIF"
                       />
                     </Box>
                   ),
                 },
-                {
+                // Short CreatedAt (hidden on sm+)
+                ...(!isDesktop ? [{
                   accessor: "created_at",
-                  title: "Tanggal Didaftarkan",
+                  title: "Daftar",
                   sortable: false,
-                  render: (record) =>
-                    dayjs(record.created_at).format("DD MMM YYYY"),
-                },
+                  render: (record: Examinee) =>
+                    dayjs(record.created_at).format("DD/MM/YY"),
+                }] : []),
+                // Full CreatedAt (visible on sm+)
+                ...(isDesktop ? [{
+                   accessor: "created_at_full",
+                   title: "Tanggal Didaftarkan",
+                   sortable: false,
+                   render: (record: Examinee) =>
+                     dayjs(record.created_at).format("DD MMM YYYY"),
+                }] : []),
                 {
                   accessor: "actions",
                   title: "",
                   textAlign: "right",
                   render: (examinee) => (
                     <Box onClick={(e) => e.stopPropagation()}>
-                      <Menu shadow="md" width={200}>
+                      <Menu shadow="md" width={200} position="bottom-end">
                         <Menu.Target>
                           <ActionIcon variant="subtle" color="gray">
                             <IconDotsVertical size={16} />

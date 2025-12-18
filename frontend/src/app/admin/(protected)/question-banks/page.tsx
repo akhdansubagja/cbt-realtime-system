@@ -13,7 +13,7 @@ import {
   Group,
   Menu,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
@@ -55,6 +55,7 @@ export default function QuestionBanksPage() {
   const [editingBank, setEditingBank] = useState<QuestionBank | null>(null);
   const [descModalOpened, { open: openDescModal, close: closeDescModal }] =
     useDisclosure(false);
+  const isDesktop = useMediaQuery('(min-width: 48em)');
   const [selectedDescription, setSelectedDescription] = useState("");
   const [query, setQuery] = useState("");
   const [sortStatus, setSortStatus] = useState<
@@ -298,13 +299,13 @@ export default function QuestionBanksPage() {
             { label: "Manajemen Bank Soal", href: "/admin/question-banks" },
           ]}
           actions={
-            <Group>
+            <Group justify="flex-start" gap="xs" wrap="wrap">
               {selectedRecords.length > 0 && (
-                <Button color="red" onClick={handleBulkDelete}>
+                <Button color="red" onClick={handleBulkDelete} size="sm">
                   Hapus ({selectedRecords.length})
                 </Button>
               )}
-              <Button leftSection={<IconPlus size={16} />} onClick={open}>
+              <Button leftSection={<IconPlus size={16} />} onClick={open} size="sm">
                 Tambah Baru
               </Button>
             </Group>
@@ -317,7 +318,7 @@ export default function QuestionBanksPage() {
           leftSection={<IconSearch size={16} />}
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
-          style={{ flex: 2 }}
+          mb="md"
         />
 
         <Box>
@@ -349,6 +350,7 @@ export default function QuestionBanksPage() {
               onSelectedRecordsChange={setSelectedRecords}
               idAccessor="id"
               fetching={loading}
+              scrollAreaProps={{ type: 'scroll', scrollbars: 'x' }}
               columns={[
                 { accessor: "name", title: "Nama Bank Soal", sortable: true },
                 {
@@ -382,14 +384,24 @@ export default function QuestionBanksPage() {
                     );
                   },
                 },
-                {
+                // Short CreatedAt (hidden on sm+)
+                ...(!isDesktop ? [{
                   accessor: "created_at",
-                  title: "Tanggal Dibuat",
+                  title: "Dibuat",
                   sortable: true,
-                  width: 150,
-                  render: (record) =>
-                    dayjs(record.created_at).format("DD MMM YYYY"),
-                },
+                  width: 100,
+                  render: (record: QuestionBank) =>
+                    dayjs(record.created_at).format("DD/MM/YY"),
+                }] : []),
+                // Full CreatedAt (visible on sm+)
+                ...(isDesktop ? [{
+                   accessor: "created_at_full",
+                   title: "Tanggal Dibuat",
+                   sortable: true,
+                   width: 150,
+                   render: (record: QuestionBank) =>
+                     dayjs(record.created_at).format("DD MMM YYYY"),
+                }] : []),
                 {
                   accessor: "total_questions",
                   title: "Jumlah Soal",
@@ -402,7 +414,7 @@ export default function QuestionBanksPage() {
                   textAlign: "right", // <-- Buat rata kanan
                   render: (bank) => (
                     <Box onClick={(e) => e.stopPropagation()}>
-                      <Menu shadow="md" width={200}>
+                      <Menu shadow="md" width={200} position="bottom-end">
                         <Menu.Target>
                           <ActionIcon variant="subtle" color="gray">
                             <IconDotsVertical size={16} />

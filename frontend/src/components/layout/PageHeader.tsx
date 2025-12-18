@@ -45,13 +45,12 @@ export function PageHeader({ title, breadcrumbs, actions }: PageHeaderProps) {
       </Breadcrumbs>
       <Flex
         justify="space-between"
-        align="center"
-        wrap="wrap"
-        gap="md"
+        align={{ base: "flex-start", sm: "center" }}
         direction={{ base: "column", sm: "row" }}
+        gap="md"
       >
         <Title order={2}>{title}</Title>
-        {actions && <Group>{actions}</Group>}
+        {actions && <Box w={{ base: "100%", sm: "auto" }}>{actions}</Box>}
       </Flex>
     </Box>
   );

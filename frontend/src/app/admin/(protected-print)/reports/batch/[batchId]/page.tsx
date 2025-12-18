@@ -9,6 +9,7 @@ import {
   LoadingOverlay,
   Modal,
   TextInput,
+  Flex,
 } from "@mantine/core";
 import { useEffect, useState, useRef } from "react";
 import { BatchParticipantReportData } from "@/types/batchParticipantReport";
@@ -600,23 +601,24 @@ export default function BatchReportPage() {
 
       {/* Toolbar */}
       <Box p="md" bg="white" style={{ borderBottom: '1px solid #eee' }}>
-        <Group justify="space-between">
+        <Flex justify="space-between" align={{ base: 'flex-start', sm: 'center' }} direction={{ base: 'column', sm: 'row' }} gap="sm">
             <Text size="sm" c="dimmed">
                 Halaman ini khusus untuk mencetak laporan.
             </Text>
             <Group>
-              <Button leftSection={<IconEdit size={16} />} onClick={openEdit} variant="outline">
+              <Button leftSection={<IconEdit size={16} />} onClick={openEdit} variant="outline" size="sm">
                   Edit Header
               </Button>
               <Button
                   leftSection={<IconDownload size={16} />}
                   onClick={handleExportPDF}
                   loading={exporting}
+                  size="sm"
               >
                   Download PDF
               </Button>
             </Group>
-        </Group>
+        </Flex>
       </Box>
 
       {/* Main Content Area - Scrollable */}

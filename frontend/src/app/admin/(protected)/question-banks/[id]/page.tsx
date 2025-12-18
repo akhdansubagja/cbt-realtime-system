@@ -24,7 +24,7 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
-import { useDisclosure, useDebouncedValue } from "@mantine/hooks";
+import { useDisclosure, useDebouncedValue, useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconFilter, IconTrash, IconList, IconBolt } from "@tabler/icons-react";
 import api from "@/lib/axios";
@@ -70,6 +70,7 @@ export default function SingleQuestionBankPage() {
   const params = useParams();
   const router = useRouter();
   const bankId = params.id as string;
+  const isDesktop = useMediaQuery('(min-width: 48em)');
 
   const [bankData, setBankData] = useState<QuestionBankWithQuestions | null>(
     null
@@ -561,21 +562,23 @@ export default function SingleQuestionBankPage() {
             { label: bankData?.name || "Detail", href: "#" },
           ]}
           actions={
-            <Group>
+
+            <Group justify="flex-start" gap="xs" wrap="wrap">
               {selectedRecords.length > 0 && (
                 <Button
                   color="red"
                   leftSection={<IconTrash size={16} />}
                   onClick={handleBulkDelete}
+                  size="sm"
                 >
                   Hapus ({selectedRecords.length})
                 </Button>
               )}
               
               {/* Export Dropdown */}
-              <Menu shadow="md" width={200}>
+              <Menu shadow="md" width={200} position="bottom-end">
                 <Menu.Target>
-                  <Button variant="outline" leftSection={<IconBolt size={16} />}>
+                  <Button variant="outline" leftSection={<IconBolt size={16} />} size="sm">
                     {selectedRecords.length > 0 ? `Export (${selectedRecords.length})` : 'Export'}
                   </Button>
                 </Menu.Target>
@@ -590,7 +593,7 @@ export default function SingleQuestionBankPage() {
                 </Menu.Dropdown>
               </Menu>
 
-              <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAddModal}>
+              <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAddModal} size="sm">
                 Tambah Soal
               </Button>
             </Group>
@@ -598,7 +601,7 @@ export default function SingleQuestionBankPage() {
         />
 
         {/* --- SEARCH & FILTER --- */}
-        <Group align="end" grow>
+        <Flex gap="md" direction={{ base: 'column', sm: 'row' }} align={{ base: 'stretch', sm: 'flex-end' }}>
           <TextInput
             label="Pencarian"
             placeholder="Cari soal..."
@@ -620,7 +623,7 @@ export default function SingleQuestionBankPage() {
             onChange={setFilterImage}
             style={{ flex: 1 }}
           />
-        </Group>
+        </Flex>
 
         {/* --- TABEL SOAL BARU --- */}
         <Box>
@@ -649,6 +652,7 @@ export default function SingleQuestionBankPage() {
               isRecordSelectable={(record) => true}
               idAccessor="id"
               fetching={loading}
+              scrollAreaProps={{ type: 'scroll', scrollbars: 'x' }}
               columns={[
               {
                 accessor: "index",
@@ -656,7 +660,7 @@ export default function SingleQuestionBankPage() {
                 width: 35,
                 render: (_, index) => (activePage - 1) * pageSize + index + 1,
               },
-              { accessor: "question_text", title: "Teks Soal", width: "60%" }, // Expanded width
+              { accessor: "question_text", title: "Teks Soal", width: isDesktop ? "60%" : 200 }, // Expanded width, fixed min width on mobile
               {
                 accessor: "has_image",
                 title: "",

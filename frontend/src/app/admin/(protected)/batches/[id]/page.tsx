@@ -173,10 +173,11 @@ export default function BatchDetailPage() {
             { label: batch.name, href: `#` },
           ]}
           actions={
-            <Group>
+            <Group justify="flex-start" gap="xs" wrap="wrap">
               <Button
                 leftSection={<IconPlus size={16} />}
                 onClick={openBulkModal}
+                size="sm"
               >
                 Tambah Peserta
               </Button>
@@ -184,6 +185,7 @@ export default function BatchDetailPage() {
                  leftSection={<IconPrinter size={16} />}
                  component="a"
                  href={`/admin/reports/batch/${batchId}`}
+                 size="sm"
               >
                   Cetak PDF
               </Button>
@@ -192,6 +194,7 @@ export default function BatchDetailPage() {
                 onClick={handleExport}
                 loading={isExporting}
                 variant="outline"
+                size="sm"
               >
                 Export ke Excel
               </Button>

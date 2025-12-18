@@ -32,7 +32,7 @@ import {
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
 import "dayjs/locale/id"; // Import locale untuk bahasa Indonesia
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
@@ -105,6 +105,7 @@ export default function ExamsPage() {
   const router = useRouter();
 
   const [statusFilter, setStatusFilter] = useState<string | null>("all"); // State untuk filter status
+  const isDesktop = useMediaQuery('(min-width: 48em)');
 
   // Reset page to 1 when pageSize changes
   useEffect(() => {
@@ -699,12 +700,13 @@ export default function ExamsPage() {
             { label: "Manajemen Ujian", href: "/admin/exams" },
           ]}
           actions={
-            <Group>
+            <Group justify="flex-start" gap="xs" wrap="wrap">
               {selectedRecords.length > 0 && (
                 <Button
                   color="red"
                   leftSection={<IconTrash size={16} />}
                   onClick={handleBulkDelete}
+                  size="sm"
                 >
                   Hapus ({selectedRecords.length})
                 </Button>
@@ -716,6 +718,7 @@ export default function ExamsPage() {
                   form.reset();
                   open();
                 }}
+                size="sm"
               >
                 Buat Ujian Baru
               </Button>
@@ -723,16 +726,17 @@ export default function ExamsPage() {
           }
         />
 
-        <Group align="end" grow>
+        <Flex gap="md" direction={{ base: 'column', sm: 'row' }} align={{ base: 'stretch', sm: 'flex-end' }}>
           <TextInput
+            style={{ flex: 2 }}
             label="Pencarian"
             placeholder="Cari ujian berdasarkan judul atau kode..."
             leftSection={<IconSearch size={16} />}
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
-            style={{ flex: 2 }}
           />
           <Select
+             style={{ flex: 1 }}
             label="Filter Status"
             placeholder="Filter Status"
             leftSection={<IconFilter size={16} />}
@@ -745,9 +749,8 @@ export default function ExamsPage() {
             ]}
             value={statusFilter}
             onChange={setStatusFilter}
-            style={{ flex: 1 }}
           />
-        </Group>
+        </Flex>
 
         <Box>
           {loading ? (
@@ -779,22 +782,38 @@ export default function ExamsPage() {
               onSelectedRecordsChange={setSelectedRecords}
               isRecordSelectable={(record) => true}
               idAccessor="id"
+              scrollAreaProps={{ type: 'scroll', scrollbars: 'x' }}
               columns={[
                 { accessor: "title", title: "Judul Ujian", sortable: true },
                 { accessor: "code", title: "Kode", sortable: false },
-                {
+                // Short Duration (hidden on sm+)
+                 ...(!isDesktop ? [{
                   accessor: "duration_minutes",
                   title: "Durasi",
                   sortable: false,
-                  render: (exam) => `${exam.duration_minutes} Menit`,
-                },
-                {
+                  render: (exam: Exam) => `${exam.duration_minutes}m`,
+                }] : []),
+                // Full Duration (visible on sm+)
+                ...(isDesktop ? [{
+                   accessor: "duration_minutes_full",
+                   title: "Durasi",
+                   sortable: false,
+                   render: (exam: Exam) => `${exam.duration_minutes} Menit`,
+                }] : []),
+                 // Short Created At (hidden on sm+)
+                ...(!isDesktop ? [{
                   accessor: "created_at",
-                  title: "Tanggal Dibuat",
+                  title: "Dibuat",
                   sortable: true,
-                  render: (exam) =>
-                    dayjs(exam.created_at).format("DD MMM YYYY"),
-                },
+                  render: (exam: Exam) => dayjs(exam.created_at).format("DD/MM/YY"),
+                }] : []),
+                // Full Created At (visible on sm+)
+                ...(isDesktop ? [{
+                   accessor: "created_at_full",
+                   title: "Tanggal Dibuat",
+                   sortable: true,
+                   render: (exam: Exam) => dayjs(exam.created_at).format("DD MMM YYYY"),
+                }] : []),
                 {
                   accessor: "status",
                   title: "Status Ujian",

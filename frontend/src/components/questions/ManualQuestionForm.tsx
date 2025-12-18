@@ -183,9 +183,10 @@ export function ManualQuestionForm({
           >
             <Group
               justify="center"
-              gap="xl"
+              gap="md"
               mih={150}
               style={{ pointerEvents: "none" }}
+              wrap="wrap"
             >
               <Dropzone.Accept>
                 <IconUpload size={52} stroke={1.5} />
@@ -196,8 +197,8 @@ export function ManualQuestionForm({
               <Dropzone.Idle>
                 <IconPhoto size={52} stroke={1.5} />
               </Dropzone.Idle>
-              <div>
-                <Text size="xl" inline>
+              <div style={{ textAlign: 'center' }}>
+                <Text size="md" inline>
                   Seret gambar ke sini atau klik untuk memilih file (Opsional)
                 </Text>
                 <Text size="sm" c="dimmed" inline mt={7}>

@@ -18,8 +18,8 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { ComponentLoader } from "@/components/ui/ComponentLoader";
-import { Box, Group, TextInput } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Box, Group, TextInput, Flex } from "@mantine/core";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
   IconAlertCircle,
   IconSearch,
@@ -45,6 +45,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const router = useRouter();
+  const isDesktop = useMediaQuery('(min-width: 48em)');
 
   const [page, setPage] = useState(1);
   const { pageSize, setPageSize, PAGE_SIZES } = useUserPreferences();
@@ -175,7 +176,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
           color: "white"
         }}
       >
-        <Group justify="space-between" align="center">
+        <Flex justify="space-between" align={{ base: 'flex-start', sm: 'center' }} direction={{ base: 'column', sm: 'row' }} gap="md">
           <div>
             <Title order={3} c="white" style={{ fontWeight: 800, letterSpacing: "-0.5px" }}>Laporan Peserta</Title>
             <Text size="sm" c="indigo.1" mt={4}>Daftar peserta dan skor ujian mereka</Text>
@@ -185,7 +186,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             leftSection={<IconSearch size={16} />}
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
-            w={300}
+            w={{ base: "100%", sm: 300 }}
             radius="xl"
             variant="filled"
             styles={{
@@ -203,7 +204,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
               }
             }}
           />
-        </Group>
+        </Flex>
       </Box>
 
       {/* TABEL MODERN */}
@@ -213,6 +214,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
         withTableBorder={false}
         borderRadius="lg"
         withColumnBorders={false}
+        scrollAreaProps={{ type: 'scroll', scrollbars: 'x' }}
         customRowAttributes={(record, index) => ({
           style: {
             backgroundColor: index % 2 === 0 
