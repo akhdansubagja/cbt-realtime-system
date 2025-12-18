@@ -1,4 +1,3 @@
-// src/app/exam/live/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -12,26 +11,22 @@ import {
   Loader,
   Center,
   Alert,
-  Grid,
   SimpleGrid,
-  Radio,
   Group,
   Stack,
   Box,
   Modal,
   useMantineColorScheme,
   AppShell,
-  Progress,
   Drawer,
-  rem,
-  ActionIcon,
   Flex,
   Image,
   Badge,
   ThemeIcon,
   RingProgress,
+  ScrollArea,
+  Burger,
 } from "@mantine/core";
-import axios from "axios";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
 import {
@@ -42,9 +37,9 @@ import {
   IconCheck,
   IconAlertTriangle,
 } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 // Definisikan tipe data yang lebih detail
 interface QuestionDetail {
@@ -82,6 +77,7 @@ export default function LiveExamPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { colorScheme } = useMantineColorScheme();
+  const isMobile = useMediaQuery("(max-width: 48em)");
 
   // State untuk ujian
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -299,8 +295,8 @@ export default function LiveExamPage() {
   return (
     <Box>
       <AppShell
-        header={{ height: 80 }}
-        padding="md"
+        header={{ height: isMobile ? 60 : 80 }}
+        padding={isMobile ? "xs" : "md"}
         bg={colorScheme === "dark" ? "dark.8" : "gray.0"}
       >
         {/* --- HEADER UJIAN BARU --- */}
@@ -318,31 +314,40 @@ export default function LiveExamPage() {
             }`,
           }}
         >
-          <Container size="xl" h="100%">
+          <Container size="xl" h="100%" px={isMobile ? "xs" : "md"}>
             <Flex h="100%" align="center" justify="space-between">
-              <Group>
-                <ThemeIcon
-                  size="lg"
-                  radius="md"
-                  variant="gradient"
-                  gradient={{ from: "violet", to: "indigo" }}
-                >
-                  <IconCheck size={20} />
-                </ThemeIcon>
+              {/* Logo / Title Area */}
+              <Group gap="sm">
+                <Box visibleFrom="sm">
+                  <ThemeIcon
+                    size="lg"
+                    radius="md"
+                    variant="gradient"
+                    gradient={{ from: "violet", to: "indigo" }}
+                  >
+                    <IconCheck size={20} />
+                  </ThemeIcon>
+                </Box>
+                
+                {/* Mobile Burger for Navigation */}
+                 <Burger opened={navOpened} onClick={openNav} hiddenFrom="sm" size="sm" />
+
                 <Box>
-                  <Title order={4} style={{ lineHeight: 1.2 }}>
+                  <Title order={4} style={{ lineHeight: 1.2 }} fz={isMobile ? "sm" : "h4"} lineClamp={1}>
                     {examData.exam.title}
                   </Title>
-                  <Text size="xs" c="dimmed" fw={500}>
+                  <Text size="xs" c="dimmed" fw={500} lineClamp={1} visibleFrom="sm">
                     Peserta: {examData.examinee.name}
                   </Text>
                 </Box>
               </Group>
 
-              <Group gap="xl">
+              {/* Right Side Actions */}
+              <Group gap={isMobile ? "xs" : "xl"}>
                 <Group gap="xs">
+                   {/* Timer Ring - Smaller on mobile */}
                   <RingProgress
-                    size={48}
+                    size={isMobile ? 36 : 48}
                     thickness={4}
                     roundCaps
                     sections={[
@@ -356,19 +361,19 @@ export default function LiveExamPage() {
                     label={
                       <Center>
                         <IconClock
-                          size={16}
+                          size={isMobile ? 14 : 16}
                           color={timeLeft < 300 ? "var(--mantine-color-red-6)" : "inherit"}
                         />
                       </Center>
                     }
                   />
                   <Box>
-                    <Text size="xs" c="dimmed" fw={700} tt="uppercase">
+                    <Text size="xs" c="dimmed" fw={700} tt="uppercase" visibleFrom="sm">
                       Sisa Waktu
                     </Text>
                     <Text
                       fw={700}
-                      fz="lg"
+                      fz={isMobile ? "sm" : "lg"}
                       c={timeLeft < 300 ? "red" : "inherit"}
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
@@ -378,15 +383,21 @@ export default function LiveExamPage() {
                   </Box>
                 </Group>
 
-                <Group>
-                  <ThemeToggle />
+                <Group gap="xs">
+                  <Box visibleFrom="sm">
+                     <ThemeToggle />
+                  </Box>
                   <Button
                     color="red"
                     variant="light"
+                    size={isMobile ? "xs" : "sm"}
                     onClick={() => setIsModalOpen(true)}
                   >
-                    Selesai Ujian
+                    {isMobile ? "Selesai" : "Selesai Ujian"}
                   </Button>
+                  <Box hiddenFrom="sm">
+                       <ThemeToggle />
+                  </Box>
                 </Group>
               </Group>
             </Flex>
@@ -395,7 +406,7 @@ export default function LiveExamPage() {
 
         {/* --- KONTEN UTAMA (SOAL) --- */}
         <AppShell.Main>
-          <Container size="md" py="xl">
+          <Container size="md" py={isMobile ? "md" : "xl"} px={isMobile ? 0 : "md"}>
             <motion.div
               key={currentQuestionIndex}
               initial={{ opacity: 0, x: 20 }}
@@ -404,7 +415,7 @@ export default function LiveExamPage() {
             >
               <Paper
                 withBorder
-                p={40}
+                p={isMobile ? "md" : 40}
                 radius="lg"
                 shadow="sm"
                 style={{
@@ -416,7 +427,7 @@ export default function LiveExamPage() {
                 onContextMenu={(e) => e.preventDefault()}
               >
                 <Group justify="space-between" mb="xl">
-                  <Badge size="lg" variant="light" color="violet">
+                  <Badge size={isMobile ? "md" : "lg"} variant="light" color="violet">
                     Soal No. {currentQuestionIndex + 1}
                   </Badge>
                   <Text size="sm" c="dimmed">
@@ -424,7 +435,7 @@ export default function LiveExamPage() {
                   </Text>
                 </Group>
 
-                <Text size="xl" style={{ lineHeight: 1.6 }}>
+                <Text size={isMobile ? "md" : "xl"} style={{ lineHeight: 1.6 }}>
                   {currentExamQuestion.question.question_text}
                 </Text>
 
@@ -433,7 +444,7 @@ export default function LiveExamPage() {
                     <Image
                       radius="md"
                       mah={400}
-                      w="auto"
+                      w="100%"
                       fit="contain"
                       src={`${process.env.NEXT_PUBLIC_API_URL}${currentExamQuestion.question.image_url}`}
                       alt={`Gambar soal no. ${currentQuestionIndex + 1}`}
@@ -446,6 +457,21 @@ export default function LiveExamPage() {
                   {currentExamQuestion.question.options.map((option) => {
                     const isSelected =
                       answers[currentExamQuestion.id] === option.key;
+                    
+                    // Logic warna background yang aman untuk dark mode
+                    let bgColor = undefined;
+                    let borderColor = undefined;
+                    
+                    if (isSelected) {
+                        if (colorScheme === 'dark') {
+                             bgColor = "transparent"; // User requested outline only
+                             borderColor = "var(--mantine-color-violet-8)";
+                        } else {
+                             bgColor = "var(--mantine-color-violet-0)";
+                             borderColor = "var(--mantine-color-violet-6)";
+                        }
+                    }
+
                     return (
                       <Paper
                         key={option.key}
@@ -458,20 +484,17 @@ export default function LiveExamPage() {
                         style={{
                           cursor: "pointer",
                           transition: "all 0.2s ease",
-                          borderColor: isSelected
-                            ? "var(--mantine-color-violet-6)"
-                            : undefined,
-                          backgroundColor: isSelected
-                            ? "var(--mantine-color-violet-0)"
-                            : undefined,
+                          borderColor: borderColor,
+                          backgroundColor: bgColor,
                         }}
                       >
-                        <Group>
+                        <Group align="flex-start" wrap="nowrap"> 
                           <ThemeIcon
                             variant={isSelected ? "filled" : "light"}
                             color={isSelected ? "violet" : "gray"}
                             radius="xl"
                             size="md"
+                            style={{ flexShrink: 0 }}
                           >
                             <Text size="xs" fw={700}>
                               {option.key}
@@ -479,7 +502,8 @@ export default function LiveExamPage() {
                           </ThemeIcon>
                           <Text
                             fw={isSelected ? 500 : 400}
-                            c={isSelected ? "violet.9" : undefined}
+                            c={isSelected ? (colorScheme === 'dark' ? 'violet.2' : 'violet.9') : undefined}
+                            style={{ wordBreak: 'break-word' }}
                           >
                             {option.text}
                           </Text>
@@ -500,24 +524,26 @@ export default function LiveExamPage() {
               style={{ position: "sticky", bottom: 20, zIndex: 10 }}
               shadow="md"
             >
-              <Flex justify="space-between">
+              <Flex justify="space-between" gap="sm">
                 <Button
                   variant="subtle"
                   color="gray"
+                  size={isMobile ? "compact-sm" : "sm"}
                   leftSection={<IconArrowLeft size={18} />}
                   onClick={() => setCurrentQuestionIndex((p) => p - 1)}
                   disabled={currentQuestionIndex === 0}
                 >
-                  Sebelumnya
+                  {isMobile ? "Prev" : "Sebelumnya"}
                 </Button>
 
                 <Button
                   variant="light"
                   color="violet"
+                  size={isMobile ? "compact-sm" : "sm"}
                   leftSection={<IconGripVertical size={18} />}
                   onClick={openNav}
                 >
-                  Daftar Soal
+                  {isMobile ? "Soal" : "Daftar Soal"}
                 </Button>
 
                 {currentQuestionIndex ===
@@ -525,19 +551,21 @@ export default function LiveExamPage() {
                   <Button
                     variant="filled"
                     color="red"
+                    size={isMobile ? "compact-sm" : "sm"}
                     rightSection={<IconCheck size={18} />}
                     onClick={() => setIsModalOpen(true)}
                   >
-                    Selesai
+                   Selesai
                   </Button>
                 ) : (
                   <Button
                     variant="filled"
                     color="violet"
+                    size={isMobile ? "compact-sm" : "sm"}
                     rightSection={<IconArrowRight size={18} />}
                     onClick={() => setCurrentQuestionIndex((p) => p + 1)}
                   >
-                    Selanjutnya
+                    {isMobile ? "Next" : "Selanjutnya"}
                   </Button>
                 )}
               </Flex>
@@ -552,7 +580,8 @@ export default function LiveExamPage() {
           title="Navigasi Soal"
           position="right"
           padding="md"
-          size="md"
+          size={isMobile ? "85%" : "md"}
+          scrollAreaComponent={ScrollArea.Autosize}
         >
           <Text size="sm" c="dimmed" mb="lg">
             Klik nomor untuk melompat ke soal tersebut.
@@ -565,7 +594,7 @@ export default function LiveExamPage() {
               return (
                 <Button
                   key={q.id}
-                  variant={isCurrent ? "filled" : isAnswered ? "light" : "default"}
+                  variant={isCurrent ? "filled" : isAnswered ? "light" : "outline"}
                   color={isCurrent ? "violet" : isAnswered ? "violet" : "gray"}
                   onClick={() => {
                     setCurrentQuestionIndex(index);
@@ -573,13 +602,22 @@ export default function LiveExamPage() {
                   }}
                   h={50}
                   radius="md"
+                  c={
+                    isCurrent
+                      ? "white"
+                      : isAnswered
+                      ? "violet.3" // Lighter violet for better contrast on dark bg
+                      : undefined // Default text color for outline
+                  }
                   style={{
                     border: isCurrent
                       ? "2px solid var(--mantine-color-violet-8)"
                       : undefined,
                   }}
                 >
-                  {index + 1}
+                  <Text size="md" c={!isCurrent && !isAnswered && colorScheme === 'dark' ? 'gray.0' : undefined}>
+                    {index + 1}
+                  </Text>
                 </Button>
               );
             })}
@@ -615,6 +653,7 @@ export default function LiveExamPage() {
           title="Konfirmasi Selesai Ujian"
           centered
           radius="lg"
+          size={isMobile ? "sm" : "md"}
         >
           <Text size="sm" mb="lg">
             Apakah Anda yakin ingin menyelesaikan sesi ujian ini? Pastikan semua

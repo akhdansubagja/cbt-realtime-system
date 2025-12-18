@@ -803,12 +803,12 @@ export default function MonitoringPage() {
                           >
                             Izinkan Ujian Ulang
                           </Menu.Item>
-                          <Menu.Item 
+                          {/* <Menu.Item 
                             leftSection={<IconEdit size={14} />}
                             onClick={() => handleEditClick(p)}
                           >
                             Edit Data
-                          </Menu.Item>
+                          </Menu.Item> */}
                           <Menu.Divider />
                           <Menu.Item 
                             color="red" 
@@ -841,7 +841,7 @@ export default function MonitoringPage() {
         </Center>
       )}
 
-      {/* MODAL EDIT */}
+      {/* MODAL EDIT
       <Modal opened={openedEdit} onClose={closeEdit} title="Edit Data Peserta">
         <Stack>
           <Select
@@ -858,7 +858,7 @@ export default function MonitoringPage() {
           />
           <Button onClick={saveEdit}>Simpan Perubahan</Button>
         </Stack>
-      </Modal>
+      </Modal> */}
     </Stack>
   );
 }
