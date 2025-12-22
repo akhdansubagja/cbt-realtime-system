@@ -6,6 +6,7 @@ export interface Examinee {
   batch_id: number;
   batch?: Batch | null;
   avatar_url: string | null;
+  original_avatar_url?: string | null;
   workplace: string | null;
   is_active: boolean;
   uniqid: string;

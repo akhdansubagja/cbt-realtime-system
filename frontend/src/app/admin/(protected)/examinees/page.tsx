@@ -13,6 +13,7 @@ import {
   Avatar,
   FileInput,
   Image,
+  Loader,
   rem,
   Menu,
   Skeleton,
@@ -88,6 +89,7 @@ export default function ExamineesPage() {
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loadingImage, setLoadingImage] = useState(false);
 
   const [quickImportOpened, { open: openQuickImport, close: closeQuickImport }] = useDisclosure(false);
 
@@ -306,10 +308,25 @@ export default function ExamineesPage() {
 
 
 
-  const handleAvatarClick = (imageUrl: string | null) => {
-    if (imageUrl) {
-      setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${imageUrl}`);
-      openImageModal();
+  const handleAvatarClick = async (examineeId: number) => {
+    // Reset selected image and start loading
+    setSelectedImage(null);
+    setLoadingImage(true);
+    openImageModal();
+
+    try {
+       const response = await api.get(`/examinees/${examineeId}`);
+       const examinee = response.data;
+       
+       if (examinee.original_avatar_url) {
+           setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${examinee.original_avatar_url}`);
+       } else if (examinee.avatar_url) {
+           setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${examinee.avatar_url}`);
+       }
+    } catch (err) {
+       console.error("Gagal memuat gambar original", err);
+    } finally {
+       setLoadingImage(false);
     }
   };
 
@@ -324,7 +341,16 @@ export default function ExamineesPage() {
         centered
         size="lg"
       >
-        <Image src={selectedImage} alt="Avatar Peserta" />
+        <Stack align="center" justify="center" mih={200}>
+           {loadingImage ? (
+             <Loader size="xl" />
+           ) : (
+             selectedImage && <Image 
+               src={selectedImage} 
+               alt="Avatar Peserta" 
+             />
+           )}
+        </Stack>
       </Modal>
 
       <ExamineeFormModal
@@ -487,7 +513,8 @@ export default function ExamineesPage() {
                             : null
                         }
                         radius="xl"
-                        onClick={() => handleAvatarClick(examinee.avatar_url)}
+                        size={45}
+                        onClick={() => handleAvatarClick(examinee.id)}
                         style={{
                           cursor: examinee.avatar_url ? "pointer" : "default",
                         }}
