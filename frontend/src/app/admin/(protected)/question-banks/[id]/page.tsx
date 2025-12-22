@@ -513,7 +513,7 @@ export default function SingleQuestionBankPage() {
             
             <Box>
               <Text fw={500} mb="xs">Pertanyaan:</Text>
-              <Paper withBorder p="md" bg="gray.0">
+              <Paper withBorder p="md" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
                 <Text>{viewQuestion.question_text}</Text>
               </Paper>
             </Box>

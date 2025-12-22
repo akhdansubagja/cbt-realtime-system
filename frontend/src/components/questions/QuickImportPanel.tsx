@@ -325,7 +325,7 @@ export function QuickImportPanel({
             <Text fw={500} size="sm" mb="xs">
               Format Soal:
             </Text>
-            <Paper withBorder p="xs" bg="gray.0">
+            <Paper withBorder p="xs" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
               <Text
                 component="pre"
                 size="xs"
@@ -344,7 +344,7 @@ b. Bandung`}
             <Text size="sm" c="dimmed" mb="xs">
               Tambahkan ; (titik koma) di akhir opsi benar
             </Text>
-            <Paper withBorder p="xs" bg="gray.0">
+            <Paper withBorder p="xs" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
               <Text
                 component="pre"
                 size="xs"
@@ -363,7 +363,7 @@ B. Jakarta;`}
             <Text size="sm" c="dimmed" mb="xs">
               Tambahkan "Answer: " di akhir soal
             </Text>
-            <Paper withBorder p="xs" bg="gray.0">
+            <Paper withBorder p="xs" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
               <Text
                 component="pre"
                 size="xs"
@@ -383,7 +383,7 @@ ANSWER: B`}
             <Text size="sm" c="dimmed" mb="xs">
               Tulis Answer: atau Jawaban: di baris paling bawah
             </Text>
-            <Paper withBorder p="xs" bg="gray.0">
+            <Paper withBorder p="xs" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
               <Text
                 component="pre"
                 size="xs"
