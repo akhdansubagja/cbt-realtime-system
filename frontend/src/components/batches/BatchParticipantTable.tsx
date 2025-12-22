@@ -16,6 +16,7 @@ import {
   Image,
   ScrollArea,
   Tooltip,
+  Loader,
 } from "@mantine/core";
 import { ComponentLoader } from "@/components/ui/ComponentLoader";
 import { Box, Group, TextInput, Flex } from "@mantine/core";
@@ -44,6 +45,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   const [imageModalOpened, { open: openImageModal, close: closeImageModal }] =
     useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loadingImage, setLoadingImage] = useState(false);
   const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 48em)');
 
@@ -106,10 +108,24 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
     setPage(1);
   }, [query, pageSize]);
 
-  const handleAvatarClick = (imageUrl: string | null) => {
-    if (imageUrl) {
-      setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${imageUrl}`);
-      openImageModal();
+  const handleAvatarClick = async (examineeId: number) => {
+    setSelectedImage(null);
+    setLoadingImage(true);
+    openImageModal();
+
+    try {
+      const response = await api.get(`/examinees/${examineeId}`);
+      const examinee = response.data;
+      
+      if (examinee.original_avatar_url) {
+          setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${examinee.original_avatar_url}`);
+      } else if (examinee.avatar_url) {
+          setSelectedImage(`${process.env.NEXT_PUBLIC_API_URL}/${examinee.avatar_url}`);
+      }
+    } catch (err) {
+      console.error("Gagal memuat gambar original", err);
+    } finally {
+      setLoadingImage(false);
     }
   };
 
@@ -164,7 +180,13 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
         centered
         size="lg"
       >
-        <Image src={selectedImage} alt="Avatar Peserta" />
+        <Flex align="center" justify="center" mih={200}>
+          {loadingImage ? (
+            <Loader size="xl" />
+          ) : (
+            selectedImage && <Image src={selectedImage} alt="Avatar Peserta" />
+          )}
+        </Flex>
       </Modal>
 
       {/* Header & Search Bar Modern */}
@@ -247,20 +269,20 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             width: 85,
             render: (record) => (
               <Box onClick={(e) => e.stopPropagation()}>
-                <Avatar
-                  // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
-                  src={
-                    record.examinee.avatar
-                      ? `${process.env.NEXT_PUBLIC_API_URL}/${record.examinee.avatar}`
-                      : null
-                  }
-                  size="md"
-                  radius="xl"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleAvatarClick(record.examinee.avatar)}
-                >
-                  {record.examinee.name.charAt(0)}
-                </Avatar>
+                  <Avatar
+                    // TypeScript sekarang tidak akan error karena tahu 'record' adalah ParticipantScore
+                    src={
+                      record.examinee.avatar
+                        ? `${process.env.NEXT_PUBLIC_API_URL}/${record.examinee.avatar}`
+                        : null
+                    }
+                    size={45}
+                    radius="xl"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleAvatarClick(record.examinee.id)}
+                  >
+                    {record.examinee.name.charAt(0)}
+                  </Avatar>
               </Box>
             ),
           },
