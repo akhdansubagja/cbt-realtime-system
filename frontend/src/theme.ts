@@ -1,4 +1,5 @@
 // frontend/src/theme.ts
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 
 import { createTheme } from "@mantine/core";
 

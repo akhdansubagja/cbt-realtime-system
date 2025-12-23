@@ -826,12 +826,6 @@ export default function MonitoringPage() {
                                 
                                 <Menu.Divider />
                                 <Menu.Item
-                                  leftSection={<IconEdit size={14} />}
-                                  onClick={() => handleEditClick(p)}
-                                >
-                                  Edit Status / Catatan
-                                </Menu.Item>
-                                <Menu.Item
                                   leftSection={<IconTrash size={14} />}
                                   color="red"
                                   onClick={() => handleDelete(p.id, p.name)}

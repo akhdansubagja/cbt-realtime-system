@@ -6,6 +6,9 @@ import { UniqueExam } from "./uniqueExam"; // <-- Saya berasumsi path impor ini 
 interface ParticipantScoreDetail {
   examId: number;
   score: number | null; // null jika peserta tidak mengambil ujian tsb
+  rawScore: number | null;
+  maxScore: number;
+  percentage: number;
 }
 
 // Tipe baru untuk data per peserta (akan jadi 'baris' di tabel kita)

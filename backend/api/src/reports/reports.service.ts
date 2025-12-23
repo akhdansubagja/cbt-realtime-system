@@ -7,6 +7,7 @@ import {
   Participant,
   ParticipantStatus,
 } from 'src/participants/entities/participant.entity';
+import { ParticipantExamQuestion } from 'src/participants/entities/participant-exam-question.entity';
 import * as ExcelJS from 'exceljs';
 
 const createAcronym = (title: string) => {
@@ -32,6 +33,9 @@ export class ReportsService {
     private readonly examineeRepository: Repository<Examinee>,
     @InjectRepository(Participant)
     private readonly participantRepository: Repository<Participant>,
+    // --- ADDED: Repository for calculating max scores ---
+    @InjectRepository(ParticipantExamQuestion)
+    private readonly peqRepository: Repository<ParticipantExamQuestion>,
   ) {}
 
   /**
@@ -79,21 +83,63 @@ export class ReportsService {
       agg.total += p.final_score || 0;
     });
 
-    // 4. Ambil SEMUA Examinee di batch ini (untuk listing lengkap)
+    // 4. Hitung Max Score untuk setiap Unique Exam di batch ini
+    //    Kita ambil salah satu participant untuk setiap exam, lalu sum poin generated questions-nya.
+    //    ATAU, lebih aman: kita query exam_questions (jika static) atau participant_exam_questions (jika dynamic per user).
+    //    Karena sistem ini copy-based (snapshot), kita bisa ambil dari participant mana saja yang sudah dapat soal.
+    //    Namun, untuk akurasi batch, idealnya setiap peserta punya soal yang nilainya setara/sama totalnya.
+    //    Kita asumsikan total poin ujian itu konsisten per Ujian (Exam ID).
+
+    const examMaxScores = new Map<number, number>();
+
+    // Kita butuh loop async, jadi gunakan for...of
+    for (const exam of uniqueExams) {
+      // Cari satu peserta (sembarang) yang mengerjakan ujian ini di batch ini
+      // Kita bisa gunakan data filteredParticipants
+      const sampleParticipant = filteredParticipants.find(
+        (p) => p.exam.id === exam.id,
+      );
+
+      if (sampleParticipant) {
+        // Hitung total poin dari tabel participant_exam_questions
+        const questions = await this.peqRepository.find({
+          where: { participant: { id: sampleParticipant.id } },
+        });
+        const totalPoints = questions.reduce((sum, q) => sum + q.point, 0);
+        examMaxScores.set(exam.id, totalPoints);
+      } else {
+        examMaxScores.set(exam.id, 0); // Should not happen if data consistency is good
+      }
+    }
+
+    // 5. Ambil SEMUA Examinee di batch ini (untuk listing lengkap)
     const allExaminees = await this.examineeRepository.find({
       where: { batch: { id: batchId } },
       order: { name: 'ASC' },
     });
 
-    // 5. Build Final Response
+    // 6. Build Final Response
     const participantScores = allExaminees.map((examinee) => {
       const agg = aggregateMap.get(examinee.id) || { count: 0, total: 0 };
       const myScores = scoresMap.get(examinee.id); // Map<examId, score>
 
-      const scoresList = uniqueExams.map((exam) => ({
-        examId: exam.id,
-        score: myScores?.has(exam.id) ? myScores.get(exam.id)! : null,
-      }));
+      const scoresList = uniqueExams.map((exam) => {
+        const rawScore = myScores?.has(exam.id) ? myScores.get(exam.id)! : null;
+        const maxScore = examMaxScores.get(exam.id) || 0;
+
+        let percentage = 0;
+        if (rawScore !== null && maxScore > 0) {
+          percentage = parseFloat(((rawScore / maxScore) * 100).toFixed(2));
+        }
+
+        return {
+          examId: exam.id,
+          score: rawScore, // Legacy support
+          rawScore: rawScore, // Explicit naming
+          maxScore: maxScore,
+          percentage: percentage,
+        };
+      });
 
       return {
         examinee: {
@@ -259,8 +305,13 @@ export class ReportsService {
 
       // Masukkan nilai untuk setiap ujian
       participant.scores.forEach((score) => {
-        rowData[`exam_${score.examId}`] =
-          score.score !== null ? score.score : '-';
+        // Format: "85.0 (25/30)"
+        const displayValue =
+          score.rawScore !== null
+            ? `${score.percentage} (${score.rawScore}/${score.maxScore})`
+            : '-';
+
+        rowData[`exam_${score.examId}`] = displayValue;
       });
 
       sheet1.addRow(rowData);

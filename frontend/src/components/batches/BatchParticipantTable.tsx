@@ -19,7 +19,7 @@ import {
   Loader,
 } from "@mantine/core";
 import { ComponentLoader } from "@/components/ui/ComponentLoader";
-import { Box, Group, TextInput, Flex } from "@mantine/core";
+import { Box, Group, TextInput, Flex, Stack } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
   IconAlertCircle,
@@ -78,7 +78,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
     filtered = sortBy(filtered, (item) => {
       if (sortStatus.columnAccessor === "examinee.name")
         return item.examinee.name.toLowerCase();
-      // @ts-ignore - Akses dinamis aman karena kita kontrol accessornya
+      // @ts-expect-error - Akses dinamis aman karena kita kontrol accessornya
       return item[sortStatus.columnAccessor];
     });
 
@@ -304,7 +304,19 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             render: (record: ParticipantScore) => {
               // Explicit type di sini juga membantu
               const scoreData = record.scores.find((s) => s.examId === exam.id);
-              return scoreData ? scoreData.score : "-";
+              
+              if (!scoreData || scoreData.rawScore === null) return "-";
+
+              return (
+                  <Stack gap={0}>
+                      <Text span fw={700}>
+                          {scoreData.percentage}
+                      </Text>
+                      <Text span size="xs" c="dimmed">
+                          ({scoreData.rawScore}/{scoreData.maxScore})
+                      </Text>
+                  </Stack>
+              );
             },
           })),
           {

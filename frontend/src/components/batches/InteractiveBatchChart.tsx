@@ -74,7 +74,7 @@ type ChartView = "avg_exam" | "avg_participant" | "specific_exam";
 
 type ChartData = {
   name: string;
-  [key: string]: any;
+  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   avatar_url?: string | null;
 };
 
@@ -99,11 +99,11 @@ const BatchChartVisual = ({
   view: ChartView;
   batchName: string;
   batchId: number;
-  theme: any;
+  theme: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   colorScheme: "light" | "dark";
   dataKey: string;
   isHorizontal: boolean;
-  onBarClick?: (data: any) => void;
+  onBarClick?: (data: any) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
   width?: number; // Optional fixed width
   height?: number; // Optional fixed height
 }) => {
@@ -212,12 +212,19 @@ const BatchChartVisual = ({
         cursor={{ fill: "transparent" }}
         content={({ active, payload, label }) => {
             if (active && payload && payload.length) {
+                const data = payload[0].payload;
+                const normalized = payload[0].value;
             return (
                 <Paper p="xs" shadow="xs" withBorder>
                 <Text fw={500}>{label}</Text>
                 <Text size="sm">
-                    {payload[0].name}: {payload[0].value}
+                   Normalized: {normalized}%
                 </Text>
+                {data.rawDetail && (
+                     <Text size="xs" c="dimmed">
+                        Raw Score: {data.rawDetail}
+                     </Text>
+                )}
                 </Paper>
             );
             }
@@ -229,7 +236,7 @@ const BatchChartVisual = ({
         barSize={20}
         radius={[0, 4, 4, 0]}
         isAnimationActive={false}
-        onClick={(data: any) => {
+        onClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             if (onBarClick) onBarClick(data);
         }}
         style={{ cursor: onBarClick ? "pointer" : "default" }}
@@ -244,7 +251,7 @@ const BatchChartVisual = ({
         <LabelList
             dataKey={dataKey}
             position="right"
-            content={(props: any) => {
+            content={(props: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             const { x, y, width: barWidth, value, index } = props;
             const dataItem = chartData[index];
             const avatarUrl = dataItem?.avatar_url;
@@ -286,8 +293,19 @@ const BatchChartVisual = ({
                     fontWeight="bold"
                     textAnchor="start"
                 >
-                    {value}
+                    {dataItem.rawDetail ? `${value}%` : value}
                 </text>
+                {dataItem.rawDetail && (
+                    <text
+                        x={startX + 40}
+                        y={centerY + 16}
+                        fill={colorScheme === "dark" ? "#aaa" : "#555"}
+                        fontSize={10}
+                        textAnchor="start"
+                    >
+                        {dataItem.rawDetail}
+                    </text>
+                )}
                 </g>
             );
             }}
@@ -328,7 +346,7 @@ const BatchChartVisual = ({
         <Bar
         dataKey={dataKey}
         isAnimationActive={false}
-        onClick={(data: any) => {
+        onClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             if (onBarClick) onBarClick(data);
         }}
         style={{ cursor: onBarClick ? "pointer" : "default" }}
@@ -478,11 +496,32 @@ export function InteractiveBatchChart({
               `/reports/batch-participants/${batchId}`
             );
 
-            data = response.data.participantScores.map((item) => ({
-              name: item.examinee.name,
-              "Nilai Rata-rata": item.averageScore,
-              avatar_url: item.examinee.avatar,
-            }));
+            data = response.data.participantScores.map((item) => {
+                 // Calculate average percentage across all exams
+                 let totalPercentage = 0;
+                 let count = 0;
+                 let rawTotal = 0;
+                 let maxTotal = 0;
+
+                 item.scores.forEach(s => {
+                    if (s.percentage !== undefined) {
+                      totalPercentage += s.percentage;
+                      count++;
+                      rawTotal += (s.rawScore || 0);
+                      maxTotal += (s.maxScore || 1); 
+                    }
+                 });
+
+                 const avgPercentage = count > 0 ? parseFloat((totalPercentage / count).toFixed(2)) : 0;
+                 const rawString = `${rawTotal}/${maxTotal}`;
+                 
+                 return {
+                    name: item.examinee.name,
+                    "Nilai Rata-rata": avgPercentage,
+                    rawDetail: `Avg: ${item.averageScore.toFixed(2)} (Total: ${rawString})`, // Custom field for tooltip/label
+                    avatar_url: item.examinee.avatar,
+                  };
+            });
 
             data.sort((a, b) => b["Nilai Rata-rata"] - a["Nilai Rata-rata"]);
             // Convert avatars to Base64 for download compatibility
@@ -679,7 +718,7 @@ export function InteractiveBatchChart({
                 colorScheme={colorScheme === "dark" ? "dark" : "light"}
                 dataKey={dataKey}
                 isHorizontal={isHorizontal}
-                onBarClick={(data: any) => {
+                onBarClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                     if (data.examId) {
                       routerPush(
                         `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(

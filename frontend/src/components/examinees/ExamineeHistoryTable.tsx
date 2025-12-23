@@ -49,20 +49,35 @@ export function ExamineeHistoryTable({ records, loading, sortStatus, onSortStatu
           accessor: "final_score",
           title: "Nilai",
           sortable: true,
-          render: (record) => (
-            <Text
-              fw={700}
-              c={
-                record.final_score && record.final_score >= 75
-                  ? "teal"
-                  : record.final_score
-                  ? "orange"
-                  : "gray"
-              }
-            >
-              {record.final_score !== null ? record.final_score : "-"}
-            </Text>
-          ),
+          render: (record) => {
+              const hasScore = record.final_score !== null;
+              const percentage = record.percentage;
+              const maxScore = record.max_score || 0;
+              
+              if (!hasScore) return <Text c="dimmed">-</Text>;
+
+              return (
+                <Stack gap={0}>
+                    <Text
+                    fw={700}
+                    c={
+                        percentage && percentage >= 75
+                        ? "teal"
+                        : percentage
+                        ? "orange"
+                        : "gray"
+                    }
+                    >
+                    {percentage !== undefined ? percentage : record.final_score}
+                    </Text>
+                     {maxScore > 0 && (
+                        <Text size="xs" c="dimmed">
+                            ({record.final_score}/{maxScore})
+                        </Text>
+                    )}
+                </Stack>
+              );
+          },
         },
         {
           accessor: "status",

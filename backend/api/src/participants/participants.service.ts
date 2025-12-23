@@ -501,7 +501,7 @@ export class ParticipantsService {
   }
 
   async findAllByExaminee(examineeId: number) {
-    return this.participantRepository.find({
+    const participants = await this.participantRepository.find({
       where: {
         examinee: { id: examineeId },
       },
@@ -509,9 +509,52 @@ export class ParticipantsService {
         exam: true,
       },
       order: {
-        id: 'DESC', // or use 'start_time' if you want to order by exam start time
+        id: 'DESC',
       },
     });
+
+    // Enhance with max_score and percentage
+    const EnhancedParticipants = await Promise.all(
+      participants.map(async (p) => {
+        // Ambil point soal untuk menghitung max score
+        // Kita gunakan peqRepository
+
+        let maxScore = 0;
+
+        // Optimisasi: Jika status belum finished, mungkin soal belum digenerate?
+        // Tapi jika status finished, pasti ada soal.
+        // Kita cek generated_questions
+
+        const questions = await this.peqRepository.find({
+          where: { participant: { id: p.id } },
+        });
+
+        if (questions.length > 0) {
+          maxScore = questions.reduce((sum, q) => sum + q.point, 0);
+        } else if (p.exam) {
+          // Fallback: jika participant belum punya soal (belum start),
+          // kita bisa estimasi dari exam.questions (manual) + exam_rules (random)
+          // TAPI untuk history, biasanya kita peduli yg sudah dikerjakan.
+          // Kalau 0, biarkan 0.
+          maxScore = 0;
+        }
+
+        let percentage = 0;
+        const rawScore = p.final_score || 0;
+
+        if (maxScore > 0) {
+          percentage = parseFloat(((rawScore / maxScore) * 100).toFixed(2));
+        }
+
+        return {
+          ...p,
+          max_score: maxScore,
+          percentage: isNaN(percentage) ? 0 : percentage,
+        };
+      }),
+    );
+
+    return EnhancedParticipants;
   }
 
   private async recalculateAndBroadcastScore(participantId: number) {

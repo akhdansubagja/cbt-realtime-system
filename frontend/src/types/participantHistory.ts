@@ -10,5 +10,7 @@ export interface ParticipantHistory {
   finished_at: string | null;
   created_at: string; // Fallback date
   exam: Exam; // <- Kita embed tipe Exam di sini
+  max_score?: number;
+  percentage?: number;
   // Tambahkan properti lain jika diperlukan
 }
