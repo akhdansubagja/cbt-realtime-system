@@ -141,6 +141,27 @@ export class ReportsService {
         };
       });
 
+      let totalPercentage = 0;
+      let examsTakenCount = 0;
+      let totalMaxScore = 0;
+
+      scoresList.forEach((s) => {
+        // Only count exams taken (where rawScore is not null)
+        if (s.rawScore !== null) {
+          // Accumulate percentages for average calculation
+          totalPercentage += s.percentage;
+          examsTakenCount++;
+
+          // Accumulate max score for this exam to the total max score
+          totalMaxScore += s.maxScore;
+        }
+      });
+
+      const averagePercentage =
+        examsTakenCount > 0
+          ? parseFloat((totalPercentage / examsTakenCount).toFixed(2))
+          : 0;
+
       return {
         examinee: {
           id: examinee.id,
@@ -149,9 +170,11 @@ export class ReportsService {
           workplace: examinee.workplace,
         },
         examCount: agg.count,
-        totalScore: agg.total,
+        totalScore: agg.total, // Raw Total
+        totalMaxScore,
         averageScore:
-          agg.count > 0 ? parseFloat((agg.total / agg.count).toFixed(2)) : 0,
+          agg.count > 0 ? parseFloat((agg.total / agg.count).toFixed(2)) : 0, // Raw Average
+        averagePercentage,
         scores: scoresList,
       };
     });
@@ -257,7 +280,10 @@ export class ReportsService {
    * Endpoint C (Export):
    * Membuat file Excel (.xlsx) dari data batch
    */
-  async exportBatchReport(batchId: number): Promise<Buffer> {
+  async exportBatchReport(
+    batchId: number,
+    type: 'raw' | 'normalized' | 'both' = 'both',
+  ): Promise<Buffer> {
     // 1. Dapatkan data (kita gunakan ulang fungsi yang ada)
     const reportData = await this.getBatchParticipantReport(batchId);
     const averageData = await this.getBatchAverageReport(batchId);
@@ -305,11 +331,18 @@ export class ReportsService {
 
       // Masukkan nilai untuk setiap ujian
       participant.scores.forEach((score) => {
-        // Format: "85.0 (25/30)"
-        const displayValue =
-          score.rawScore !== null
-            ? `${score.percentage} (${score.rawScore}/${score.maxScore})`
-            : '-';
+        let displayValue: string | number = '-';
+
+        if (score.rawScore !== null) {
+          if (type === 'raw') {
+            displayValue = `${score.rawScore}/${score.maxScore}`;
+          } else if (type === 'normalized') {
+            displayValue = score.percentage;
+          } else {
+            // Both
+            displayValue = `${score.percentage} (${score.rawScore}/${score.maxScore})`;
+          }
+        }
 
         rowData[`exam_${score.examId}`] = displayValue;
       });

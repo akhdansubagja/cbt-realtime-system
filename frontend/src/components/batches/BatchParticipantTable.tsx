@@ -330,14 +330,39 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             accessor: "totalScore",
             title: "Total",
             sortable: true,
-            width: 120,
+            width: 140,
+            render: (record) => {
+                const percentage = record.totalMaxScore > 0 
+                  ? ((record.totalScore / record.totalMaxScore) * 100).toFixed(2)
+                  : "0.00";
+                
+                return (
+                    <Stack gap={0}>
+                        <Text span fw={700}>
+                            {percentage}
+                        </Text>
+                        <Text span size="xs" c="dimmed">
+                            ({record.totalScore}/{record.totalMaxScore})
+                        </Text>
+                    </Stack>
+                )
+            }
           },
           {
             accessor: "averageScore",
             title: "Rata-rata",
             sortable: true,
-            width: 120,
-            render: (record) => record.averageScore.toFixed(2),
+            width: 140,
+            render: (record) => (
+                <Stack gap={0}>
+                    <Text span fw={700}>
+                        {record.averagePercentage?.toFixed(2) ?? "0.00"}
+                    </Text>
+                    <Text span size="xs" c="dimmed">
+                        (Raw: {record.averageScore.toFixed(2)})
+                    </Text>
+                </Stack>
+            ),
           },
         ]}
       />

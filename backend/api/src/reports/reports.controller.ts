@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Query,
   Res,
   Header,
 } from '@nestjs/common';
@@ -49,13 +50,14 @@ export class ReportsController {
   )
   async exportBatchReport(
     @Param('id', ParseIntPipe) id: number,
+    @Query('type') type: 'raw' | 'normalized' | 'both' = 'both',
     @Res() res: express.Response,
   ) {
-    const buffer = await this.reportsService.exportBatchReport(id);
+    const buffer = await this.reportsService.exportBatchReport(id, type);
 
     // Kita tambahkan tanggal ke nama file
     const date = new Date().toISOString().split('T')[0];
-    const fileName = `Laporan_Batch_${id}_${date}.xlsx`;
+    const fileName = `Laporan_Batch_${id}_${type}_${date}.xlsx`;
 
     // Content-Disposition menyuruh browser untuk men-download file
     res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);

@@ -13,6 +13,7 @@ import {
   Anchor,
   Breadcrumbs,
   Stack,
+  Menu,
 } from "@mantine/core";
 import {
   IconAlertCircle,
@@ -72,10 +73,11 @@ export default function BatchDetailPage() {
     fetchBatchDetail();
   }, [id]);
 
-  const handleExport = async () => {
+  const handleExport = async (type: 'raw' | 'normalized' | 'both') => {
     setIsExporting(true);
     try {
       const response = await api.get(`/reports/export/batch/${batchId}`, {
+        params: { type },
         responseType: "blob", // Penting: kita minta file, bukan JSON
       });
 
@@ -189,15 +191,30 @@ export default function BatchDetailPage() {
               >
                   Cetak PDF
               </Button>
-              <Button
-                leftSection={<IconFileExport size={16} />}
-                onClick={handleExport}
-                loading={isExporting}
-                variant="outline"
-                size="sm"
-              >
-                Export ke Excel
-              </Button>
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                    <Button 
+                        leftSection={<IconFileExport size={16} />} 
+                        loading={isExporting}
+                        variant="outline"
+                        size="sm"
+                    >
+                        Export ke Excel
+                    </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                    <Menu.Label>Pilih Format</Menu.Label>
+                    <Menu.Item onClick={() => handleExport('both')}>
+                        Lengkap (Persen & Raw)
+                    </Menu.Item>
+                    <Menu.Item onClick={() => handleExport('normalized')}>
+                        Hanya Persentase
+                    </Menu.Item>
+                    <Menu.Item onClick={() => handleExport('raw')}>
+                        Hanya Skor Asli
+                    </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           }
         />

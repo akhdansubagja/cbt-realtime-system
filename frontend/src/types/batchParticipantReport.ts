@@ -22,7 +22,9 @@ export interface ParticipantScore {
   };
   examCount: number;
   totalScore: number;
+  totalMaxScore: number;
   averageScore: number;
+  averagePercentage: number;
   scores: ParticipantScoreDetail[]; // Array skor individu
 }
 
