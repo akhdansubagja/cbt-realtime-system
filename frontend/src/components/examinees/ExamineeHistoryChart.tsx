@@ -20,7 +20,9 @@ import {
 
 export interface ChartData {
   name: string; // Nama Ujian
-  Nilai: number; // Skor
+  Nilai: number; // Percentage (0-100)
+  rawScore?: number | null;
+  maxScore?: number;
 }
 
 interface ExamineeHistoryChartProps {
@@ -71,10 +73,28 @@ export function ExamineeHistoryChart({
           />
           <Tooltip 
             cursor={{ fill: isDark ? theme.colors.dark[6] : theme.colors.gray[0] }}
-            contentStyle={{ 
-                backgroundColor: isDark ? theme.colors.dark[7] : '#fff',
-                borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
-                borderRadius: '8px',
+            content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    const data = payload[0].payload as ChartData;
+                    const normalized = payload[0].value;
+                return (
+                    <Paper p="xs" shadow="xs" withBorder style={{
+                        backgroundColor: isDark ? theme.colors.dark[7] : '#fff',
+                        borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+                    }}>
+                    <Text fw={500} size="sm">{label}</Text>
+                    <Text size="sm">
+                       Normalized: {normalized}
+                    </Text>
+                    {(data.rawScore !== undefined && data.maxScore !== undefined) && (
+                         <Text size="xs" c="dimmed">
+                            Raw Score: {data.rawScore} / {data.maxScore}
+                         </Text>
+                    )}
+                    </Paper>
+                );
+                }
+                return null;
             }}
           />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />

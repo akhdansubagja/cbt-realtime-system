@@ -218,7 +218,7 @@ const BatchChartVisual = ({
                 <Paper p="xs" shadow="xs" withBorder>
                 <Text fw={500}>{label}</Text>
                 <Text size="sm">
-                   Normalized: {normalized}%
+                   Normalized: {normalized}
                 </Text>
                 {data.rawDetail && (
                      <Text size="xs" c="dimmed">
@@ -293,7 +293,7 @@ const BatchChartVisual = ({
                     fontWeight="bold"
                     textAnchor="start"
                 >
-                    {dataItem.rawDetail ? `${value}%` : value}
+                    {dataItem.rawDetail ? `${value}` : value}
                 </text>
                 {dataItem.rawDetail && (
                     <text

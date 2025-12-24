@@ -89,7 +89,9 @@ export default function ExamineeDetailPage() {
     })
     .map(h => ({
       name: h.exam?.title || `Ujian #${h.exam_id}`,
-      Nilai: h.final_score || 0,
+      Nilai: h.percentage !== undefined ? h.percentage : (h.final_score || 0),
+      rawScore: h.final_score,
+      maxScore: h.max_score,
     }));
 
   if (loading) {
