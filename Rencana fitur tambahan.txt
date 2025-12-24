@@ -95,13 +95,14 @@ DONE45. buat agar sistem dapat melakukan kompresi pada gambar, atau setidaknya b
 
 DONE46. perbaiki agar sistem dapat mendeteksi pada saat ingin mengexport ke dalam pdf ataupun ganbar supaya tidak menggunakan html2canvas, atau menggunakan konsep khusus, seperti menggunakan phantom rendering.
 
-47. buat agar sistem dapat mengatur ujian, wajib untuk dikerjakan semua soal atau tidaknya.
+DONE47. buat agar sistem dapat menyelesaikan ujian berdasarkan waktu yang sedang berjalan
 
-DONE48. buat agar sistem dapat menyelesaikan ujian berdasarkan waktu yang sedang berjalan
+DONE48. buat agar grafik bisa dilakukan normalisasi terhadap nilai atau skor peserta
 
-DONE49. buat agar grafik bisa dilakukan normalisasi terhadap nilai atau skor peserta
+DONE49. buat agar pada fitur untuk export ke excel yang ada di halaman detail batch, supaya misalkan klik tombol export akan muncul 3 pilihan yaitu untuk export versi nilai raw atau mentahnya saja, yang sudah dinormalisasi, dan juga keduanya.
 
-50. buat agar pada fitur untuk export ke excel yang ada di halaman detail batch, supaya misalkan klik tombol export akan muncul 3 pilihan yaitu untuk export versi nilai raw atau mentahnya saja, yang sudah dinormalisasi, dan juga keduanya.
+
+
 
 
 

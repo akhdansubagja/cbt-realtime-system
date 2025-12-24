@@ -321,12 +321,43 @@ export class ReportsService {
 
     // Tambahkan data baris untuk Sheet 1
     reportData.participantScores.forEach((participant) => {
+      // Calculate normalized total percentage
+      let totalPercentageVal = 0;
+      if (participant.totalMaxScore > 0) {
+        totalPercentageVal = parseFloat(
+          ((participant.totalScore / participant.totalMaxScore) * 100).toFixed(
+            2,
+          ),
+        );
+      }
+
+      // Determine display values for Total and Average
+      let totalScoreDisplay: string | number = participant.totalScore;
+      let averageScoreDisplay: string | number = parseFloat(
+        participant.averageScore.toFixed(2),
+      );
+
+      if (type === 'raw') {
+        totalScoreDisplay = participant.totalScore;
+        // For raw average, we use the raw average score calculated previously
+        averageScoreDisplay = parseFloat(participant.averageScore.toFixed(2));
+      } else if (type === 'normalized') {
+        totalScoreDisplay = totalPercentageVal;
+        averageScoreDisplay = participant.averagePercentage;
+      } else {
+        // Both
+        totalScoreDisplay = `${totalPercentageVal} (${participant.totalScore}/${participant.totalMaxScore})`;
+        averageScoreDisplay = `${participant.averagePercentage} (${participant.averageScore.toFixed(
+          2,
+        )})`;
+      }
+
       // Siapkan data baris
       const rowData: any = {
         name: participant.examinee.name,
         examCount: participant.examCount,
-        totalScore: participant.totalScore,
-        averageScore: parseFloat(participant.averageScore.toFixed(2)),
+        totalScore: totalScoreDisplay,
+        averageScore: averageScoreDisplay,
       };
 
       // Masukkan nilai untuk setiap ujian
@@ -335,7 +366,7 @@ export class ReportsService {
 
         if (score.rawScore !== null) {
           if (type === 'raw') {
-            displayValue = `${score.rawScore}/${score.maxScore}`;
+            displayValue = score.rawScore; // Show only the raw number
           } else if (type === 'normalized') {
             displayValue = score.percentage;
           } else {

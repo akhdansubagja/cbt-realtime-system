@@ -205,7 +205,7 @@ export default function BatchDetailPage() {
                 <Menu.Dropdown>
                     <Menu.Label>Pilih Format</Menu.Label>
                     <Menu.Item onClick={() => handleExport('both')}>
-                        Lengkap (Persen & Raw)
+                        Lengkap (Persen & Skor Asli)
                     </Menu.Item>
                     <Menu.Item onClick={() => handleExport('normalized')}>
                         Hanya Persentase
