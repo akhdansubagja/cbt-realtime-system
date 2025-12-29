@@ -332,9 +332,7 @@ export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
             sortable: true,
             width: 140,
             render: (record) => {
-                const percentage = record.totalMaxScore > 0 
-                  ? ((record.totalScore / record.totalMaxScore) * 100).toFixed(2)
-                  : "0.00";
+                const percentage = record.totalPercentageSum?.toFixed(2) ?? "0.00";
                 
                 return (
                     <Stack gap={0}>

@@ -23,6 +23,7 @@ export interface ParticipantScore {
   examCount: number;
   totalScore: number;
   totalMaxScore: number;
+  totalPercentageSum: number; // NEW
   averageScore: number;
   averagePercentage: number;
   scores: ParticipantScoreDetail[]; // Array skor individu

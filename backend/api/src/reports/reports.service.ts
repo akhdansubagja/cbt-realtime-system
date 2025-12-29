@@ -144,6 +144,7 @@ export class ReportsService {
       let totalPercentage = 0;
       let examsTakenCount = 0;
       let totalMaxScore = 0;
+      let totalPercentageSum = 0; // NEW: Sum of percentages for Total Column
 
       scoresList.forEach((s) => {
         // Only count exams taken (where rawScore is not null)
@@ -154,6 +155,9 @@ export class ReportsService {
 
           // Accumulate max score for this exam to the total max score
           totalMaxScore += s.maxScore;
+
+          // NEW: Accumulate percentage for Total sum
+          totalPercentageSum += s.percentage;
         }
       });
 
@@ -172,6 +176,7 @@ export class ReportsService {
         examCount: agg.count,
         totalScore: agg.total, // Raw Total
         totalMaxScore,
+        totalPercentageSum, // NEW
         averageScore:
           agg.count > 0 ? parseFloat((agg.total / agg.count).toFixed(2)) : 0, // Raw Average
         averagePercentage,
@@ -322,14 +327,18 @@ export class ReportsService {
     // Tambahkan data baris untuk Sheet 1
     reportData.participantScores.forEach((participant) => {
       // Calculate normalized total percentage
-      let totalPercentageVal = 0;
-      if (participant.totalMaxScore > 0) {
-        totalPercentageVal = parseFloat(
-          ((participant.totalScore / participant.totalMaxScore) * 100).toFixed(
-            2,
-          ),
-        );
-      }
+      // For sum of percentages, we use totalPercentageSum directly
+      let totalPercentageVal = participant.totalPercentageSum;
+
+      // Legacy calculation fallback (if needed, but we want sum generally)
+      // let totalPercentageVal = 0;
+      // if (participant.totalMaxScore > 0) {
+      //   totalPercentageVal = parseFloat(
+      //     ((participant.totalScore / participant.totalMaxScore) * 100).toFixed(
+      //       2,
+      //     ),
+      //   );
+      // }
 
       // Determine display values for Total and Average
       let totalScoreDisplay: string | number = participant.totalScore;

@@ -101,6 +101,7 @@ DONE48. buat agar grafik bisa dilakukan normalisasi terhadap nilai atau skor pes
 
 DONE49. buat agar pada fitur untuk export ke excel yang ada di halaman detail batch, supaya misalkan klik tombol export akan muncul 3 pilihan yaitu untuk export versi nilai raw atau mentahnya saja, yang sudah dinormalisasi, dan juga keduanya.
 
+DONE50. perbaiki kolom total yang ada pada tabel laporan peserta
 
 
 
