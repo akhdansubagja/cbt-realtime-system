@@ -183,14 +183,37 @@ export default function BatchDetailPage() {
               >
                 Tambah Peserta
               </Button>
-              <Button
-                 leftSection={<IconPrinter size={16} />}
-                 component="a"
-                 href={`/admin/reports/batch/${batchId}`}
-                 size="sm"
-              >
-                  Cetak PDF
-              </Button>
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <Button
+                    leftSection={<IconPrinter size={16} />}
+                    size="sm"
+                  >
+                    Cetak PDF
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Label>Pilih Format PDF</Menu.Label>
+                  <Menu.Item
+                    component={Link}
+                    href={`/admin/reports/batch/${batchId}?type=both`}
+                  >
+                    Lengkap (Normalisasi & Skor Asli)
+                  </Menu.Item>
+                  <Menu.Item
+                    component={Link}
+                    href={`/admin/reports/batch/${batchId}?type=normalized`}
+                  >
+                    Hanya Normalisasi
+                  </Menu.Item>
+                  <Menu.Item
+                    component={Link}
+                    href={`/admin/reports/batch/${batchId}?type=raw`}
+                  >
+                    Hanya Skor Asli
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
               <Menu shadow="md" width={200}>
                 <Menu.Target>
                     <Button 
@@ -205,10 +228,10 @@ export default function BatchDetailPage() {
                 <Menu.Dropdown>
                     <Menu.Label>Pilih Format</Menu.Label>
                     <Menu.Item onClick={() => handleExport('both')}>
-                        Lengkap (Persen & Skor Asli)
+                        Lengkap (Normalisasi & Skor Asli)
                     </Menu.Item>
                     <Menu.Item onClick={() => handleExport('normalized')}>
-                        Hanya Persentase
+                        Hanya Normalisasi
                     </Menu.Item>
                     <Menu.Item onClick={() => handleExport('raw')}>
                         Hanya Skor Asli

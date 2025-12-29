@@ -20,7 +20,7 @@ import jsPDF from "jspdf";
 import { createRoot } from "react-dom/client"; // New Import
 import api from "@/lib/axios";
 import { notifications } from "@mantine/notifications";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useDisclosure } from "@mantine/hooks";
 
 
@@ -31,11 +31,13 @@ const BatchReportDocument = ({
   header1,
   header2,
   header3,
+  type,
 }: {
   data: BatchParticipantReportData;
   header1: string;
   header2: string;
   header3: string;
+  type: "raw" | "normalized" | "both";
 }) => {
   const examColumns = [1, 2, 3, 4, 5, 6];
 
@@ -276,8 +278,25 @@ const BatchReportDocument = ({
                     const scoreObj = p.scores.find(
                       (s) => s.examId === examDef.id
                     );
-                    if (scoreObj && scoreObj.score !== null) {
-                      scoreDisplay = String(scoreObj.score);
+                    
+                    if (scoreObj) {
+                        if (type === 'raw') {
+                            // Gunakan rawScore jika ada
+                             if (scoreObj.rawScore !== undefined && scoreObj.rawScore !== null) {
+                                scoreDisplay = String(scoreObj.rawScore);
+                             } else if (scoreObj.score !== null) {
+                                 // Fallback ke 'score' lama jika rawScore tdk ada
+                                scoreDisplay = String(scoreObj.score);
+                             }
+                        } else if (type === 'normalized') {
+                             if (scoreObj.percentage !== undefined && scoreObj.percentage !== null) {
+                                scoreDisplay = String(scoreObj.percentage);
+                             }
+                        } else {
+                            // BOTH
+                            // Kita return element JSX nanti di bawah, tapi variabel ini string
+                            // Jadi kita handle formatting custom di JSX
+                        }
                     }
                   }
 
@@ -308,10 +327,41 @@ const BatchReportDocument = ({
                             alignItems: "center",
                             justifyContent: "center",
                             fontWeight: "bold",
-                            fontSize: "11pt",
+                            fontSize: type === 'both' ? "9pt" : "11pt", 
+                            flexDirection: 'column',
+                            lineHeight: type === 'both' ? 1 : undefined
                           }}
                         >
-                          {scoreDisplay}
+                          {(() => {
+                              const examDef = data.uniqueExams[colIndex - 1];
+                              if (!examDef) return "";
+                              
+                              const scoreObj = p.scores.find(
+                                (s) => s.examId === examDef.id
+                              );
+                              if (!scoreObj) return "";
+
+                              if (type === 'both') {
+                                  // Tampilkan Both
+                                  // Atas: Normalized (Bold)
+                                  // Bawah: Raw (Kecil)
+                                  const pct = scoreObj.percentage ?? "-";
+                                  const raw = scoreObj.rawScore ?? scoreObj.score ?? "-";
+                                  // const max = scoreObj.maxScore ?? "?"; 
+                                  // Space terbatas, mungkin Raw saja cukup atau Raw/Max
+                                  
+                                  return (
+                                      <>
+                                        <div>{pct}</div>
+                                        <div style={{ fontSize: "7pt", fontWeight: "normal", color: "#555" }}>
+                                            ({raw})
+                                        </div>
+                                      </>
+                                  )
+                              }
+                              
+                              return scoreDisplay;
+                          })()}
                         </div>
                       </div>
                     </td>
@@ -366,7 +416,9 @@ const BatchReportDocument = ({
 
 export default function BatchReportPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const batchId = params.batchId as string;
+  const type = (searchParams.get("type") as "raw" | "normalized" | "both") || "raw";
 
   const [data, setData] = useState<BatchParticipantReportData | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
@@ -527,6 +579,7 @@ export default function BatchReportPage() {
                 header1={header1} 
                 header2={header2} 
                 header3={header3} 
+                type={type}
             />
         );
         // Wait time for fonts/SVGs to settle (images are already based64 so fast)
@@ -633,6 +686,7 @@ export default function BatchReportPage() {
                 header1={header1} 
                 header2={header2} 
                 header3={header3} 
+                type={type}
              />
           </div>
 
