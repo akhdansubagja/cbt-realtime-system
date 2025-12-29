@@ -425,8 +425,10 @@ export default function BatchReportPage() {
       const convertAvatarsToBase64 = async (reportData: BatchParticipantReportData) => {
         const newData = JSON.parse(JSON.stringify(reportData)); // Deep clone
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const promises = newData.participantScores.map(async (item: any) => {
             const avatarUrl = item.examinee.original_avatar_url || item.examinee.avatar;
+            
             
             if (avatarUrl && !avatarUrl.startsWith('data:')) {
                 try {

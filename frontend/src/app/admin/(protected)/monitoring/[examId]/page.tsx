@@ -249,6 +249,7 @@ export default function MonitoringPage() {
       
       // Update local state optimistic
       setAllParticipants(prev => prev.map(p => 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         p.id === editingParticipant.id ? { ...p, status: editForm.status as any } : p
       ));
       closeEdit();
@@ -269,7 +270,8 @@ export default function MonitoringPage() {
           api.get(`/exams/${examId}/participants`),
           api.get(`/exams/${examId}`),
         ]);
-
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const initialScores = participantsRes.data.map((p: any) => {
             return {
               id: p.id,
@@ -370,7 +372,8 @@ export default function MonitoringPage() {
         });
       }
     );
-
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.on("new-participant", (newParticipantData: any) => {
       console.log("Peserta baru bergabung:", newParticipantData);
       
@@ -457,6 +460,7 @@ export default function MonitoringPage() {
       filtered = filtered.filter((p) => {
         // Asumsi kita memfilter berdasarkan waktu mulai peserta
         // Kita butuh 'start_time' dari backend untuk ini
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const startTime = (p as any).start_time;
         if (!startTime) return false;
 

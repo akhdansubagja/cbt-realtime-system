@@ -138,7 +138,9 @@ export default function ExamsPage() {
     ])
       .then(([examsRes, banksRes, questionsRes]) => {
         setExams(examsRes.data);
+        setExams(examsRes.data);
         setQuestionBanks(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           banksRes.data.map((b: any) => ({
             value: b.id.toString(),
             label: b.name,
@@ -393,6 +395,7 @@ export default function ExamsPage() {
     setEditingExam(examDetails);
 
     // --- LAKUKAN TRANSFORMASI DATA DI SINI ---
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformedRules = examDetails.exam_rules.map((rule: any) => ({
       ...rule,
       // Ambil ID dari objek 'question_bank' dan ubah menjadi string
@@ -406,6 +409,7 @@ export default function ExamsPage() {
         ? new Date(examDetails.start_time)
         : null,
       end_time: examDetails.end_time ? new Date(examDetails.end_time) : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       manual_questions: examDetails.exam_questions.map((q: any) => ({
         question_id: q.question.id,
         point: q.point,

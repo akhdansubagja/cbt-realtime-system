@@ -19,13 +19,18 @@ import { Examinee } from "@/types/examinee";
 import dayjs from "dayjs";
 
 interface ExamineeProfileCardProps {
+  /** Data lengkap peserta */
   examinee: Examinee;
+  /** Statistik tambahan (total ujian, rata-rata) */
   stats?: {
     totalExams: number;
     averageScore: number;
   };
 }
 
+/**
+ * Kartu profil peserta yang menampilkan avatar, informasi detail, dan statistik ringkas.
+ */
 export function ExamineeProfileCard({
   examinee,
   stats,

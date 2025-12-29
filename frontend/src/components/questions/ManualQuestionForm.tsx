@@ -19,22 +19,38 @@ import { notifications } from "@mantine/notifications";
 import api from "@/lib/axios";
 import { saveDraft, loadDraft, deleteDraft } from "@/lib/indexed-db";
 
+/** Interface untuk nilai-nilai dalam form soal manual */
 export interface ManualQuestionFormValues {
+  /** Teks uraian soal */
   question_text: string;
+  /** Tipe soal (saat ini hanya multiple_choice) */
   question_type: string;
+  /** URL gambar soal (jika ada) */
   image_url: string;
+  /** Pilihan jawaban */
   options: { key: string; text: string }[];
+  /** Kunci jawaban yang benar */
   correct_answer: string;
 }
 
+/** Props untuk ManualQuestionForm */
 interface ManualQuestionFormProps {
+  /** ID Bank Soal (jika ada, untuk draft key) */
   bankId?: string | number;
+  /** Nilai awal form (untuk mode edit) */
   initialValues?: ManualQuestionFormValues;
+  /** Callback saat form disubmit */
   onSubmit: (values: ManualQuestionFormValues) => void;
+  /** Callback saat batal */
   onCancel?: () => void;
+  /** Indikator loading saat submit */
   isSubmitting?: boolean;
 }
 
+/**
+ * Form manual untuk membuat atau mengedit satu soal.
+ * Mendukung upload gambar, penambahan opsi dinamis, dan auto-save draft ke IndexedDB.
+ */
 export function ManualQuestionForm({
   bankId,
   initialValues,

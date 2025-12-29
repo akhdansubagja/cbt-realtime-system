@@ -29,6 +29,10 @@ interface Examinee {
   name: string;
 }
 
+/**
+ * Halaman Utama (Login Peserta).
+ * Peserta memilih nama dari dropdown dan memasukkan kode ujian untuk bergabung.
+ */
 export default function HomePage() {
   const router = useRouter();
   const [examinees, setExaminees] = useState<
@@ -103,9 +107,11 @@ export default function HomePage() {
       } else {
         throw new Error("Respons dari server tidak valid.");
       }
-    } catch (err: any) {
-      if (err.response) {
-        setError(err.response.data.message || "Terjadi kesalahan.");
+    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((err as any).response) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setError((err as any).response.data.message || "Terjadi kesalahan.");
       } else {
         setError("Tidak dapat terhubung ke server backend.");
       }

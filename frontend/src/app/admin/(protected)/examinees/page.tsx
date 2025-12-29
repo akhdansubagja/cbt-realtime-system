@@ -105,10 +105,11 @@ export default function ExamineesPage() {
           });
           fetchExaminees();
           closeQuickImport();
-      } catch (err: any) {
+      } catch (err) {
           notifications.show({
              title: "Error",
-             message: err.response?.data?.message || "Failed to import",
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             message: (err as any).response?.data?.message || "Failed to import",
              color: "red"
           });
       }

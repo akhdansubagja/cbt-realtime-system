@@ -4,6 +4,12 @@
 import { Box } from '@mantine/core';
 import { ThemeToggle } from './ThemeToggle';
 
+/**
+ * Layout khusus untuk halaman peserta (Exam Interface).
+ * Menampilkan konten utama dengan background abu-abu dan ThemeToggle floating.
+ * 
+ * @param children Konten halaman yang akan dirender.
+ */
 export function ParticipantLayout({ children }: { children: React.ReactNode }) {
   return (
     // Box utama yang memberikan background abu-abu

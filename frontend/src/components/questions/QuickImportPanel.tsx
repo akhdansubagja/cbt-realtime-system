@@ -37,16 +37,25 @@ import { useDebouncedCallback } from "@mantine/hooks"; // Use Mantine's debounce
 // To be safe and minimal dependency, I'll use a specific useEffect with setTimeout.
 
 interface QuickImportPanelProps {
-  bankId: string | number; // Added bankId
+  /** ID Bank Soal target */
+  bankId: string | number; 
+  /** Callback saat parsing selesai dan user menyimpan */
   onSave: (questions: ParsedQuestion[]) => Promise<void>;
+  /** Callback saat batal */
   onCancel: () => void;
 }
 
+/** Interface untuk data draft di IndexedDB */
 interface DraftData {
   text: string;
   parsedQuestions: ParsedQuestion[];
 }
 
+/**
+ * Panel untuk Quick Import Soal dari teks (Smart Paste).
+ * Mem-parsing teks menjadi soal terstruktur, mendukung deteksi kunci jawaban otomatis,
+ * dan penyisipan gambar per soal.
+ */
 export function QuickImportPanel({
   bankId,
   onSave,
@@ -361,7 +370,7 @@ B. Jakarta;`}
               Kunci Jawaban Cara Inline #2:
             </Text>
             <Text size="sm" c="dimmed" mb="xs">
-              Tambahkan "Answer: " di akhir soal
+              Tambahkan &quot;Answer: &quot; di akhir soal
             </Text>
             <Paper withBorder p="xs" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
               <Text

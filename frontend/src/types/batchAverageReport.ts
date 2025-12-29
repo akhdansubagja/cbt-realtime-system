@@ -1,7 +1,14 @@
 // frontend/src/types/batchAverageReport.ts
 
+/**
+ * Interface untuk laporan rata-rata nilai batch per ujian.
+ * Digunakan pada grafik diagram batang di detail batch.
+ */
 export interface BatchAverageReport {
-  examId: number; // <-- Tambahkan ID ujian
+  /** ID Ujian */
+  examId: number;
+  /** Judul Ujian */
   examTitle: string;
-  averageScore: string; // Ini adalah string karena kita menggunakan ROUND dan getRawMany
+  /** Nilai Rata-rata (String karena decimal dari DB) */
+  averageScore: string;
 }

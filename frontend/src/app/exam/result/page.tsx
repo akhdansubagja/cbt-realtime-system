@@ -21,6 +21,12 @@ import { motion, useSpring, useTransform } from "framer-motion";
 import { ThemeToggle } from "../../../components/layout/ThemeToggle";
 
 // Komponen ini akan menangani logika utama
+// Komponen ini akan menangani logika utama
+/**
+ * Konten Halaman Hasil Ujian.
+ * Menampilkan skor akhir dengan animasi dan pesan feedback.
+ * Membedakan status selesai normal atau waktu habis.
+ */
 function ResultContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -163,6 +169,11 @@ function ResultContent() {
 }
 
 // Komponen utama yang menggunakan Suspense
+// Komponen utama yang menggunakan Suspense
+/**
+ * Halaman Hasil Ujian (Wrapper).
+ * Menggunakan Suspense karena mengakses useSearchParams.
+ */
 export default function ResultPage() {
   return (
     <Suspense

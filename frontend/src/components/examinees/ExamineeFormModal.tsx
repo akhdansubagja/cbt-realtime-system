@@ -19,14 +19,24 @@ import { notifications } from "@mantine/notifications";
 import { Examinee } from "@/types/examinee";
 import { Batch } from "@/types/batch";
 
+/** Props untuk ExamineeFormModal */
 interface ExamineeFormModalProps {
+  /** Apakah modal terbuka */
   opened: boolean;
+  /** Callback saat modal ditutup */
   onClose: () => void;
+  /** Callback saat data berhasil disimpan */
   onSuccess: () => void;
+  /** Data peserta awal untuk edit mode (null jika create mode) */
   initialExaminee?: Examinee | null;
+  /** Daftar batch untuk dropdown */
   batches: Batch[];
 }
 
+/**
+ * Modal form untuk membuat atau mengedit data peserta ujian (Examinee).
+ * Mendukung upload avatar dan pemilihan batch.
+ */
 export function ExamineeFormModal({
   opened,
   onClose,

@@ -32,6 +32,8 @@ import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
 
 // Data untuk navigasi, agar lebih rapi dan mudah diubah
+// Data untuk navigasi, agar lebih rapi dan mudah diubah
+/** Daftar link navigasi di sidebar */
 const navLinks = [
   {
     href: "/admin/dashboard",
@@ -60,6 +62,12 @@ const navLinks = [
   },
 ];
 
+/**
+ * Layout utama untuk Admin Dashboard application.
+ * Menyediakan sidebar navigasi, header responsive, dan area konten utama.
+ * 
+ * @param children Konten halaman yang akan dirender didalam layout.
+ */
 export function AdminDashboardLayout({
   children,
 }: {

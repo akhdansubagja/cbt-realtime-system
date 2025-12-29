@@ -31,6 +31,7 @@ import { notifications } from "@mantine/notifications";
 import { saveDraft, loadDraft, deleteDraft } from "@/lib/indexed-db";
 import { Select } from "@mantine/core";
 
+/** Interface untuk data peserta hasil parsing teks */
 interface ParsedExaminee {
   id: string; // temp id for key
   index: number; // real line index
@@ -40,12 +41,14 @@ interface ParsedExaminee {
   source: "text" | "image"; // Track origin for UX
 }
 
+/** Interface untuk data draft di IndexedDB */
 interface DraftData {
   text: string;
   files: Record<number, File>; // Key = index
   batchId?: string | null;
 }
 
+/** Props untuk QuickExamineeImportPanel */
 interface QuickExamineeImportPanelProps {
   batchId?: string | number | null;
   batches?: Batch[];
@@ -53,6 +56,11 @@ interface QuickExamineeImportPanelProps {
   onCancel: () => void;
 }
 
+/**
+ * Panel impor peserta cepat (Smart Paste).
+ * Memungkinkan user menempel text (nama peserta) dan drag-drop gambar sekaligus.
+ * Fitur: Auto-save draft ke IndexedDB, matching nama dan file berdasarkan baris.
+ */
 export function QuickExamineeImportPanel({
   batchId: initialBatchId,
   batches = [],
@@ -127,7 +135,7 @@ export function QuickExamineeImportPanel({
   // Re-runs whenever text changes OR attachedFiles changes
   useEffect(() => {
     // Basic lines
-    let lines = text.split("\n").map((l) => l.trim());
+    const lines = text.split("\n").map((l) => l.trim());
     // Remove empty trailing lines, but keep empty middle lines to preserve index alignment?
     // UX Decision: User might leave empty lines. If we filter empties, indices shift.
     // User requirement: "Keep attachedFiles[5] as is".
@@ -210,7 +218,7 @@ export function QuickExamineeImportPanel({
 
       // Apply new appends
       if (newNames.length > 0) {
-        let baseIndex = currentTextLines.length; // Start index for new items
+        const baseIndex = currentTextLines.length; // Start index for new items
         newFilesForAppend.forEach((f, i) => {
           next[baseIndex + i] = f;
         });
@@ -275,7 +283,7 @@ export function QuickExamineeImportPanel({
       cards.forEach((c) => {
         const item: { name: string; fileIndex?: number } = { name: c.name };
         // 'c.index' is the original line number.
-        const file = attachedFiles[c.index]; // @ts-ignore
+        const file = attachedFiles[c.index];
 
         if (file) {
           formData.append("avatars", file);

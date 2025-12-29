@@ -66,7 +66,9 @@ const COLORS = [
 ];
 
 interface InteractiveBatchChartProps {
+  /** ID Batch */
   batchId: number;
+  /** Nama Batch (untuk judul grafik saat download) */
   batchName: string;
 }
 
@@ -82,6 +84,10 @@ type ChartData = {
   // --- 1. NEW COMPONENT: Visual-only version of the chart ---
 // This component receives data and renders the chart exactly how we want it to look
 // either on screen or in the exported image.
+/**
+ * Komponen internal untuk merender visual grafik (BarChart).
+ * Digunakan baik untuk tampilan layar maupun 'phantom rendering' saat ekspor gambar.
+ */
 const BatchChartVisual = ({
   chartData,
   view,
@@ -95,13 +101,17 @@ const BatchChartVisual = ({
   width, // New prop
   height, // New prop
 }: {
+  /** Data grafik yang sudah diformat */
   chartData: ChartData[];
+  /** Mode tampilan grafik saat ini */
   view: ChartView;
   batchName: string;
   batchId: number;
   theme: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   colorScheme: "light" | "dark";
+  /** Key data yang akan ditampilkan (misal: 'Nilai Rata-rata') */
   dataKey: string;
+  /** Apakah grafik harus horizontal (bar ke samping) */
   isHorizontal: boolean;
   onBarClick?: (data: any) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
   width?: number; // Optional fixed width
@@ -399,6 +409,13 @@ const BatchChartVisual = ({
   );
 };
 
+/**
+ * Komponen grafik interaktif untuk analisis performa Batch.
+ * Fitur:
+ * - 3 mode tampilan: Rata-rata per Ujian, Rata-rata per Peserta, Performa Ujian Spesifik.
+ * - Ekspor grafik ke PNG dengan kualitas tinggi (Phantom Rendering).
+ * - Navigasi drill-down ke monitoring ujian.
+ */
 export function InteractiveBatchChart({
   batchId,
   batchName,

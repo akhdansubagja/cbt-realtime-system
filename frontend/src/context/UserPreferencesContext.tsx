@@ -3,12 +3,14 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useLocalStorage } from "@mantine/hooks";
 
+/** Interface untuk UserPreferencesContext */
 interface UserPreferencesContextType {
   pageSize: number;
   setPageSize: (size: number) => void;
   PAGE_SIZES: number[];
 }
 
+// Context untuk menyimpan preferensi pengguna (seperti ukuran halaman tabel)
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(
   undefined
 );
@@ -35,6 +37,10 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Custom hook untuk mengakses UserPreferencesContext.
+ * Mengembalikan { pageSize, setPageSize, PAGE_SIZES }.
+ */
 export function useUserPreferences() {
   const context = useContext(UserPreferencesContext);
   if (context === undefined) {

@@ -3,6 +3,10 @@
 
 import { createTheme } from "@mantine/core";
 
+/**
+ * Konfigurasi Tema Mantine Global.
+ * Mengatur font, warna, shadow, dan style default komponen.
+ */
 export const theme = createTheme({
   fontFamily: "Inter, sans-serif",
   primaryColor: "galaxy",

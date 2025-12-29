@@ -25,15 +25,22 @@ import {
 } from 'recharts';
 
 interface BatchAverageChartProps {
+  /** ID dari Batch yang akan ditampilkan grafiknya */
   batchId: number;
 }
 
 // Tipe data khusus untuk Recharts
 interface ChartData {
-  name: string; // Judul Ujian
-  'Nilai Rata-rata': number; // Skor rata-rata
+  /** Judul Ujian */
+  name: string;
+  /** Skor rata-rata (0-100) */
+  'Nilai Rata-rata': number;
 }
 
+/**
+ * Komponen grafik batang sederhana yang menampilkan rata-rata nilai batch per ujian.
+ * Menggunakan Recharts.
+ */
 export function BatchAverageChart({ batchId }: BatchAverageChartProps) {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);

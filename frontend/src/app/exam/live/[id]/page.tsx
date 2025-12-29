@@ -42,6 +42,7 @@ import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
 import { motion } from "framer-motion";
 
 // Definisikan tipe data yang lebih detail
+/** Detail satu pertanyaan dalam ujian */
 interface QuestionDetail {
   id: number;
   question_text: string;
@@ -49,13 +50,14 @@ interface QuestionDetail {
   options: { key: string; text: string }[];
 }
 
+/** Struktur pertanyaan ujian dengan poin */
 interface ExamQuestion {
   id: number;
   point: number;
   question: QuestionDetail;
 }
 
-// Hanya butuh satu definisi yang benar sesuai data dari backend
+/** Data lengkap ujian live termasuk sisa waktu */
 interface ExamData {
   id: number; // Participant ID
   examinee: { name: string };
@@ -67,6 +69,13 @@ interface ExamData {
   time_left_seconds: number; // Sisa waktu langsung dari backend
 }
 
+/**
+ * Halaman Utama Ujian Live.
+ * - Menangani timer countdown (disinkronkan dengan backend).
+ * - Menangani navigasi soal (Prev/Next/Jump).
+ * - Mengirim jawaban via WebSocket (Real-time).
+ * - Menangani penyelesaian ujian (Manual atau Waktu Habis).
+ */
 export default function LiveExamPage() {
   const params = useParams();
   const participantId = parseInt(params.id as string, 10);
@@ -154,9 +163,11 @@ export default function LiveExamPage() {
         setExamData(examDataPayload);
         setTimeLeft(examDataPayload.time_left_seconds);
         setAnswers(savedAnswers);
-      } catch (err: any) {
-        if (err.response && err.response.status === 403) {
-          const message = err.response.data.message || "";
+      } catch (err) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((err as any).response && (err as any).response.status === 403) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const message = (err as any).response.data.message || "";
           if (message.includes("telah selesai")) {
             // Jika errornya karena ujian selesai, baru redirect
             router.replace(
@@ -166,10 +177,12 @@ export default function LiveExamPage() {
             // Jika error 403 lain (seperti token salah), tampilkan pesan
             setError(message);
           }
-        } else if (err.response && err.response.status === 401) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } else if ((err as any).response && (err as any).response.status === 401) {
           // Jika tidak ada token sama sekali, tampilkan pesan
           setError(
-            err.response.data.message ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (err as any).response.data.message ||
               "Akses ditolak. Silakan bergabung melalui halaman utama."
           );
         } else {

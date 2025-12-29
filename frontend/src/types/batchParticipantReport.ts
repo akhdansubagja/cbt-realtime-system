@@ -3,15 +3,26 @@
 import { UniqueExam } from "./uniqueExam"; // <-- Saya berasumsi path impor ini benar
 
 // Tipe untuk satu entri skor (misal: Ujian A, nilai 90)
+/**
+ * Detail skor peserta untuk satu ujian tertentu.
+ */
 interface ParticipantScoreDetail {
+  /** ID Ujian */
   examId: number;
-  score: number | null; // null jika peserta tidak mengambil ujian tsb
+  /** Skor akhir (null jika belum mengambil) */
+  score: number | null;
+  /** Skor mentah (total poin benar) */
   rawScore: number | null;
+  /** Skor maksimal yang bisa dicapai */
   maxScore: number;
+  /** Persentase nilai */
   percentage: number;
 }
 
-// Tipe baru untuk data per peserta (akan jadi 'baris' di tabel kita)
+/**
+ * Data lengkap performa satu peserta dalam batch.
+ * Mencakup profil peserta dan rekap nilai dari semua ujian.
+ */
 export interface ParticipantScore {
   examinee: {
     id: number;
@@ -29,8 +40,10 @@ export interface ParticipantScore {
   scores: ParticipantScoreDetail[]; // Array skor individu
 }
 
-// Tipe data utama (wrapper) yang dikembalikan oleh API
-// Kita ubah nama interface lama untuk mewakili seluruh objek respons
+/**
+ * Struktur respons utama API untuk laporan batch.
+ * Berisi daftar ujian unik dalam batch dan daftar nilai peserta.
+ */
 export interface BatchParticipantReportData {
   uniqueExams: UniqueExam[];
   participantScores: ParticipantScore[];

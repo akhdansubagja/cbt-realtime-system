@@ -27,6 +27,7 @@ import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
 import { ParticipantLayout } from "@/components/layout/ParticipantLayout";
 
 // --- PERBAIKAN TIPE DATA DI SINI ---
+/** Interface data ujian untuk halaman persiapan */
 interface ExamData {
   id: number;
   examinee: {
@@ -37,10 +38,14 @@ interface ExamData {
     id: number;
     title: string;
     duration_minutes: number;
-    exam_questions: any[];
+    exam_questions: unknown[];
   };
 }
 
+/**
+ * Halaman Persiapan Ujian (Start Page).
+ * Menampilkan detail ujian (judul, durasi, jumlah soal) sebelum peserta memulai timer.
+ */
 export default function ExamSessionPage() {
   const router = useRouter();
   const params = useParams();
@@ -57,13 +62,12 @@ export default function ExamSessionPage() {
       try {
         const response = await api.get(`/participants/${participantId}/start`);
         setExamData(response.data);
-      } catch (err: any) {
-        if (
-          err.response &&
-          (err.response.status === 401 || err.response.status === 403)
-        ) {
+      } catch (err) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((err as any).response && ((err as any).response.status === 401 || (err as any).response.status === 403)) {
           // Jika ditolak (401 atau 403), tampilkan pesan error dari backend
-          setError(err.response.data.message || "Akses ditolak.");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          setError((err as any).response.data.message || "Akses ditolak.");
         } else {
           // Untuk error lain (seperti 500), tampilkan pesan umum
           setError("Gagal memuat data ujian. Server bermasalah.");

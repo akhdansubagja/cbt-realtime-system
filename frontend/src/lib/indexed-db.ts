@@ -1,5 +1,11 @@
 import { get, set, del } from "idb-keyval";
 
+/**
+ * Menyimpan data draft ke IndexedDB.
+ * Menggunakan library `idb-keyval` untuk operasi sederhana key-value.
+ * @param key Key unik untuk penyimpanan
+ * @param data Data yang akan disimpan
+ */
 export async function saveDraft<T>(key: string, data: T): Promise<void> {
   try {
     await set(key, data);
@@ -9,6 +15,11 @@ export async function saveDraft<T>(key: string, data: T): Promise<void> {
   }
 }
 
+/**
+ * Memuat data draft dari IndexedDB.
+ * @param key Key unik draft
+ * @returns Data draft atau undefined jika tidak ada/gagal
+ */
 export async function loadDraft<T>(key: string): Promise<T | undefined> {
   try {
     const data = await get<T>(key);
@@ -20,6 +31,10 @@ export async function loadDraft<T>(key: string): Promise<T | undefined> {
   }
 }
 
+/**
+ * Menghapus data draft dari IndexedDB.
+ * @param key Key unik draft yang akan dihapus
+ */
 export async function deleteDraft(key: string): Promise<void> {
   try {
     await del(key);

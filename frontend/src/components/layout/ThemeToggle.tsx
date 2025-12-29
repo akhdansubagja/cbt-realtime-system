@@ -5,6 +5,10 @@ import { ActionIcon, useMantineColorScheme } from '@mantine/core';
 import { IconSun, IconMoon } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
+/**
+ * Tombol toggle untuk mengganti tema aplikasi (gelap/terang).
+ * Mendukung animasi View Transitions API jika didukung browser.
+ */
 export function ThemeToggle() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const [mounted, setMounted] = useState(false);

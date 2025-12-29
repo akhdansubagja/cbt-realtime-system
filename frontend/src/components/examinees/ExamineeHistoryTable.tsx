@@ -6,12 +6,20 @@ import { IconEye } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 
 interface ExamineeHistoryTableProps {
+  /** Daftar riwayat ujian peserta */
   records: ParticipantHistory[];
+  /** State loading tabel */
   loading: boolean;
+  /** Status sorting saat ini */
   sortStatus: DataTableSortStatus<ParticipantHistory>;
+  /** Handler perubahan sorting */
   onSortStatusChange: (status: DataTableSortStatus<ParticipantHistory>) => void;
 }
 
+/**
+ * Tabel riwayat ujian peserta.
+ * Menampilkan daftar ujian yang pernah diikuti beserta status dan nilainya.
+ */
 export function ExamineeHistoryTable({ records, loading, sortStatus, onSortStatusChange }: ExamineeHistoryTableProps) {
   const router = useRouter();
 

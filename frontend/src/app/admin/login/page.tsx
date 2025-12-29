@@ -28,6 +28,11 @@ import {
 import axios from "axios";
 import { motion } from "framer-motion";
 
+/**
+ * Halaman Login Administrator.
+ * Menyediakan form username/password untuk mendapatkan token akses admin.
+ * Memiliki dekorasi visual di sisi kiri dan form di sisi kanan.
+ */
 export default function AdminLoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -53,8 +58,9 @@ export default function AdminLoginPage() {
       const { access_token } = response.data;
       localStorage.setItem("access_token", access_token);
       router.replace("/admin/dashboard");
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
+    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((err as any).response && (err as any).response.status === 401) {
         setError("Username atau password salah.");
       } else {
         setError("Terjadi kesalahan. Tidak dapat terhubung ke server.");

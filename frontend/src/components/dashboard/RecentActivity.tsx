@@ -8,17 +8,22 @@ import { Batch } from "@/types/batch";
 import { Exam } from "@/types/exam";
 
 // Define a unified Activity type
+/** Interface untuk item aktivitas */
 interface ActivityItem {
   id: string;
   title: string;
   desc: string;
   time: string;
   timestamp: number;
-  icon: any;
+  icon: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   color: string;
   type: "exam" | "batch" | "user";
 }
 
+/**
+ * Komponen timeline aktivitas terkini.
+ * Menggabungkan data dari Batch dan Exam terbaru.
+ */
 export function RecentActivity() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +48,8 @@ export function RecentActivity() {
         }));
 
         // Assuming Exam has createdAt, if not we might need to skip or use a default
+        // Assuming Exam has createdAt, if not we might need to skip or use a default
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const examActivities: ActivityItem[] = examsRes.data.map((exam: any) => ({
           id: `exam-${exam.id}`,
           title: "Paket Soal Baru",

@@ -7,11 +7,18 @@ import api from "@/lib/axios";
 import { Batch } from "@/types/batch";
 import { BatchAverageReport } from "@/types/batchAverageReport";
 
+// Interface untuk data grafik
 interface ChartData {
+  /** Label (nama batch) */
   name: string;
+  /** Nilai score */
   score: number;
 }
 
+/**
+ * Komponen grafik area untuk dashboard admin.
+ * Menampilkan performa rata-rata batch dalam periode waktu tertentu.
+ */
 export function DashboardChart() {
   const theme = useMantineTheme();
   const [period, setPeriod] = useState<string | null>("7");

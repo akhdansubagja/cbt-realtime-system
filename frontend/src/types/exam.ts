@@ -1,4 +1,7 @@
 // frontend/src/types/exam.ts
+/**
+ * Interface Utama untuk Paket Soal (Exam).
+ */
 export interface Exam {
   id: number;
   title: string;

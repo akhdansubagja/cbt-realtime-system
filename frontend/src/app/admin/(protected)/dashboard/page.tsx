@@ -47,7 +47,7 @@ function StatCard({
 }: {
   title: string;
   value: number;
-  icon: any;
+  icon: React.ElementType;
   loading: boolean;
   color: string;
   description: string;

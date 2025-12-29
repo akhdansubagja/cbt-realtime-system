@@ -35,9 +35,15 @@ import { useEffect, useState, useMemo } from "react";
 type ParticipantScore = BatchParticipantReportData["participantScores"][number];
 
 interface BatchParticipantTableProps {
+  /** ID dari Batch yang akan ditampilkan laporannya */
   batchId: number;
 }
 
+/**
+ * Tabel laporan peserta dalam satu batch.
+ * Menampilkan progress live, skor per ujian, dan total/rata-rata.
+ * Mendukung sorting, filtering, dan pagination.
+ */
 export function BatchParticipantTable({ batchId }: BatchParticipantTableProps) {
   const [data, setData] = useState<BatchParticipantReportData | null>(null);
   const [loading, setLoading] = useState(true);

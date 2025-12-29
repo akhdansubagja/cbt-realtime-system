@@ -1,6 +1,10 @@
 // frontend/src/types/participantHistory.ts
 import { Exam } from "./exam";
 
+/**
+ * Interface untuk riwayat partisipasi ujian seorang peserta.
+ * Mencatat skor akhir, waktu mulai/selesai, dan status pengerjaan.
+ */
 export interface ParticipantHistory {
   id: number;
   exam_id: number;

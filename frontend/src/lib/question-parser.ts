@@ -1,3 +1,4 @@
+/** Interface hasil parsing pertanyaan */
 export interface ParsedQuestion {
   id: string; // Temporary ID for UI
   question_text: string;
@@ -9,6 +10,11 @@ export interface ParsedQuestion {
   imagePreviewUrl?: string;
 }
 
+/**
+ * Mem-parsing teks mentah menjadi array objek ParsedQuestion.
+ * Mendukung format soal dengan nomor, opsi per baris (a-e), dan kunci jawaban (inline atau blok terpisah).
+ * @param text Teks mentah dari input paste
+ */
 export function parseQuestionText(text: string): ParsedQuestion[] {
   // 1. Separate "Answer Key Block" from "Questions Text"
   // Keywords: "Answer:", "Answers:", "Jawaban:", "Kunci Jawaban:", "Jwbn:"
@@ -29,14 +35,6 @@ export function parseQuestionText(text: string): ParsedQuestion[] {
   // Format: "1. A", "2. b", "3 C"
   const answerMap = new Map<string, string>(); // Index/Number -> Answer Char
   if (answerBlock) {
-    const answerLines = answerBlock.split("\n");
-    const answerPairRegex = /^(\d+)[\.\)\s]+([a-eA-E])/;
-
-    // Also support single line format: "1. A 2. B 3. C"
-    // Split by numbers if necessary, but simple regex on lines is safest first.
-    // Let's handle both line-based and space-separated flow.
-    const tokens = answerBlock.split(/\s+/); // Split by whitespace to handle "1. A 2. B"
-
     // Improved logic: Match patterns in the whole block string
     const globalAnswerRegex = /(\d+)[\.\)\s]+([a-eA-E])/g;
     let m;

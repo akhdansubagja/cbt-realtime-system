@@ -1,7 +1,18 @@
 import axios from "axios";
 
+/**
+ * Instance Axios global untuk aplikasi.
+ * Sudah dikonfigurasi dengan Base URL dari environment variable.
+ */
 const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
 
+/**
+ * Interceptor Request.
+ * Menangani penyisipan token otorisasi secara otomatis berdasarkan endpoint.
+ * - Endpoint publik: Tidak ada token.
+ * - Endpoint /admin: Token 'access_token' (Admin).
+ * - Endpoint /participants: Token 'participant_token_{id}' (Peserta Ujian).
+ */
 api.interceptors.request.use(
   (config) => {
     // Daftar endpoint publik yang TIDAK memerlukan token sama sekali

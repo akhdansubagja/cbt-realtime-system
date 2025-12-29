@@ -21,6 +21,7 @@ import { useState, useEffect } from "react";
 import api from "@/lib/axios";
 import { DataTable } from "mantine-datatable";
 
+// Interface data soal
 interface Question {
   id: number;
   question_text: string;
@@ -30,23 +31,34 @@ interface Question {
   correct_answer?: string;
 }
 
+// Interface opsi dropdown bank soal
 interface QuestionBank {
   value: string;
   label: string;
 }
 
+// Props untuk QuestionSelectorDrawer
 interface QuestionSelectorDrawerProps {
+  /** Apakah drawer terbuka */
   opened: boolean;
+  /** Fungsi penutup drawer */
   onClose: () => void;
+  /** Callback saat soal ditambahkan */
   onAddQuestions: (
     questions: { question_id: number; point: number }[]
   ) => void;
+  /** Daftar bank soal yang tersedia */
   questionBanks: QuestionBank[];
+  /** Daftar ID soal yang sudah ada di exam (untuk filter/disable jika perlu nanti) */
   existingQuestionIds: number[];
 }
 
 const PAGE_SIZES = [10, 20, 50];
 
+/**
+ * Drawer untuk memilih dan menambahkan soal dari Bank Soal ke dalam Paket Ujian.
+ * Fitur: Pencarian bank soal, pagination, search soal, dan preview detail soal.
+ */
 export function QuestionSelectorDrawer({
   opened,
   onClose,

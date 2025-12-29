@@ -18,17 +18,27 @@ import {
   YAxis,
 } from 'recharts';
 
+/** Interface data input untuk grafik */
 export interface ChartData {
-  name: string; // Nama Ujian
-  Nilai: number; // Percentage (0-100)
+  /** Nama Ujian */
+  name: string; 
+  /** Nilai Akhir (Percentage 0-100) */
+  Nilai: number; 
+  /** Skor mentah (opsional) */
   rawScore?: number | null;
+  /** Skor maksimal (opsional) */
   maxScore?: number;
 }
 
 interface ExamineeHistoryChartProps {
+  /** Array data riwayat ujian peserta */
   data: ChartData[];
 }
 
+/**
+ * Grafik batang yang menampilkan riwayat nilai ujian seorang peserta.
+ * Menampilkan nilai persentase dan tooltip dengan detail skor mentah.
+ */
 export function ExamineeHistoryChart({
   data,
 }: ExamineeHistoryChartProps) {

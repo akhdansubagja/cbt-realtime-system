@@ -30,13 +30,22 @@ interface FormValues {
 }
 
 // Tipe untuk props komponen
+/** Props untuk BulkAddExamineesModal */
 interface BulkAddExamineesModalProps {
+  /** Apakah modal terbuka */
   opened: boolean;
+  /** Fungsi penutup modal */
   onClose: () => void;
-  onSuccess: () => void; // Fungsi untuk me-refresh tabel di halaman induk
-  lockedBatchId?: number; // Jika modal ini dibuka dari halaman detail batch
+  /** Fungsi untuk me-refresh tabel di halaman induk setelah sukses */
+  onSuccess: () => void; 
+  /** Jika modal ini dibuka dari halaman detail batch, batchId akan dikunci */
+  lockedBatchId?: number; 
 }
 
+/**
+ * Modal untuk menambahkan banyak peserta sekaligus secara manual.
+ * User dapat menambah baris input nama dan avatar.
+ */
 export function BulkAddExamineesModal({
   opened,
   onClose,

@@ -10,7 +10,11 @@ export const metadata = {
   description: 'Aplikasi Ujian Online Real-time',
 };
 
-export default function RootLayout({ children }: { children: any }) {
+/**
+ * Layout Utama Aplikasi (Root Layout).
+ * Mengatur struktur HTML dasar, meta tags, dan membungkus konten dengan Providers.
+ */
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
