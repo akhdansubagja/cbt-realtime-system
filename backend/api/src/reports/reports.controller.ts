@@ -20,21 +20,46 @@ import express from 'express';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
+  /**
+   * Mendapatkan laporan partisipan batch.
+   * Format tabel untuk menampilkan nilai semua peserta di semua ujian.
+   *
+   * @param id ID Batch.
+   */
   @Get('batch-participants/:id')
   getBatchParticipantReport(@Param('id', ParseIntPipe) id: number) {
     return this.reportsService.getBatchParticipantReport(id);
   }
 
+  /**
+   * Mendapatkan rata-rata nilai batch per ujian.
+   * Digunakan untuk grafik performa batch.
+   *
+   * @param id ID Batch.
+   */
   @Get('batch-averages/:id')
   getBatchAverageReport(@Param('id', ParseIntPipe) id: number) {
     return this.reportsService.getBatchAverageReport(id);
   }
 
+  /**
+   * Mendapatkan daftar unik ujian yang pernah dikerjakan oleh batch ini.
+   * Digunakan untuk filter dropdown.
+   *
+   * @param id ID Batch.
+   */
   @Get('batch-unique-exams/:id')
   getBatchUniqueExams(@Param('id', ParseIntPipe) id: number) {
     return this.reportsService.getBatchUniqueExams(id);
   }
 
+  /**
+   * Mendapatkan performa detail per ujian untuk batch tertentu.
+   * Menampilkan nilai setiap siswa untuk satu ujian spesifik.
+   *
+   * @param batchId ID Batch.
+   * @param examId ID Ujian.
+   */
   @Get('batch-exam-performance/:batchId/:examId')
   getBatchExamPerformance(
     @Param('batchId', ParseIntPipe) batchId: number,
@@ -43,6 +68,14 @@ export class ReportsController {
     return this.reportsService.getBatchExamPerformance(batchId, examId);
   }
 
+  /**
+   * Mengexport laporan batch ke file Excel (XLSX).
+   * Mendukung opsi export nilai mentah (raw), ternormalisasi (normalized), atau keduanya.
+   *
+   * @param id ID Batch.
+   * @param type Tipe export ('raw' | 'normalized' | 'both').
+   * @param res Objek response express.
+   */
   @Get('export/batch/:id')
   @Header(
     'Content-Type',

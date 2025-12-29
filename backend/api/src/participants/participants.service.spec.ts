@@ -54,22 +54,47 @@ describe('ParticipantsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ParticipantsService,
-        { provide: getRepositoryToken(Participant), useValue: mockParticipantRepository },
-        { provide: getRepositoryToken(Examinee), useValue: mockExamineeRepository },
+        {
+          provide: getRepositoryToken(Participant),
+          useValue: mockParticipantRepository,
+        },
+        {
+          provide: getRepositoryToken(Examinee),
+          useValue: mockExamineeRepository,
+        },
         { provide: getRepositoryToken(Exam), useValue: mockExamRepository },
-        { provide: getRepositoryToken(ParticipantAnswer), useValue: mockAnswerRepository },
-        { provide: getRepositoryToken(ExamQuestion), useValue: mockExamQuestionRepository },
-        { provide: getRepositoryToken(ParticipantExamQuestion), useValue: mockPeqRepository },
-        { provide: getRepositoryToken(ExamRule), useValue: mockExamRuleRepository },
-        { provide: getRepositoryToken(Question), useValue: mockQuestionRepository },
+        {
+          provide: getRepositoryToken(ParticipantAnswer),
+          useValue: mockAnswerRepository,
+        },
+        {
+          provide: getRepositoryToken(ExamQuestion),
+          useValue: mockExamQuestionRepository,
+        },
+        {
+          provide: getRepositoryToken(ParticipantExamQuestion),
+          useValue: mockPeqRepository,
+        },
+        {
+          provide: getRepositoryToken(ExamRule),
+          useValue: mockExamRuleRepository,
+        },
+        {
+          provide: getRepositoryToken(Question),
+          useValue: mockQuestionRepository,
+        },
         { provide: LiveExamGateway, useValue: mockLiveExamGateway },
         { provide: AuthService, useValue: mockAuthService },
       ],
     }).compile();
 
     service = module.get<ParticipantsService>(ParticipantsService);
-    participantRepository = module.get<Repository<Participant>>(getRepositoryToken(Participant));
-    examineeRepository = module.get<Repository<Examinee>>(getRepositoryToken(Examinee));
+    participantRepository = module.get<Repository<Participant>>(
+      getRepositoryToken(Participant),
+    );
+    examineeRepository = module.get<Repository<Examinee>>(
+      getRepositoryToken(Examinee),
+    );
     examRepository = module.get<Repository<Exam>>(getRepositoryToken(Exam));
     jest.clearAllMocks();
   });
@@ -85,21 +110,23 @@ describe('ParticipantsService', () => {
       const mockExaminee = new Examinee();
       mockExaminee.id = 1;
       mockExaminee.name = 'Budi';
-      
+
       const mockExam = new Exam();
       mockExam.id = 1;
       mockExam.code = 'EXAM-01';
-      
+
       const mockParticipant = new Participant();
       mockParticipant.id = 1;
       mockParticipant.examinee = mockExaminee;
       mockParticipant.exam = mockExam;
 
       const mockToken = { access_token: 'some-jwt-token' };
-      
+
       mockExamineeRepository.findOneBy.mockResolvedValue(mockExaminee);
       mockExamRepository.findOneBy.mockResolvedValue(mockExam);
-      (participantRepository.findOne as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(mockParticipant);
+      (participantRepository.findOne as jest.Mock)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockParticipant);
       mockParticipantRepository.create.mockReturnValue(mockParticipant);
       mockParticipantRepository.save.mockResolvedValue(mockParticipant);
       mockAuthService.loginParticipant.mockResolvedValue(mockToken);
@@ -111,24 +138,28 @@ describe('ParticipantsService', () => {
       expect(result.participant).toBe(mockParticipant);
       expect(result.access_token).toBe(mockToken.access_token);
       expect(participantRepository.save).toHaveBeenCalled();
-      expect(mockAuthService.loginParticipant).toHaveBeenCalledWith(mockParticipant);
+      expect(mockAuthService.loginParticipant).toHaveBeenCalledWith(
+        mockParticipant,
+      );
     });
 
     it('should throw ForbiddenException if the exam is already finished', async () => {
-        const joinExamDto: JoinExamDto = { examinee_id: 1, code: 'EXAM-01' };
-        const mockExaminee = new Examinee();
-        mockExaminee.id = 1;
-        const mockExam = new Exam();
-        mockExam.id = 1;
+      const joinExamDto: JoinExamDto = { examinee_id: 1, code: 'EXAM-01' };
+      const mockExaminee = new Examinee();
+      mockExaminee.id = 1;
+      const mockExam = new Exam();
+      mockExam.id = 1;
 
-        const existingParticipant = new Participant();
-        existingParticipant.status = ParticipantStatus.FINISHED;
+      const existingParticipant = new Participant();
+      existingParticipant.status = ParticipantStatus.FINISHED;
 
-        mockExamineeRepository.findOneBy.mockResolvedValue(mockExaminee);
-        mockExamRepository.findOneBy.mockResolvedValue(mockExam);
-        mockParticipantRepository.findOne.mockResolvedValue(existingParticipant);
+      mockExamineeRepository.findOneBy.mockResolvedValue(mockExaminee);
+      mockExamRepository.findOneBy.mockResolvedValue(mockExam);
+      mockParticipantRepository.findOne.mockResolvedValue(existingParticipant);
 
-        await expect(service.joinExam(joinExamDto)).rejects.toThrow(ForbiddenException);
+      await expect(service.joinExam(joinExamDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -143,41 +174,57 @@ describe('ParticipantsService', () => {
       mockParticipant.examinee = { name: 'Siti' } as Examinee;
 
       mockParticipantRepository.findOne.mockResolvedValue(mockParticipant);
-      mockParticipantRepository.save.mockImplementation(p => Promise.resolve(p));
+      mockParticipantRepository.save.mockImplementation((p) =>
+        Promise.resolve(p),
+      );
 
       const result = await service.beginExam(participantId);
 
       expect(result.start_time).toBeInstanceOf(Date);
-      expect(participantRepository.save).toHaveBeenCalledWith(expect.objectContaining({
-          start_time: expect.any(Date)
-      }));
-      expect(mockLiveExamGateway.broadcastNewParticipant).toHaveBeenCalledWith(10, 1, 'Siti');
+      expect(participantRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start_time: expect.any(Date),
+        }),
+      );
+      expect(mockLiveExamGateway.broadcastNewParticipant).toHaveBeenCalledWith(
+        10,
+        1,
+        'Siti',
+        undefined,
+        expect.any(Date),
+      );
     });
   });
 
   describe('finishExam', () => {
     it('should calculate final score, set status to FINISHED, and broadcast the update', async () => {
-        const participantId = 1;
-        const mockParticipant = new Participant();
-        mockParticipant.id = participantId;
-        mockParticipant.exam = { id: 10 } as Exam;
+      const participantId = 1;
+      const mockParticipant = new Participant();
+      mockParticipant.id = participantId;
+      mockParticipant.exam = { id: 10 } as Exam;
 
-        const mockAnswers = [
-            { participant_exam_question: { point: 10 } },
-            { participant_exam_question: { point: 15 } }
-        ] as ParticipantAnswer[];
-        
-        mockAnswerRepository.find.mockResolvedValue(mockAnswers);
-        mockParticipantRepository.findOne.mockResolvedValue(mockParticipant);
-        mockParticipantRepository.save.mockImplementation(p => Promise.resolve(p));
+      const mockAnswers = [
+        { participant_exam_question: { point: 10 } },
+        { participant_exam_question: { point: 15 } },
+      ] as ParticipantAnswer[];
 
-        const result = await service.finishExam(participantId);
+      mockAnswerRepository.find.mockResolvedValue(mockAnswers);
+      mockParticipantRepository.findOne.mockResolvedValue(mockParticipant);
+      mockParticipantRepository.save.mockImplementation((p) =>
+        Promise.resolve(p),
+      );
 
-        expect(result.final_score).toBe(25);
-        expect(result.status).toBe(ParticipantStatus.FINISHED);
-        expect(participantRepository.save).toHaveBeenCalled();
-        expect(mockLiveExamGateway.broadcastStatusUpdate).toHaveBeenCalledWith(10, 1, ParticipantStatus.FINISHED);
+      const result = await service.finishExam(participantId);
+
+      expect(result.final_score).toBe(25);
+      expect(result.status).toBe(ParticipantStatus.FINISHED);
+      expect(participantRepository.save).toHaveBeenCalled();
+      expect(mockLiveExamGateway.broadcastStatusUpdate).toHaveBeenCalledWith(
+        10,
+        1,
+        ParticipantStatus.FINISHED,
+        expect.any(Date),
+      );
     });
   });
-
 });

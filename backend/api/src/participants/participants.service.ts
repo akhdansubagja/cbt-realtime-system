@@ -66,15 +66,14 @@ export class ParticipantsService {
 
   private readonly logger = new Logger(ParticipantsService.name);
 
-  // --- CRON JOB: AUTO-FINISH EXAMS ---
+  /**
+   * Cron Job yang berjalan setiap 10 detik.
+   * Mengecek peserta yang waktu ujiannya sudah habis (Expired) dan memaksa selesai (Auto-finish).
+   */
   @Cron(CronExpression.EVERY_10_SECONDS)
   async handleExpiredExams() {
     // 1. Cari peserta yang statusnya STARTED dan waktu estimasi selesai sudah lewat
     //    Kita cari yang (start_time + duration) < now
-    //    Karena query builder agak kompleks dengan date arithmetic, kita bisa filter di memory
-    //    atau query yang started saja lalu cek satu per satu (untuk safety).
-    //    Untuk performa lebih baik, bisa pakai raw query, tpi ini MVP.
-    //    Kita ambil yang 'started' dulu.
 
     // OPTIMISASI: Ambil participants yang 'started' dan exam-nya punya durasi.
     const activeParticipants = await this.participantRepository.find({
@@ -103,8 +102,17 @@ export class ParticipantsService {
     }
   }
 
+  /**
+   * Mengatur proses bergabungnya peserta ke dalam ujian.
+   * Memvalidasi kode ujian, waktu ujian, dan status peserta.
+   * Jika peserta sudah pernah masuk, akan mengembalikan sesi terakhir (Resume).
+   *
+   * @param joinExamDto Data join (kode ujian, id examinee).
+   * @returns Token akses dan data sesi peserta.
+   * @throws NotFoundException Jika peserta/ujian tidak valid.
+   * @throws ForbiddenException Jika waktu ujian belum mulai/berakhir.
+   */
   async joinExam(joinExamDto: JoinExamDto) {
-    // Validasi (tidak berubah)
     const examinee = await this.examineeRepository.findOneBy({
       id: joinExamDto.examinee_id,
     });
@@ -125,7 +133,6 @@ export class ParticipantsService {
         'Waktu untuk bergabung ujian telah berakhir.',
       );
 
-    // Cari sesi yang ada
     // Cari sesi yang ada (AMBIL YANG TERAKHIR / LATEST ATTEMPT)
     const existingParticipant = await this.participantRepository.findOne({
       where: { examinee: { id: examinee.id }, exam: { id: exam.id } },
@@ -152,7 +159,6 @@ export class ParticipantsService {
       const savedParticipant =
         await this.participantRepository.save(newParticipant);
 
-      // --- PERBAIKAN DI SINI ---
       // Ambil ulang data dan simpan ke variabel sementara
       const reloadedParticipant = await this.participantRepository.findOne({
         where: { id: savedParticipant.id },
@@ -168,7 +174,6 @@ export class ParticipantsService {
 
       // Jika berhasil, baru assign ke variabel utama
       participantForToken = reloadedParticipant;
-      // --- AKHIR PERBAIKAN ---
     }
 
     const token = await this.authService.loginParticipant(participantForToken);
@@ -179,6 +184,13 @@ export class ParticipantsService {
     };
   }
 
+  /**
+   * Memulai ujian (Start Timer).
+   * Merekam waktu mulai di database dan menyiarkan event ke monitoring admin.
+   *
+   * @param participantId ID peserta.
+   * @returns Data peserta yang telah diperbarui.
+   */
   async beginExam(participantId: number) {
     // Ambil data participant LENGKAP dengan relasi exam dan examinee
     const participant = await this.participantRepository.findOne({
@@ -199,7 +211,7 @@ export class ParticipantsService {
       const savedParticipant =
         await this.participantRepository.save(participant); // Simpan dulu
 
-      // --- LOGIKA BARU UNTUK MENYIARKAN PESERTA BARU ---
+      // LOGIKA UNTUK MENYIARKAN PESERTA BARU
       if (savedParticipant.exam && savedParticipant.examinee) {
         this.liveExamGateway.broadcastNewParticipant(
           savedParticipant.exam.id,
@@ -209,7 +221,6 @@ export class ParticipantsService {
           savedParticipant.start_time, // Kirim waktu mulai
         );
       }
-      // --- AKHIR LOGIKA BARU ---
 
       return savedParticipant;
     }
@@ -220,6 +231,13 @@ export class ParticipantsService {
     return participant;
   }
 
+  /**
+   * Menyimpan jawaban peserta.
+   * Menentukan kebenaran jawaban (True/False) dan menyimpannya.
+   * Juga memicu broadcast update skor real-time ke admin.
+   *
+   * @param data Payload jawaban dari Kafka.
+   */
   async saveAnswer(data: SubmitAnswerPayload) {
     const participantExamQuestion = await this.peqRepository.findOneBy({
       id: data.examQuestionId,
@@ -246,6 +264,14 @@ export class ParticipantsService {
     await this.recalculateAndBroadcastScore(data.participantId);
   }
 
+  /**
+   * Mengakhiri sesi ujian peserta secara manual atau otomatis.
+   * Menghitung total skor dan menyimpannya di kolom final_score.
+   *
+   * @param participantId ID peserta.
+   * @param finishedAtDate Waktu selesai (opsional, default: sekarang).
+   * @returns Data peserta yang telah diupdate.
+   */
   async finishExam(participantId: number, finishedAtDate?: Date) {
     const correctAnswers = await this.answerRepository.find({
       where: {
@@ -275,7 +301,7 @@ export class ParticipantsService {
       `Ujian untuk peserta ID ${participantId} selesai. Skor akhir: ${totalScore}`,
     );
 
-    // --- LOGIKA BARU UNTUK MENYIARKAN STATUS ---
+    // LOGIKA BARU UNTUK MENYIARKAN STATUS
     if (savedParticipant.exam) {
       // Pastikan exam ada
       this.liveExamGateway.broadcastStatusUpdate(
@@ -285,11 +311,16 @@ export class ParticipantsService {
         savedParticipant.finished_at, // Kirim waktu selesai
       );
     }
-    // --- AKHIR LOGIKA BARU ---
 
     return savedParticipant; // Kembalikan data yang sudah di-update
   }
 
+  /**
+   * Mengambil semua jawaban peserta untuk dipetakan di frontend.
+   *
+   * @param participantId ID peserta.
+   * @returns Object map jawaban { [questionId]: answerString }.
+   */
   async getParticipantAnswers(participantId: number) {
     const answers = await this.answerRepository.find({
       where: { participant: { id: participantId } },
@@ -305,6 +336,15 @@ export class ParticipantsService {
     return formattedAnswers;
   }
 
+  /**
+   * Inti dari logika CBT: Mengenerate atau mengambil soal ujian untuk peserta.
+   * 1. Jika ini pertama kali, sistem akan mengacak soal sesuai aturan (ExamRules) dan menyimpannya sebagai Snapshot.
+   * 2. Menghitung sisa waktu pengerjaan.
+   * 3. Mensanitasi data (menghapus kunci jawaban) sebelum dikirim ke client.
+   *
+   * @param participantId ID sesi peserta.
+   * @returns Daftar soal tersanitasi, sisa waktu, dan metadata ujian.
+   */
   async getExamQuestions(participantId: number) {
     // 1. Ambil data sesi peserta.
     //    Kita memuat relasi penting: 'examinee' (untuk nama), 'exam' (untuk detail ujian),
@@ -414,7 +454,6 @@ export class ParticipantsService {
       // Simpan semua 'snapshot' soal ke database.
       await this.peqRepository.save(participantExamQuestionsToSave);
 
-      // --- PENGGANTI REKURSI ---
       // Muat ulang data participant SECARA EKSPLISIT setelah menyimpan snapshot
       // Ini memastikan kita mendapatkan data terbaru termasuk relasi 'generated_questions'.
       const updatedParticipant = await this.participantRepository.findOne({
@@ -500,6 +539,12 @@ export class ParticipantsService {
     });
   }
 
+  /**
+   * Mengambil semua riwayat ujian dari seorang siswa (Examinee).
+   *
+   * @param examineeId ID siswa.
+   * @returns List ujian beserta skor.
+   */
   async findAllByExaminee(examineeId: number) {
     const participants = await this.participantRepository.find({
       where: {
@@ -557,6 +602,9 @@ export class ParticipantsService {
     return EnhancedParticipants;
   }
 
+  /**
+   * Mengalkulasi ulang skor dan mengirimkannya via web socket.
+   */
   private async recalculateAndBroadcastScore(participantId: number) {
     const correctAnswers = await this.answerRepository.find({
       where: {
@@ -570,7 +618,6 @@ export class ParticipantsService {
       return sum + (answer.participant_exam_question?.point || 0);
     }, 0);
 
-    // --- INILAH PERBAIKAN UTAMANYA ---
     // Ambil ID ujian dengan memuat relasi 'exam'
     const participant = await this.participantRepository.findOne({
       where: { id: participantId },
@@ -589,6 +636,10 @@ export class ParticipantsService {
 
   // --- FITUR BARU: RETAKE & CRUD ---
 
+  /**
+   * Mengizinkan ujian ulang (Retake).
+   * Membuat sesi duplikat dengan attempt_number++
+   */
   async allowRetake(participantId: number) {
     // 1. Ambil data session terakhir
     const lastSession = await this.participantRepository.findOne({

@@ -8,6 +8,11 @@ import { CreateUserDto } from './dto/create-user.dto'; // <-- IMPORT UNTUK DTO
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /**
+   * Membuat user admin baru.
+   *
+   * @param createUserDto Data user baru.
+   */
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);

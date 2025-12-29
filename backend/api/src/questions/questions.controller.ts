@@ -24,6 +24,13 @@ export class QuestionsController {
   constructor(private readonly questionsService: QuestionsService) {}
 
   // --- ENDPOINT UPLOAD (Terpisah) ---
+  /**
+   * Mengunggah file gambar untuk soal.
+   * File disimpan di disk storage lokal.
+   *
+   * @param file File gambar yang diunggah.
+   * @returns URL relatif file yang diunggah.
+   */
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -57,11 +64,23 @@ export class QuestionsController {
 
   // --- ENDPOINT CRUD ---
 
+  /**
+   * Membuat satu soal baru.
+   *
+   * @param createQuestionDto Data soal baru.
+   */
   @Post()
   create(@Body() createQuestionDto: CreateQuestionDto) {
     return this.questionsService.create(createQuestionDto);
   }
 
+  /**
+   * Membuat banyak soal sekaligus (Import).
+   * Menerima array file untuk gambar soal jika ada.
+   *
+   * @param body Body request berisi data JSON string 'data'.
+   * @param files Array file gambar.
+   */
   @Post('bulk')
   @UseInterceptors(
     AnyFilesInterceptor({
@@ -94,17 +113,31 @@ export class QuestionsController {
     return this.questionsService.createBulk(createBulkDto, files);
   }
 
+  /**
+   * Mengambil semua daftar soal.
+   */
   @Get()
   findAll() {
     return this.questionsService.findAll();
   }
 
+  /**
+   * Mengambil detail soal berdasarkan ID.
+   *
+   * @param id ID soal.
+   */
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     // Gunakan ParseIntPipe agar aman
     return this.questionsService.findOne(id);
   }
 
+  /**
+   * Mengupdate data soal.
+   *
+   * @param id ID soal.
+   * @param updateQuestionDto Data update.
+   */
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -113,6 +146,11 @@ export class QuestionsController {
     return this.questionsService.update(id, updateQuestionDto);
   }
 
+  /**
+   * Menghapus soal.
+   *
+   * @param id ID soal.
+   */
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.questionsService.remove(id);

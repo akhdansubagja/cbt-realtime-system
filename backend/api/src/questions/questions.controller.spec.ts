@@ -67,20 +67,20 @@ describe('QuestionsController', () => {
 
   describe('findOne', () => {
     it('should return a single question', async () => {
-      const questionId = '1';
+      const questionId = 1;
       const singleQuestion = new Question();
       mockQuestionsService.findOne.mockResolvedValue(singleQuestion);
 
       const result = await controller.findOne(questionId);
 
       expect(result).toEqual(singleQuestion);
-      expect(service.findOne).toHaveBeenCalledWith(+questionId);
+      expect(service.findOne).toHaveBeenCalledWith(questionId);
     });
   });
 
   describe('update', () => {
     it('should update a question', async () => {
-      const questionId = '1';
+      const questionId = 1;
       const updateDto = new UpdateQuestionDto();
       const updatedQuestion = new Question();
       mockQuestionsService.update.mockResolvedValue(updatedQuestion);
@@ -88,18 +88,18 @@ describe('QuestionsController', () => {
       const result = await controller.update(questionId, updateDto);
 
       expect(result).toEqual(updatedQuestion);
-      expect(service.update).toHaveBeenCalledWith(+questionId, updateDto);
+      expect(service.update).toHaveBeenCalledWith(questionId, updateDto);
     });
   });
 
   describe('remove', () => {
     it('should remove a question', async () => {
-      const questionId = '1';
+      const questionId = 1;
       mockQuestionsService.remove.mockResolvedValue({ affected: 1 });
 
       await controller.remove(questionId);
 
-      expect(service.remove).toHaveBeenCalledWith(+questionId);
+      expect(service.remove).toHaveBeenCalledWith(questionId);
     });
   });
 });

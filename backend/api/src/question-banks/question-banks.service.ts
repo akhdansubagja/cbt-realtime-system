@@ -27,6 +27,9 @@ export class QuestionBanksService {
     return this.questionBankRepository.save(newBank);
   }
 
+  /**
+   * Mengambil daftar bank soal dengan jumlah soal di setiap bank.
+   */
   findAll() {
     return this.questionBankRepository
       .createQueryBuilder('question_bank')
@@ -38,6 +41,9 @@ export class QuestionBanksService {
       .getMany();
   }
 
+  /**
+   * Mengambil detail bank soal beserta seluruh soal di dalamnya.
+   */
   findOne(id: number) {
     // Tambahkan 'relations' untuk mengambil semua soal yang terhubung
     return this.questionBankRepository.findOne({
@@ -46,6 +52,10 @@ export class QuestionBanksService {
     });
   }
 
+  /**
+   * Mencari dan memfilter soal di dalam bank soal tertentu.
+   * Mendukung pagination, pencarian teks, dan filter gambar.
+   */
   async findQuestionsForBank(bankId: number, options: PaginationOptions) {
     const { page, limit, search, has_image } = options;
     const skip = (page - 1) * limit;
@@ -58,13 +68,6 @@ export class QuestionBanksService {
 
     if (has_image === 'true') {
       where.image_url = Not(IsNull());
-      // If you also want to exclude empty strings:
-      // where.image_url = And(Not(IsNull()), Not(""));
-      // But usually checking Not(IsNull()) is enough if default is null.
-      // Let's assume Not(IsNull()) and Not('') if possible, but TypeORM simple find options might be tricky for OR/AND combinations on same field without QueryBuilder.
-      // For simplicity with simple find options:
-      // If we need strict check for non-empty, we might need QueryBuilder.
-      // Let's stick to simple find for now. If image_url is nullable, Not(IsNull()) is good.
     } else if (has_image === 'false') {
       where.image_url = IsNull();
     }
@@ -85,6 +88,9 @@ export class QuestionBanksService {
   }
 
   // --- TAMBAHKAN LOGIKA UPDATE DI SINI ---
+  /**
+   * Mengupdate data bank soal.
+   */
   async update(id: number, updateQuestionBankDto: UpdateQuestionBankDto) {
     // Perbarui data di database
     await this.questionBankRepository.update(id, updateQuestionBankDto);
@@ -93,11 +99,18 @@ export class QuestionBanksService {
   }
 
   // --- TAMBAHKAN LOGIKA DELETE DI SINI ---
+  /**
+   * Menghapus bank soal.
+   */
   async remove(id: number) {
     // Hapus data dari database
     return this.questionBankRepository.delete(id);
   }
 
+  /**
+   * Mengexport soal ke dalam format DOCX atau PDF.
+   * Mendukung filter subset soal berdasarkan ID.
+   */
   async exportQuestions(
     bankId: number,
     format: 'docx' | 'pdf',

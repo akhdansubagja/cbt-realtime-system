@@ -112,8 +112,10 @@ DONE50. perbaiki kolom total yang ada pada tabel laporan peserta
 
 
 
+
+
 OPSIONAL
-1. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
+DONE1. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
 2. pada halaman utama untuk peserta tambahkan fitur untuk quiz latihan matematika kabataku, yang angkanya dihasilkan random dari frontend, lalu disediakan juga seperti lembar kosong untuk melakukan penghitungan soal secara manual.
 3. buat animasi pada halaman utama pada saat peserta ingin melaksanakan ujian, misalkan karakter laki laki atau perempuan,
 4. buat agar sistem bisa menambahkan soal essai.

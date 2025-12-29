@@ -28,8 +28,14 @@ export class ExamsService {
     private readonly answerRepository: Repository<ParticipantAnswer>,
   ) {}
 
+  /**
+   * Membuat ujian baru beserta soal manual dan aturan pengacakan soal.
+   *
+   * @param createExamDto Data ujian baru.
+   * @returns Objek ujian yang disimpan.
+   */
   async create(createExamDto: CreateExamDto) {
-    // 1. Buat dan simpan data ujian utama (tidak berubah)
+    // 1. Buat dan simpan data ujian utama
     const newExam = this.examRepository.create({
       title: createExamDto.title,
       code: createExamDto.code,
@@ -71,6 +77,13 @@ export class ExamsService {
     return savedExam;
   }
 
+  /**
+   * Memperbarui data ujian, termasuk soal manual dan aturan acak jika disertakan.
+   *
+   * @param id ID ujian.
+   * @param updateExamDto Data update.
+   * @returns Ujian yang telah diperbarui.
+   */
   async update(id: number, updateExamDto: UpdateExamDto) {
     // 1. Update data utama ujian
     await this.examRepository.update(id, {
@@ -122,6 +135,14 @@ export class ExamsService {
     return this.findOne(id);
   }
 
+  /**
+   * Menghapus ujian.
+   * Karena menggunakan CASCADE on delete di database, relasi akan terhapus otomatis.
+   *
+   * @param id ID ujian.
+   * @returns Hasil delete.
+   * @throws NotFoundException Jika ujian tidak ditemukan.
+   */
   async remove(id: number) {
     // Dengan onDelete: 'CASCADE', menghapus exam akan otomatis menghapus semua relasinya
     const result = await this.examRepository.delete(id);
@@ -131,10 +152,22 @@ export class ExamsService {
     return result;
   }
 
+  /**
+   * Mengambil semua data ujian diurutkan dari yang terbaru.
+   *
+   * @returns Daftar ujian.
+   */
   findAll() {
     return this.examRepository.find({ order: { id: 'DESC' } });
   }
 
+  /**
+   * Mengambil detail lengkap satu ujian.
+   * Termasuk soal manual dan aturan pengacakan bank soal.
+   *
+   * @param id ID ujian.
+   * @returns Detail ujian.
+   */
   async findOne(id: number) {
     // Tambahkan relasi yang lebih dalam untuk mengambil semua detail
     return this.examRepository.findOne({
@@ -148,6 +181,12 @@ export class ExamsService {
     });
   }
 
+  /**
+   * Mendapatkan daftar peserta untuk suatu ujian beserta skor sementara (progress).
+   *
+   * @param examId ID ujian.
+   * @returns Daftar peserta dengan skor dan status terkini.
+   */
   async getParticipantsForExam(examId: number) {
     // 1. Ambil semua peserta, termasuk 'start_time' dan 'exam' untuk kalkulasi
     const participants = await this.participantRepository.find({

@@ -18,6 +18,7 @@ const mockQuestionBankRepository = {
   findOneBy: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
+  createQueryBuilder: jest.fn(),
 };
 
 const mockQuestionRepository = {
@@ -81,14 +82,31 @@ describe('QuestionBanksService', () => {
   describe('findAll', () => {
     it('should return an array of question banks', async () => {
       const mockBanks = [new QuestionBank()];
-      mockQuestionBankRepository.find.mockResolvedValue(mockBanks);
+
+      const mockQueryBuilder = {
+        loadRelationCountAndMap: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockBanks),
+      };
+
+      (
+        mockQuestionBankRepository.createQueryBuilder as jest.Mock
+      ).mockReturnValue(mockQueryBuilder);
 
       const result = await service.findAll();
 
       expect(result).toEqual(mockBanks);
-      expect(questionBankRepository.find).toHaveBeenCalledWith({
-        order: { name: 'ASC' },
-      });
+      expect(questionBankRepository.createQueryBuilder).toHaveBeenCalledWith(
+        'question_bank',
+      );
+      expect(mockQueryBuilder.loadRelationCountAndMap).toHaveBeenCalledWith(
+        'question_bank.total_questions',
+        'question_bank.questions',
+      );
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'question_bank.name',
+        'ASC',
+      );
     });
   });
 
@@ -146,8 +164,13 @@ describe('QuestionBanksService', () => {
       const result = await service.update(bankId, updateDto);
 
       expect(result).toEqual(updatedBank);
-      expect(questionBankRepository.update).toHaveBeenCalledWith(bankId, updateDto);
-      expect(questionBankRepository.findOneBy).toHaveBeenCalledWith({ id: bankId });
+      expect(questionBankRepository.update).toHaveBeenCalledWith(
+        bankId,
+        updateDto,
+      );
+      expect(questionBankRepository.findOneBy).toHaveBeenCalledWith({
+        id: bankId,
+      });
     });
   });
 

@@ -68,20 +68,20 @@ describe('QuestionBanksController', () => {
 
   describe('findOne', () => {
     it('should return a single question bank', async () => {
-      const bankId = '1';
+      const bankId = 1;
       const singleBank = new QuestionBank();
       mockQuestionBanksService.findOne.mockResolvedValue(singleBank);
 
       const result = await controller.findOne(bankId);
 
       expect(result).toEqual(singleBank);
-      expect(service.findOne).toHaveBeenCalledWith(+bankId);
+      expect(service.findOne).toHaveBeenCalledWith(bankId);
     });
   });
 
   describe('update', () => {
     it('should update a question bank', async () => {
-      const bankId = '1';
+      const bankId = 1;
       const updateDto = new UpdateQuestionBankDto();
       const updatedBank = new QuestionBank();
       mockQuestionBanksService.update.mockResolvedValue(updatedBank);
@@ -89,31 +89,36 @@ describe('QuestionBanksController', () => {
       const result = await controller.update(bankId, updateDto);
 
       expect(result).toEqual(updatedBank);
-      expect(service.update).toHaveBeenCalledWith(+bankId, updateDto);
+      expect(service.update).toHaveBeenCalledWith(bankId, updateDto);
     });
   });
 
   describe('remove', () => {
     it('should remove a question bank', async () => {
-      const bankId = '1';
+      const bankId = 1;
       mockQuestionBanksService.remove.mockResolvedValue({ affected: 1 });
 
       await controller.remove(bankId);
 
-      expect(service.remove).toHaveBeenCalledWith(+bankId);
+      expect(service.remove).toHaveBeenCalledWith(bankId);
     });
   });
 
   describe('findQuestions', () => {
     it('should return paginated questions for a bank', async () => {
-        const bankId = '1';
-        const paginatedResult = { data: [], total: 0, page: 1, last_page: 1 };
-        mockQuestionBanksService.findQuestionsForBank.mockResolvedValue(paginatedResult);
+      const bankId = 1;
+      const paginatedResult = { data: [], total: 0, page: 1, last_page: 1 };
+      mockQuestionBanksService.findQuestionsForBank.mockResolvedValue(
+        paginatedResult,
+      );
 
-        const result = await controller.findQuestions(bankId, '1', '10');
+      const result = await controller.findQuestions(bankId, '1', '10');
 
-        expect(result).toEqual(paginatedResult);
-        expect(service.findQuestionsForBank).toHaveBeenCalledWith(+bankId, { page: 1, limit: 10 });
+      expect(result).toEqual(paginatedResult);
+      expect(service.findQuestionsForBank).toHaveBeenCalledWith(bankId, {
+        page: 1,
+        limit: 10,
+      });
     });
   });
 });

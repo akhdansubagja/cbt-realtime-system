@@ -15,7 +15,12 @@ export class QuestionsService {
     private readonly questionRepository: Repository<Question>,
   ) {}
 
-  // Helper Private: Untuk menghapus file fisik berdasarkan URL
+  /**
+   * Helper Private: Untuk menghapus file fisik berdasarkan URL (path relatif).
+   * Berguna untuk membersihkan file gambar saat soal dihapus atau diupdate.
+   *
+   * @param imageUrl URL/Path gambar (misal: /uploads/abc.jpg)
+   */
   private async deleteImageFile(imageUrl: string) {
     if (!imageUrl) return;
 
@@ -33,6 +38,9 @@ export class QuestionsService {
     }
   }
 
+  /**
+   * Membuat soal baru.
+   */
   async create(createQuestionDto: CreateQuestionDto) {
     const payload = { ...createQuestionDto };
     if (payload.image_url === '') {
@@ -46,6 +54,13 @@ export class QuestionsService {
     return this.questionRepository.save(newQuestion);
   }
 
+  /**
+   * Membuat banyak soal sekaligus (Import).
+   * Memproses mapping opsi jawaban dan file gambar yang terkait.
+   *
+   * @param createBulkDto Data DTO bulk.
+   * @param files Array file yang diupload untuk soal-soal tertentu.
+   */
   async createBulk(
     createBulkDto: CreateBulkQuestionsDto,
     files: Array<Express.Multer.File> = [],
@@ -104,6 +119,10 @@ export class QuestionsService {
     return this.questionRepository.findOneBy({ id });
   }
 
+  /**
+   * Mengupdate data soal.
+   * Menangani logika penggantian gambar (hapus lama, simpan baru).
+   */
   async update(id: number, updateQuestionDto: UpdateQuestionDto) {
     // 1. Ambil data lama untuk pengecekan
     const existingQuestion = await this.findOne(id);
@@ -150,6 +169,10 @@ export class QuestionsService {
     return this.findOne(id);
   }
 
+  /**
+   * Menghapus soal.
+   * Juga menghapus file gambar fisik jika ada.
+   */
   async remove(id: number) {
     // 1. Cari data dulu sebelum dihapus
     const question = await this.findOne(id);

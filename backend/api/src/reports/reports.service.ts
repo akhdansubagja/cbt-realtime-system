@@ -39,8 +39,12 @@ export class ReportsService {
   ) {}
 
   /**
-   * Endpoint A (Tabel):
-   * Diurutkan berdasarkan NAMA, dan sekarang juga MENGAMBIL avatar_url
+   * Membuat Laporan Tabel Partisipan Batch.
+   * Mengumpulkan semua nilai ujian dari setiap peserta dalam batch.
+   * Menghitung nilai mentah, nilai maksimal, rata-rata, dan total.
+   *
+   * @param batchId ID Batch.
+   * @returns Data lengkap laporan batch.
    */
   async getBatchParticipantReport(batchId: number) {
     // 1. Ambil data cleaned (hanya latest attempt)
@@ -191,8 +195,11 @@ export class ReportsService {
   }
 
   /**
-   * Endpoint B (Grafik):
-   * Menghitung nilai rata-rata batch untuk setiap ujian yang diambil.
+   * Membuat Laporan Rata-rata Batch per Ujian.
+   * Digunakan untuk visualisasi grafik batang (Bar Chart).
+   *
+   * @param batchId ID Batch.
+   * @returns List ujian beserta rata-rata nilainya.
    */
   async getBatchAverageReport(batchId: number) {
     const filteredParticipants = await this.getFilteredParticipants(batchId);
@@ -231,8 +238,11 @@ export class ReportsService {
   }
 
   /**
-   * Endpoint A (Dropdown):
-   * Memperbaiki error SQL 'examinee.name'
+   * Mendapatkan daftar unik ujian yang ada di batch ini.
+   * Digunakan untuk mengisi opsi dropdown filter di frontend.
+   *
+   * @param batchId ID Batch.
+   * @returns List ujian unik.
    */
   async getBatchUniqueExams(batchId: number) {
     // Reuse filtered participants to ensure consistency
@@ -254,8 +264,12 @@ export class ReportsService {
   }
 
   /**
-   * Endpoint B (Grafik Drill-down):
-   * Sekarang juga MENGAMBIL avatar_url
+   * Membuat Laporan Detail Performa Batch pada Satu Ujian Spesifik.
+   * Menampilkan skor setiap peserta untuk ujian tersebut.
+   *
+   * @param batchId ID Batch.
+   * @param examId ID Ujian.
+   * @returns List peserta dan skornya di ujian ini.
    */
   async getBatchExamPerformance(batchId: number, examId: number) {
     const filtered = await this.getFilteredParticipants(batchId);
@@ -282,8 +296,12 @@ export class ReportsService {
   }
 
   /**
-   * Endpoint C (Export):
-   * Membuat file Excel (.xlsx) dari data batch
+   * Mengenerate file Excel report untuk Batch.
+   * Berisi dua sheet: Rangkuman Nilai Peserta dan Rangkuman Rata-rata Ujian.
+   *
+   * @param batchId ID Batch.
+   * @param type Tipe skor yang ditampilkan (raw/normalized/both).
+   * @returns Buffer file Excel.
    */
   async exportBatchReport(
     batchId: number,
@@ -426,7 +444,11 @@ export class ReportsService {
     return workbook.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 
-  // --- HELPER: Deduplicate attempts (Select Latest) ---
+  /**
+   * Helper Private: Mengambil data partisipan yang sudah difilter.
+   * Hanya mengambil ATTEMPT TERAKHIR (Latest Attempt) untuk setiap kombinasi Peserta-Ujian.
+   * Memastikan data yang diolah tidak duplikat.
+   */
   private async getFilteredParticipants(
     batchId: number,
   ): Promise<Participant[]> {

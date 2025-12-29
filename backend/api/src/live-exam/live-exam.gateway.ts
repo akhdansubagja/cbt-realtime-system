@@ -30,20 +30,34 @@ export class LiveExamGateway implements OnModuleInit {
     await this.kafkaClient.connect();
   }
 
+  /**
+   * Menangani koneksi baru WebSocket.
+   * @param client Socket client.
+   */
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
   }
 
+  /**
+   * Menangani pemutusan koneksi WebSocket.
+   * @param client Socket client.
+   */
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
   }
 
+  /**
+   * Menerima submisi jawaban dari peserta ujian.
+   * Meneruskan data ke Kafka dan memberikan konfirmasi ke client.
+   *
+   * @param data Data jawaban yang dikirim peserta.
+   * @param client Socket client.
+   */
   @SubscribeMessage('submitAnswer')
   handleSubmitAnswer(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ) {
-    // --- PERBAIKAN DI SINI: HAPUS JSON.stringify() ---
     this.kafkaClient.emit('answer-submissions', data); // Kirim objeknya langsung
 
     console.log(`Jawaban dari ${client.id} dikirim ke Kafka:`, data);
@@ -54,6 +68,13 @@ export class LiveExamGateway implements OnModuleInit {
     });
   }
 
+  /**
+   * Menyiarkan update skor peserta ke room monitoring ujian (Admin).
+   *
+   * @param examId ID ujian.
+   * @param participantId ID peserta.
+   * @param newScore Skor terbaru.
+   */
   broadcastScoreUpdate(
     examId: number,
     participantId: number,
@@ -72,6 +93,12 @@ export class LiveExamGateway implements OnModuleInit {
     );
   }
 
+  /**
+   * Mengizinkan admin/pengawas bergabung ke room monitoring ujian tertentu.
+   *
+   * @param data Object berisi examId.
+   * @param client Socket client.
+   */
   @SubscribeMessage('join-monitoring-room')
   handleJoinMonitoringRoom(
     @MessageBody() data: { examId: number },
@@ -84,13 +111,21 @@ export class LiveExamGateway implements OnModuleInit {
     );
   }
 
-  // Metode baru untuk menyiarkan peserta yang baru bergabung/memulai
+  /**
+   * Menyiarkan notifikasi peserta baru yang memulai ujian.
+   *
+   * @param examId ID ujian.
+   * @param participantId ID peserta.
+   * @param participantName Nama peserta.
+   * @param batchName Nama batch peserta.
+   * @param startTime Waktu mulai.
+   */
   broadcastNewParticipant(
     examId: number,
     participantId: number,
     participantName: string,
-    batchName?: string, // Tambahkan parameter batchName
-    startTime?: Date, // Tambahkan parameter startTime
+    batchName?: string,
+    startTime?: Date,
   ) {
     const roomName = `exam-${examId}-monitoring`;
 
@@ -112,11 +147,19 @@ export class LiveExamGateway implements OnModuleInit {
     );
   }
 
+  /**
+   * Menyiarkan update status peserta (Selesai, Diskualifikasi, dll).
+   *
+   * @param examId ID ujian.
+   * @param participantId ID peserta.
+   * @param newStatus Status baru.
+   * @param finishedAt Waktu selesai (jika ada).
+   */
   broadcastStatusUpdate(
     examId: number,
     participantId: number,
     newStatus: ParticipantStatus,
-    finishedAt?: Date, // Tambahkan parameter finishedAt
+    finishedAt?: Date,
   ) {
     const roomName = `exam-${examId}-monitoring`;
 

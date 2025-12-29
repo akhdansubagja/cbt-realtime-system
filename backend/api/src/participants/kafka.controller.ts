@@ -16,10 +16,18 @@ export class KafkaController {
 
   constructor(private readonly participantsService: ParticipantsService) {}
 
+  /**
+   * Handler untuk event 'answer-submissions' dari Kafka.
+   * Menerima jawaban peserta dan menyimpannya ke database.
+   *
+   * @param data Payload jawaban.
+   */
   @EventPattern('answer-submissions')
-  handleAnswerSubmission(@Payload() data: SubmitAnswerPayload) { // <-- Terima langsung sebagai objek
+  handleAnswerSubmission(@Payload() data: SubmitAnswerPayload) {
     // Tidak perlu parsing, NestJS sudah melakukannya untuk kita!
-    this.logger.log(`Pesan diterima & diproses dari Kafka: ${JSON.stringify(data)}`);
+    this.logger.log(
+      `Pesan diterima & diproses dari Kafka: ${JSON.stringify(data)}`,
+    );
     this.participantsService.saveAnswer(data);
   }
 }

@@ -30,6 +30,12 @@ export class ExamineesService {
     private readonly batchRepository: Repository<Batch>,
   ) {}
 
+  /**
+   * Menghasilkan ID unik untuk peserta.
+   * Format: YYYYMMDD-XXXX (4 karakter acak).
+   *
+   * @returns String ID unik.
+   */
   private generateUniqId(): string {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -46,6 +52,13 @@ export class ExamineesService {
     return `${dateStr}-${randomSuffix}`;
   }
 
+  /**
+   * Membuat peserta baru dan menyimpannya ke database.
+   *
+   * @param createExamineeDto Data transfer object pembuatan peserta.
+   * @param file File avatar yang diunggah (opsional).
+   * @returns Peserta yang baru dibuat.
+   */
   async create(
     createExamineeDto: CreateExamineeDto,
     file: Express.Multer.File,
@@ -56,17 +69,13 @@ export class ExamineesService {
     if (batch_id) {
       batch = await this.batchRepository.findOneBy({ id: batch_id });
       if (!batch) {
-        // Anda bisa melempar error di sini jika batch_id tidak ditemukan
-        // misalnya: new NotFoundException(`Batch with ID ${batch_id} not found`)
-        // Tapi untuk sekarang kita biarkan null jika tidak ketemu
+        // Logika jika batch tidak ditemukan
       }
     }
 
     const examinee = this.examineeRepository.create({
       ...restDto,
       batch: batch ?? undefined,
-      // Jika ada file, kita akan process nanti, set sementara undefined atau handle terpisah
-      // Tapi karena TypeORM create hanya instance object, kita bisa set null dulu
       avatar_url: undefined,
       original_avatar_url: undefined,
       uniqid: this.generateUniqId(),
@@ -82,6 +91,15 @@ export class ExamineesService {
     return this.examineeRepository.save(examinee);
   }
 
+  /**
+   * Mengambil data peserta dengan pagination dan filter.
+   *
+   * @param options Opsi pagination (page, limit).
+   * @param search Kata kunci pencarian (nama).
+   * @param batchId Filter ID Batch.
+   * @param isActive Filter status aktif.
+   * @returns Data peserta dan total count.
+   */
   async findAll(
     options: PaginationOptions,
     search?: string,
@@ -91,19 +109,18 @@ export class ExamineesService {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
-    // Buat object kondisi pencarian yang dinamis
     const whereCondition: any = {};
 
     if (search) {
       whereCondition.name = ILike(`%${search}%`);
     }
 
-    // TAMBAHAN: Filter by Batch ID
+    // Filter by Batch ID
     if (batchId) {
       whereCondition.batch = { id: batchId };
     }
 
-    // TAMBAHAN: Filter by Status
+    // Filter by Status
     if (isActive !== undefined && isActive !== null && isActive !== '') {
       whereCondition.is_active = isActive === 'true';
     }
@@ -126,8 +143,14 @@ export class ExamineesService {
     };
   }
 
+  /**
+   * Mencari peserta berdasarkan ID.
+   * Menyertakan relasi partisipasi ujian dan batch.
+   *
+   * @param id ID peserta.
+   * @returns Data peserta detail.
+   */
   findOne(id: number) {
-    // Ganti dari findOneBy menjadi findOne dengan opsi 'relations'
     return this.examineeRepository.findOne({
       where: { id },
       relations: [
@@ -138,7 +161,15 @@ export class ExamineesService {
     });
   }
 
-  // --- LOGIKA UPDATE BARU ---
+  /**
+   * Memperbarui data peserta.
+   *
+   * @param id ID peserta.
+   * @param updateExamineeDto Data update peserta.
+   * @param file File avatar baru (opsional).
+   * @returns Data peserta yang telah diperbarui.
+   * @throws NotFoundException Jika peserta tidak ditemukan.
+   */
   async update(
     id: number,
     updateExamineeDto: UpdateExamineeDto,
@@ -193,7 +224,12 @@ export class ExamineesService {
     return this.examineeRepository.save(examinee);
   }
 
-  // --- LOGIKA DELETE BARU ---
+  /**
+   * Menghapus peserta beserta file avatar fisiknya.
+   *
+   * @param id ID peserta yang akan dihapus.
+   * @returns Hasil operasi delete.
+   */
   async remove(id: number) {
     // 1. Cari data peserta dulu sebelum dihapus untuk mendapatkan nama filenya
     const examinee = await this.examineeRepository.findOne({
@@ -218,6 +254,8 @@ export class ExamineesService {
   /**
    * Mengambil daftar sederhana semua peserta (hanya id dan nama).
    * Didesain untuk dropdown dan data selection, bukan tabel paginated.
+   *
+   * @returns Daftar peserta (id, name).
    */
   async findAllSimple() {
     return this.examineeRepository.find({
@@ -226,6 +264,13 @@ export class ExamineesService {
     });
   }
 
+  /**
+   * Membuat peserta secara massal beserta avatar.
+   *
+   * @param createBulkWithAvatarsDto DTO data massal.
+   * @param files Array file avatar.
+   * @returns Array peserta yang berhasil disimpan.
+   */
   async createBulkWithAvatars(
     createBulkWithAvatarsDto: CreateBulkWithAvatarsDto,
     files: Array<Express.Multer.File>,
@@ -277,6 +322,13 @@ export class ExamineesService {
     return this.examineeRepository.save(savedExaminees);
   }
 
+  /**
+   * Melakukan update status aktif/tidak aktif pada banyak peserta sekaligus.
+   *
+   * @param ids Array ID peserta.
+   * @param isActive Status baru (boolean).
+   * @returns Pesan sukses.
+   */
   async updateBulkStatus(ids: number[], isActive: boolean) {
     if (!ids.length) return;
 
@@ -290,6 +342,13 @@ export class ExamineesService {
     return { message: 'Status updated successfully' };
   }
 
+  /**
+   * Mengupdate status seluruh peserta dalam satu batch.
+   *
+   * @param batchId ID Batch.
+   * @param isActive Status baru.
+   * @returns Pesan sukses.
+   */
   async updateBulkStatusByBatch(batchId: number, isActive: boolean) {
     await this.examineeRepository
       .createQueryBuilder()
@@ -301,7 +360,12 @@ export class ExamineesService {
     return { message: 'Batch status updated successfully' };
   }
 
-  // --- HELPER UNTUK IMAGE PROCESSING ---
+  /**
+   * Memproses file avatar menggunakan Sharp (resize dan save).
+   *
+   * @param file File dari multer.
+   * @returns Object path original dan thumbnail.
+   */
   private async processAvatar(
     file: Express.Multer.File,
   ): Promise<{ originalPath: string; thumbnailPath: string }> {
@@ -343,6 +407,11 @@ export class ExamineesService {
     }
   }
 
+  /**
+   * Menghapus file secara aman (tidak error jika file tidak ada).
+   *
+   * @param path Path file yang akan dihapus.
+   */
   private async deleteFileSafely(path: string) {
     try {
       await fs.unlink(join(process.cwd(), path));

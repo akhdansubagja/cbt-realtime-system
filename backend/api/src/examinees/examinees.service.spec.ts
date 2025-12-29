@@ -133,7 +133,7 @@ describe('ExamineesService', () => {
       expect(result).toEqual(mockExaminee);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: examineeId },
-        relations: ['participants', 'participants.exam'],
+        relations: ['participants', 'participants.exam', 'batch'],
       });
     });
   });
