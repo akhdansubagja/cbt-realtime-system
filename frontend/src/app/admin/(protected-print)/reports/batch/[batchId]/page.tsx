@@ -218,22 +218,6 @@ const BatchReportDocument = ({
                         style={{
                           width: "100%",
                           height: "100%",
-                          // No object-fit needed; image is pre-cropped on canvas for export
-                          // For on-screen preview of raw data, this might stretch if not cropped yet.
-                          // But on-screen preview typically doesn't use the 'exportData' cloned object?
-                          // Wait, the on-screen preview uses 'data'. 'data' is NOT modified. 
-                          // So on-screen preview of 'data' will show stretched image?
-                          // AH! I need a fallback for the ON-SCREEN PREVIEW which uses original data.
-                          // The on-screen preview images are likely rectangular/original aspect.
-                          // If I simply use width/height 100%, valid preview will look SQUASHED again.
-                          // BUT, 'export' only happens in hidden container with 'exportData'.
-                          // The on-screen rendering uses 'BatchReportDocument' with 'data'.
-                          
-                          // SOLUTION: Use object-fit: cover HERE on the CSS.
-                          // For export: 'html2canvas' ignores object-fit: cover, BUT since the image is ALREADY cropped to aspect ratio, 
-                          // 'cover' and 'fill' look IDENTICAL on the canvas-cropped image.
-                          // So adding 'object-fit: cover' here fixes the PREVIEW (original data) 
-                          // AND is harmless for the EXPORT (cropped data).
                           objectFit: "cover",
                         }}
                       />

@@ -95,12 +95,6 @@ function ResultContent() {
                 Ujian Telah Selesai
               </Title>
 
-              {/* Tampilkan sapaan jika nama berhasil diambil */}
-              {participantName && (
-                <Text size="lg">
-                  Selamat, <b>{participantName}!</b>
-                </Text>
-              )}
 
               {finished ? (
                 <Alert
@@ -146,9 +140,9 @@ function ResultContent() {
                       {roundedAnimatedScore}
                     </motion.h1>
                   </motion.div>
-                  <Text fw={500} mt="md">
+                  {/* <Text fw={500} mt="md">
                     {getFeedbackMessage(finalScore)}
-                  </Text>
+                  </Text> */}
                 </>
               )}
 
@@ -168,8 +162,7 @@ function ResultContent() {
   );
 }
 
-// Komponen utama yang menggunakan Suspense
-// Komponen utama yang menggunakan Suspense
+
 /**
  * Halaman Hasil Ujian (Wrapper).
  * Menggunakan Suspense karena mengakses useSearchParams.

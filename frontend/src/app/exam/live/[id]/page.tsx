@@ -26,6 +26,7 @@ import {
   RingProgress,
   ScrollArea,
   Burger,
+  LoadingOverlay,
 } from "@mantine/core";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
@@ -36,6 +37,8 @@ import {
   IconArrowRight,
   IconCheck,
   IconAlertTriangle,
+  IconWifi,           // <-- Icon baru untuk indikator sinyal
+  IconWifiOff,        // <-- Icon baru untuk indikator sinyal
 } from "@tabler/icons-react";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
@@ -100,6 +103,13 @@ export default function LiveExamPage() {
 
   // State untuk WebSocket
   const socketRef = useRef<Socket | null>(null);
+  
+  // --------------------------------------------------------------------------
+  // State Status Koneksi
+  // Menambahkan state untuk memantau apakah frontend terhubung ke backend.
+  // Ini penting agar siswa tidak menjawab soal saat server mati (mencegah data hilang).
+  // --------------------------------------------------------------------------
+  const [isConnected, setIsConnected] = useState(true); // Default dianggap nyala dulu sampai socket init
 
   const handleFinishExam = async (force: boolean = false) => {
     // Jika tidak dipaksa (tombol manual ditekan), buka modal terlebih dahulu
@@ -211,16 +221,29 @@ export default function LiveExamPage() {
     );
     socketRef.current = socket;
 
+    // ------------------------------------------------------------------------
+    // [KP-RESILIENCE] Event Listeners untuk Konektivitas
+    // Mendeteksi jika koneksi socket terputus atau tersambung kembali.
+    // ------------------------------------------------------------------------
+    
     socket.on("connect", () => {
       console.log("Terhubung ke server WebSocket dengan ID:", socket.id);
+      setIsConnected(true); // Koneksi pulih, buka blokir layar
     });
 
-    socket.on("disconnect", () => {
-      console.log("Terputus dari server WebSocket.");
+    socket.on("disconnect", (reason) => {
+      console.log("Terputus dari server WebSocket:", reason);
+      setIsConnected(false); // Koneksi putus, blokir layar!
+    });
+    
+    socket.on("connect_error", (err) => {
+      console.log("Gagal koneksi:", err);
+      setIsConnected(false); // Gagal konek, blokir layar!
     });
 
     socket.on("answerReceived", (data) => {
       console.log("Konfirmasi jawaban diterima dari server:", data);
+      // Di sini bisa ditambahkan logika untuk memberi tanda centang hijau "Tersimpan"
     });
 
     // Cleanup: putuskan koneksi saat komponen di-unmount
@@ -312,6 +335,30 @@ export default function LiveExamPage() {
         padding={isMobile ? "xs" : "md"}
         bg={colorScheme === "dark" ? "dark.8" : "gray.0"}
       >
+        {/* ------------------------------------------------------------------
+            Layar Pemblokir (Blocking Overlay)
+            Muncul menutupi seluruh layar jika koneksi terputus.
+            Mencegah siswa input jawaban saat server mati.
+           ------------------------------------------------------------------ */}
+        <LoadingOverlay
+          visible={!isConnected}
+          zIndex={1000}
+          overlayProps={{ radius: "sm", blur: 2 }}
+          loaderProps={{ children: (
+              <Stack align="center" gap="md">
+                  <Loader color="red" type="bars" />
+                  <Alert variant="filled" color="red" title="Koneksi Terputus" icon={<IconWifiOff />}>
+                      <Text size="sm">
+                          Kami kehilangan koneksi ke server. Mohon tunggu, sedang mencoba menyambung ulang...
+                      </Text>
+                      <Text size="xs" mt="xs" fw={700}>
+                          JANGAN TUTUP HALAMAN INI. Sesi ujian akan otomatis berlanjut setelah tersambung.
+                      </Text>
+                  </Alert>
+              </Stack>
+          )}}
+        />
+
         {/* --- HEADER UJIAN BARU --- */}
         <AppShell.Header
           style={{
@@ -408,6 +455,7 @@ export default function LiveExamPage() {
                   >
                     {isMobile ? "Selesai" : "Selesai Ujian"}
                   </Button>
+
                   <Box hiddenFrom="sm">
                        <ThemeToggle />
                   </Box>
