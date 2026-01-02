@@ -451,6 +451,8 @@ export default function ExamineesPage() {
             value={selectedBatchFilter}
             onChange={setSelectedBatchFilter}
             clearable
+            searchable
+            nothingFoundMessage="Batch tidak ditemukan"
             leftSection={<IconFilter size={16} />}
           />
 

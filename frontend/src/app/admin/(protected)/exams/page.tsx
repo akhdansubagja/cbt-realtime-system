@@ -638,6 +638,8 @@ export default function ExamsPage() {
                     {...form.getInputProps(
                       `random_rules.${index}.question_bank_id`
                     )}
+                    searchable
+                    nothingFoundMessage="Bank soal tidak ditemukan"
                   />
                   <NumberInput
                     placeholder="Jumlah Soal"

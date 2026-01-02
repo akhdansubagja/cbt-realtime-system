@@ -188,6 +188,8 @@ export function ExamineeFormModal({
             value={form.values.batch_id ? String(form.values.batch_id) : null}
             {...form.getInputProps("batch_id")}
             clearable
+            searchable
+            nothingFoundMessage="Batch tidak ditemukan"
           />
           <TextInput
             label="Institusi / Tempat Kerja (Opsional)"
