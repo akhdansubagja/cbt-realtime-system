@@ -537,9 +537,10 @@ export function InteractiveBatchChart({
     wrapper.style.background = "white";
     
     const hiddenContainer = document.createElement("div");
-    const EXPORT_WIDTH = view === 'avg_participant' ? 800 : 1920; 
+    // Update: Use 800 width for both participant AND specific exam views
+    const EXPORT_WIDTH = (view === 'avg_participant' || view === 'specific_exam') ? 800 : 1920; 
     
-    // Adjusted height calculation for Scoreboard
+    // Adjusted height calculation for Scoreboard/List views
     const itemHeight = 60; 
     const baseHeight = 200; 
     const dynamicHeight = chartData.length * itemHeight + baseHeight;
@@ -624,16 +625,27 @@ export function InteractiveBatchChart({
         </ActionIcon>
       </Group>
 
+      <Collapse in={!isMobile}>
+          <Text size="sm" c="dimmed" mb="md">
+            Pilih mode tampilan untuk melihat analisis yang berbeda.
+          </Text>
+      </Collapse>
+
       <SegmentedControl
-        fullWidth
         value={view}
-        onChange={(value) => setView(value as ChartView)}
-        data={[
-          { label: "Rata-rata per Ujian", value: "avg_exam" },
-          { label: "Rata-rata per Peserta", value: "avg_participant" },
-          { label: "Per Ujian Spesifik", value: "specific_exam" },
+        onChange={(val) => setView(val as ChartView)}
+        fullWidth
+        data={isMobile ? [
+            { label: "Rerata Ujian", value: "avg_exam" },
+            { label: "Rerata Peserta", value: "avg_participant" },
+            { label: "Per Ujian", value: "specific_exam" },
+        ] : [
+            { label: "Rata-rata per Ujian", value: "avg_exam" },
+            { label: "Rata-rata per Peserta", value: "avg_participant" },
+            { label: "Per Ujian Spesifik", value: "specific_exam" },
         ]}
-        mb="md"
+        mb="xl"
+        size={isMobile ? "xs" : "sm"}
       />
       
       <Collapse in={view === "specific_exam"}>
