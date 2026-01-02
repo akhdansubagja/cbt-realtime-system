@@ -19,10 +19,17 @@ import {
   Tooltip,
   Stack, // <-- Tambahkan Tooltip
   ActionIcon,
+  Button,
   useMantineColorScheme,
 } from "@mantine/core";
 import { ComponentLoader } from "@/components/ui/ComponentLoader";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { 
+  IconAlertCircle, 
+  IconDownload,
+  IconTrophy,
+  IconMedal,
+  IconAward
+} from "@tabler/icons-react";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { toPng } from "html-to-image";
 import { useRouter } from "next/navigation";
@@ -42,12 +49,7 @@ import {
   LabelList, // <-- Tambahkan LabelList
 } from "recharts";
 
-import {
-  IconTrophy,
-  IconMedal,
-  IconAward,
-  IconDownload,
-} from "@tabler/icons-react";
+
 
 // Impor tipe-tipe data kita (tidak berubah)
 import { BatchAverageReport } from "@/types/batchAverageReport";
@@ -81,13 +83,7 @@ type ChartData = {
 };
 
 
-  // --- 1. NEW COMPONENT: Visual-only version of the chart ---
-// This component receives data and renders the chart exactly how we want it to look
-// either on screen or in the exported image.
-/**
- * Komponen internal untuk merender visual grafik (BarChart).
- * Digunakan baik untuk tampilan layar maupun 'phantom rendering' saat ekspor gambar.
- */
+// --- 1. NEW COMPONENT: Visual-only version of the chart OR Scoreboard ---
 const BatchChartVisual = ({
   chartData,
   view,
@@ -97,21 +93,17 @@ const BatchChartVisual = ({
   colorScheme,
   dataKey,
   isHorizontal,
-  onBarClick, 
+  onBarClick,
   width, // New prop
   height, // New prop
 }: {
-  /** Data grafik yang sudah diformat */
   chartData: ChartData[];
-  /** Mode tampilan grafik saat ini */
   view: ChartView;
   batchName: string;
   batchId: number;
   theme: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   colorScheme: "light" | "dark";
-  /** Key data yang akan ditampilkan (misal: 'Nilai Rata-rata') */
   dataKey: string;
-  /** Apakah grafik harus horizontal (bar ke samping) */
   isHorizontal: boolean;
   onBarClick?: (data: any) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
   width?: number; // Optional fixed width
@@ -123,6 +115,179 @@ const BatchChartVisual = ({
     specific_exam: "Performa Ujian Spesifik",
   };
 
+  const useFixedDimensions = typeof width === "number";
+
+  // --- CUSTOM BAR CHART RENDERER (For View & Export) ---
+  if (view === "avg_participant" || view === "specific_exam") {
+    // Determine max value for 100% width reference (usually 100 for exams)
+    const maxValue = 100; 
+
+    return (
+      <Box
+        style={{
+          background: colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
+          padding: theme.spacing.xl,
+          width: useFixedDimensions ? width : "100%", 
+          minHeight: useFixedDimensions ? height : 400,
+          display: "block",
+          overflow: "visible",
+        }}
+      >
+        <Stack gap="lg" align="center" mb="xl">
+          <Title order={4}>{batchName}</Title>
+          <Text size="sm" c="dimmed">
+            {VIEW_TITLES[view]}
+          </Text>
+        </Stack>
+
+        <Stack gap="xs" style={{ maxWidth: 800, margin: "0 auto", width: '100%' }}>
+          {chartData.map((item, index) => {
+            const rank = index + 1;
+            let rankColor = colorScheme === 'dark' ? "transparent" : theme.colors.gray[1];
+            let rankTextColor = colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6];
+            let trophyIcon = null;
+
+            if (rank === 1) {
+              rankColor = "#FFD700"; // Gold
+              rankTextColor = "#FFF";
+              trophyIcon = <IconTrophy size={16} />;
+            } else if (rank === 2) {
+              rankColor = "#C0C0C0"; // Silver
+              rankTextColor = "#FFF";
+              trophyIcon = <IconMedal size={16} />;
+            } else if (rank === 3) {
+              rankColor = "#CD7F32"; // Bronze
+              rankTextColor = "#FFF";
+              trophyIcon = <IconAward size={16} />;
+            }
+
+            const avatarSrc = item.avatar_url?.startsWith("data:")
+              ? item.avatar_url
+              : item.avatar_url
+              ? `${process.env.NEXT_PUBLIC_API_URL}/${item.avatar_url}`
+              : null;
+
+            // Determine value key safely
+            // Use dataKey prop which is synced with view, or fallback to manual check
+            // Important: Handle stale data case (view updated but data not yet fetched)
+            const rawValue = item[dataKey] ?? (view === 'specific_exam' ? item["Skor"] : item["Nilai Rata-rata"]);
+            const value = typeof rawValue === 'number' ? rawValue : 0;
+            
+            // Safe width calculation
+            const barWidth = Math.min(Math.max((value / maxValue) * 100, 0), 100);
+
+            // If we have 0 value and it might be due to stale data (mismatch), 
+            // the render will just show 0 which is safe.
+
+            return (
+              <Group
+                key={index}
+                wrap="nowrap"
+                align="center"
+                p="sm"
+                onClick={() => onBarClick && onBarClick(item)}
+                style={{
+                  cursor: onBarClick ? "pointer" : "default",
+                  borderBottom: `1px solid ${
+                    colorScheme === "dark"
+                      ? theme.colors.dark[4]
+                      : theme.colors.gray[2]
+                  }`,
+                }}
+              >
+                {/* 1. LABEL AREA: Rank, Avatar, Name */}
+                <Group gap="sm" style={{ width: '30%', minWidth: 200 }} wrap="nowrap">
+                    {/* Rank */}
+                    <Box
+                    w={28}
+                    h={28}
+                    style={{
+                        borderRadius: "50%",
+                        backgroundColor: rankColor,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                        fontSize: 12,
+                        color: rankTextColor,
+                        flexShrink: 0,
+                    }}
+                    >
+                    {trophyIcon || rank}
+                    </Box>
+
+                    {/* Avatar */}
+                    {avatarSrc ? (
+                        <Avatar src={avatarSrc} radius="xl" size="sm" />
+                    ) : (
+                        <Avatar radius="xl" size="sm" color="initials">{item.name.substring(0, 2).toUpperCase()}</Avatar>
+                    )}
+
+                    {/* Name */}
+                    <Text
+                    fw={500}
+                    size="sm"
+                    style={{ flex: 1 }}
+                    lineClamp={1}
+                    title={item.name}
+                    >
+                    {item.name}
+                    </Text>
+                </Group>
+
+                {/* 2. BAR AREA: Custom CSS Bar */}
+                <Box style={{ flex: 1, position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
+                     {/* Background Track */}
+                     <Box 
+                        style={{ 
+                            position: 'absolute',
+                            left: 0,
+                            top: 6, // center vertically (24 - 12) / 2
+                            bottom: 6,
+                            right: 0,
+                            background: colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[1],
+                            borderRadius: 6,
+                        }} 
+                     />
+                     
+                     {/* Filled Bar */}
+                     <Box 
+                        style={{ 
+                            position: 'absolute',
+                            left: 0,
+                            top: 6,
+                            bottom: 6,
+                            width: `${barWidth}%`,
+                            background: theme.colors.violet[5],
+                            borderRadius: 6,
+                            transition: 'width 0.5s ease-out', // Animation for screen
+                        }} 
+                     />
+                </Box>
+
+                {/* 3. VALUE AREA */}
+                <Box style={{ width: 60, textAlign: 'right' }}>
+                     <Text fw={700} size="sm" c="violet">
+                         {value.toFixed(1)}
+                     </Text>
+                     {/* Optional: Show raw score details if available */}
+                     {item.rawDetail && view === 'avg_participant' && (
+                         <Text size="xs" c="dimmed" style={{ fontSize: 9 }}>
+                             {item.rawDetail.split('(')[1]?.replace(')', '') || ''}
+                         </Text>
+                     )}
+                </Box>
+
+              </Group>
+            );
+          })}
+        </Stack>
+      </Box>
+    );
+  }
+
+  // --- VERTICAL BAR CHART (Only for 'avg_exam') ---
+  // We keep Recharts for this one as it's a standard vertical bar chart
   const COLORS = [
     "#0088FE",
     "#00C49F",
@@ -133,242 +298,33 @@ const BatchChartVisual = ({
     "#FF69B4",
   ];
 
-  // If width is provided, we use fixed dimensions (for export). 
-  // If not, we use ResponsiveContainer ( for display).
-  const useFixedDimensions = typeof width === 'number';
-
-  const chartElement1 = (
-    <BarChart
-      width={useFixedDimensions ? width : undefined}
-      height={useFixedDimensions ? (height || Math.max(400, chartData.length * 35)) : undefined}
-      layout="vertical"
-      data={chartData}
-      margin={{ top: 5, right: 100, left: 40, bottom: 5 }}
-    >
-        <defs>
-        <clipPath
-            id={`circleClip-${batchId}`}
-            clipPathUnits="objectBoundingBox"
-        >
-            <circle cx="0.5" cy="0.5" r="0.5" />
-        </clipPath>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-        <XAxis type="number" domain={[0, 100]} hide />
-        <YAxis
-        dataKey="name"
-        type="category"
-        width={180}
-        tick={({ x, y, payload }) => {
-            const index = chartData.findIndex(
-            (d) => d.name === payload.value
-            );
-            const rank = index + 1;
-            const isTop3 = rank <= 3;
-
-            let rankColor = "#dimmed";
-            if (rank === 1) rankColor = "gold";
-            if (rank === 2) rankColor = "silver";
-            if (rank === 3) rankColor = "#CD7F32";
-
-            const data = chartData.find((d) => d.name === payload.value);
-            const avatarUrl = data?.avatar_url;
-
-            return (
-            <g transform={`translate(${x},${y})`}>
-                {isTop3 ? (
-                <g transform="translate(-170, -10)">
-                    <circle cx="10" cy="10" r="10" fill={rankColor} />
-                    <text
-                    x="10"
-                    y="14"
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="10"
-                    fontWeight="bold"
-                    >
-                    {rank}
-                    </text>
-                </g>
-                ) : (
-                <text
-                    x={-160}
-                    y={4}
-                    textAnchor="middle"
-                    fill="gray"
-                    fontSize="12"
-                    fontWeight="bold"
-                >
-                    {rank}.
-                </text>
-                )}
-                <text
-                x={-140}
-                y={4}
-                textAnchor="start"
-                fill={colorScheme === "dark" ? "#fff" : "#000"}
-                fontSize={12}
-                fontWeight={500}
-                >
-                {payload.value.length > 20
-                    ? `${payload.value.substring(0, 20)}...`
-                    : payload.value}
-                </text>
-            </g>
-            );
-        }}
-        />
-        <RechartsTooltip
-        cursor={{ fill: "transparent" }}
-        content={({ active, payload, label }) => {
-            if (active && payload && payload.length) {
-                const data = payload[0].payload;
-                const normalized = payload[0].value;
-            return (
-                <Paper p="xs" shadow="xs" withBorder>
-                <Text fw={500}>{label}</Text>
-                <Text size="sm">
-                   Normalized: {normalized}
-                </Text>
-                {data.rawDetail && (
-                     <Text size="xs" c="dimmed">
-                        Raw Score: {data.rawDetail}
-                     </Text>
-                )}
-                </Paper>
-            );
-            }
-            return null;
-        }}
-        />
-        <Bar
-        dataKey={dataKey}
-        barSize={20}
-        radius={[0, 4, 4, 0]}
-        isAnimationActive={false}
-        onClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-            if (onBarClick) onBarClick(data);
-        }}
-        style={{ cursor: onBarClick ? "pointer" : "default" }}
-        >
-        {chartData.map((entry, index) => (
-            <Cell
-            key={`cell-${index}`}
-            fill={COLORS[index % COLORS.length]}
-            style={{ cursor: onBarClick ? "pointer" : "default" }}
-            />
-        ))}
-        <LabelList
-            dataKey={dataKey}
-            position="right"
-            content={(props: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-            const { x, y, width: barWidth, value, index } = props;
-            const dataItem = chartData[index];
-            const avatarUrl = dataItem?.avatar_url;
-            // Note: avatar extraction logic assumes pre-processing
-            const avatarSrc = avatarUrl?.startsWith("data:")
-                ? avatarUrl
-                : avatarUrl
-                ? `${process.env.NEXT_PUBLIC_API_URL}/${avatarUrl}`
-                : null;
-
-            const startX = x + barWidth + 10;
-            const centerY = y + 10;
-
-            return (
-                <g>
-                {avatarSrc ? (
-                    <image
-                    x={startX}
-                    y={y - 9}
-                    href={avatarSrc}
-                    height="32"
-                    width="32"
-                    clipPath={`url(#circleClip-${batchId})`}
-                    preserveAspectRatio="xMidYMid slice"
-                    />
-                ) : (
-                    <circle
-                    cx={startX + 16}
-                    cy={centerY}
-                    r={16}
-                    fill="#ccc"
-                    />
-                )}
-                <text
-                    x={startX + 40}
-                    y={centerY + 4}
-                    fill={colorScheme === "dark" ? "#fff" : "#000"}
-                    fontSize={12}
-                    fontWeight="bold"
-                    textAnchor="start"
-                >
-                    {dataItem.rawDetail ? `${value}` : value}
-                </text>
-                {dataItem.rawDetail && (
-                    <text
-                        x={startX + 40}
-                        y={centerY + 16}
-                        fill={colorScheme === "dark" ? "#aaa" : "#555"}
-                        fontSize={10}
-                        textAnchor="start"
-                    >
-                        {dataItem.rawDetail}
-                    </text>
-                )}
-                </g>
-            );
-            }}
-        />
-        </Bar>
-    </BarChart>
-  );
-
   const chartElement2 = (
     <BarChart
       width={useFixedDimensions ? width : undefined}
-      height={useFixedDimensions ? (height || 400) : undefined}
+      height={useFixedDimensions ? height || 400 : undefined}
       data={chartData}
       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
     >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis domain={[0, 100]} />
-        <RechartsTooltip
-        cursor={{ fill: "transparent" }}
-        content={({ active, payload, label }) => {
-            if (active && payload && payload.length) {
-            return (
-                <Paper p="xs" shadow="xs" withBorder>
-                <Text fw={500}>{label}</Text>
-                <Text size="sm">
-                    {payload[0].name}: {payload[0].value}
-                </Text>
-                <Text size="xs" c="dimmed" mt={4}>
-                    Klik untuk monitor ujian
-                </Text>
-                </Paper>
-            );
-            }
-            return null;
-        }}
-        />
-        <Bar
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="name" />
+      <YAxis domain={[0, 100]} />
+      <RechartsTooltip />
+      <Bar
         dataKey={dataKey}
         isAnimationActive={false}
         onClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-            if (onBarClick) onBarClick(data);
+          if (onBarClick) onBarClick(data);
         }}
         style={{ cursor: onBarClick ? "pointer" : "default" }}
-        >
+      >
         {chartData.map((entry, index) => (
-            <Cell
+          <Cell
             key={`cell-${index}`}
             fill={COLORS[index % COLORS.length]}
             style={{ cursor: onBarClick ? "pointer" : "default" }}
-            />
+          />
         ))}
-        </Bar>
+      </Bar>
     </BarChart>
   );
 
@@ -377,10 +333,10 @@ const BatchChartVisual = ({
       style={{
         background: colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
         padding: theme.spacing.xl,
-        width: useFixedDimensions ? width : "100%", // Always take full width of container
+        width: useFixedDimensions ? width : "100%",
         height: useFixedDimensions ? "auto" : "100%",
-        display: "block", // Ensure block layout
-        overflow: "visible"
+        display: "block",
+        overflow: "visible",
       }}
     >
       <Stack gap={0} align="center" mb="lg">
@@ -390,55 +346,48 @@ const BatchChartVisual = ({
         </Text>
       </Stack>
 
-      {chartData.length > 0 && (
-          isHorizontal ? (
-            useFixedDimensions ? chartElement1 : (
-                <ResponsiveContainer width="100%" height={Math.max(400, chartData.length * 35)}>
-                    {chartElement1}
-                </ResponsiveContainer>
-            )
-          ) : (
-            useFixedDimensions ? chartElement2 : (
+      {chartData.length > 0 &&
+         (view === 'avg_exam' ? (
+             useFixedDimensions ? (
+                chartElement2
+             ) : (
                 <ResponsiveContainer width="100%" height={400}>
-                    {chartElement2}
+                  {chartElement2}
                 </ResponsiveContainer>
-            )
-          )
+             )
+         ) : null /* Handled above by custom renderer */
       )}
     </Box>
   );
-};
+}; // End BatchChartVisual
 
-/**
- * Komponen grafik interaktif untuk analisis performa Batch.
- * Fitur:
- * - 3 mode tampilan: Rata-rata per Ujian, Rata-rata per Peserta, Performa Ujian Spesifik.
- * - Ekspor grafik ke PNG dengan kualitas tinggi (Phantom Rendering).
- * - Navigasi drill-down ke monitoring ujian.
- */
+// ... InteractiveBatchChart ...
+
+import { useMediaQuery } from "@mantine/hooks"; // Import useMediaQuery
+
 export function InteractiveBatchChart({
   batchId,
   batchName,
 }: InteractiveBatchChartProps) {
-  const router = useRouter(); 
+  const router = useRouter();
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
+  const isMobile = useMediaQuery("(max-width: 48em)"); // Detect mobile
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [uniqueExams, setUniqueExams] = useState<
     { value: string; label: string }[]
   >([]);
-  const [view, setView] = useState<ChartView>("avg_exam");
+  const [view, setView] = useState<ChartView>("avg_participant"); // Default to participant scoreboard
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Ref not really needed for display anymore, but kept if needed for other things
-  const chartContainerRef = useRef<HTMLDivElement>(null); 
+
+  const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // ... (Keep existing useEffect data fetching logic - no changes needed there) ...
-  // [Only duplicating the View/Title map logic for logic consistency if needed, but it's used inside Visual]
-
+  // ... (Data fetching effects remain unchanged) ...
+  // [IMPORTANT: Ensure you keep the useEffects from the previous file content for fetching data]
+  
   // 1. Ambil daftar ujian unik (dropdown) - TIDAK BERUBAH
   useEffect(() => {
     if (!batchId) return;
@@ -462,8 +411,8 @@ export function InteractiveBatchChart({
     }
 
     const convertImagesToBase64 = async (data: ChartData[]) => {
-        // ... (Existing logic) ...
-        const promises = data.map(async (item) => {
+       /* ... existing code ... */
+       const promises = data.map(async (item) => {
             if (item.avatar_url) {
               try {
                 // Ensure absolute URL (simple check)
@@ -541,7 +490,6 @@ export function InteractiveBatchChart({
             });
 
             data.sort((a, b) => b["Nilai Rata-rata"] - a["Nilai Rata-rata"]);
-            // Convert avatars to Base64 for download compatibility
             data = await convertImagesToBase64(data);
             setChartData(data);
             break;
@@ -555,7 +503,6 @@ export function InteractiveBatchChart({
               avatar_url: item.avatar_url,
             }));
             data.sort((a, b) => b.Skor - a.Skor);
-            // Convert avatars to Base64 for download compatibility
             data = await convertImagesToBase64(data);
             setChartData(data);
             break;
@@ -569,7 +516,6 @@ export function InteractiveBatchChart({
     fetchChartData();
   }, [batchId, view, selectedExamId]);
 
-  // Tentukan 'dataKey'
   const dataKey = useMemo(() => {
     if (view === "avg_exam") return "Nilai Rata-rata";
     if (view === "avg_participant") return "Nilai Rata-rata";
@@ -577,30 +523,33 @@ export function InteractiveBatchChart({
     return "";
   }, [view]);
 
-  // Tentukan 'layout' berdasarkan 'view'
   const isHorizontal = view === "avg_participant" || view === "specific_exam";
 
-  // --- PHANTOM RENDERING LOGIC ---
   const handleDownload = async () => {
     setIsDownloading(true);
 
-    // 1. Create a wrapper that pushes content off-screen but keeps it rendered
     const wrapper = document.createElement("div");
     wrapper.style.position = "fixed";
-    wrapper.style.left = "200vw"; // Far off-screen
+    wrapper.style.left = "200vw";
     wrapper.style.top = "0";
-    wrapper.style.zIndex = "99999"; // High z-index to avoid overlap issues during paint
-    wrapper.style.opacity = "1"; // Fully opaque so it paints
-    wrapper.style.background = "white"; // Solid background
+    wrapper.style.zIndex = "99999";
+    wrapper.style.opacity = "1";
+    wrapper.style.background = "white";
     
-    // 2. Create the actual container for the chart
     const hiddenContainer = document.createElement("div");
-    const EXPORT_WIDTH = 1920; 
-    const EXPORT_HEIGHT = Math.max(1080, chartData.length * 40 + 200); 
+    const EXPORT_WIDTH = view === 'avg_participant' ? 800 : 1920; 
+    
+    // Adjusted height calculation for Scoreboard
+    const itemHeight = 60; 
+    const baseHeight = 200; 
+    const dynamicHeight = chartData.length * itemHeight + baseHeight;
+
+    const EXPORT_HEIGHT = isHorizontal 
+        ? Math.max(800, dynamicHeight) 
+        : 1080;
 
     hiddenContainer.style.width = `${EXPORT_WIDTH}px`;
     hiddenContainer.style.height = `${EXPORT_HEIGHT}px`;
-    // Ensure background matches theme
     hiddenContainer.style.background = colorScheme === 'dark' ? '#1A1B1E' : '#FFFFFF';
     
     wrapper.appendChild(hiddenContainer);
@@ -621,7 +570,7 @@ export function InteractiveBatchChart({
                         colorScheme={colorScheme === "dark" ? "dark" : "light"}
                         dataKey={dataKey}
                         isHorizontal={isHorizontal}
-                        width={EXPORT_WIDTH} // PASS FIXED DIMENSIONS
+                        width={EXPORT_WIDTH} 
                         height={EXPORT_HEIGHT}
                     />
                 </MantineProvider>
@@ -629,10 +578,6 @@ export function InteractiveBatchChart({
             setTimeout(resolve, 800); 
         });
 
-        // 3. Capture with high quality
-        // Note: html-to-image might be confused by left: -3000px.
-        // We can use the 'width' and 'height' options to forcedly grab that rect?
-        // No, usually it grabs the node.
         const dataUrl = await toPng(hiddenContainer, {
             backgroundColor: colorScheme === "dark" ? "#1A1B1E" : "#FFFFFF",
             cacheBust: true,
@@ -661,7 +606,6 @@ export function InteractiveBatchChart({
     }
   };
 
-
   const routerPush = (url: string) => {
     router.push(url);
   }
@@ -680,7 +624,6 @@ export function InteractiveBatchChart({
         </ActionIcon>
       </Group>
 
-      {/* Kontrol UI (Tabs dan Dropdown) */}
       <SegmentedControl
         fullWidth
         value={view}
@@ -692,6 +635,7 @@ export function InteractiveBatchChart({
         ]}
         mb="md"
       />
+      
       <Collapse in={view === "specific_exam"}>
         <Select
           label="Pilih Ujian"
@@ -704,10 +648,7 @@ export function InteractiveBatchChart({
         />
       </Collapse>
 
-      <Box
-        ref={chartContainerRef}
-      >
-        {/* Tampilkan Loader/Error/Empty State */}
+      <Box ref={chartContainerRef}>
         {loading && <ComponentLoader label="Memuat data grafik..." />}
         {error && (
           <Alert
@@ -724,27 +665,51 @@ export function InteractiveBatchChart({
           </Text>
         )}
 
-        {/* --- MAIN DISPLAY RENDER --- */}
         {!loading && !error && chartData.length > 0 && (
-            <BatchChartVisual 
-                chartData={chartData}
-                view={view}
-                batchId={batchId}
-                batchName={batchName}
-                theme={theme}
-                colorScheme={colorScheme === "dark" ? "dark" : "light"}
-                dataKey={dataKey}
-                isHorizontal={isHorizontal}
-                onBarClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-                    if (data.examId) {
-                      routerPush(
-                        `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(
-                          batchName
-                        )}`
-                      );
-                    }
-                }}
-            />
+            // MOBILE VIEW LOGIC
+            isMobile ? (
+                <Paper withBorder p="xl" radius="md" bg={colorScheme === 'dark' ? 'dark.7' : 'gray.0'}>
+                    <Stack align="center" gap="md">
+                         <IconDownload size={48} color="var(--mantine-color-violet-5)" />
+                         <Text ta="center" fw={500}>
+                             Tampilan grafik tidak tersedia di mode mobile.
+                         </Text>
+                         <Text ta="center" size="sm" c="dimmed">
+                             Silakan unduh grafik untuk melihat ringkasan lengkap performa peserta.
+                         </Text>
+                         <Button 
+                            leftSection={<IconDownload size={18} />}
+                            fullWidth
+                            variant="gradient"
+                            gradient={{ from: 'violet', to: 'indigo' }}
+                            onClick={handleDownload}
+                            loading={isDownloading}
+                         >
+                             Unduh Grafik ({view === 'avg_participant' ? 'Papan Skor' : 'Chart'})
+                         </Button>
+                    </Stack>
+                </Paper>
+            ) : (
+                <BatchChartVisual 
+                    chartData={chartData}
+                    view={view}
+                    batchId={batchId}
+                    batchName={batchName}
+                    theme={theme}
+                    colorScheme={colorScheme === "dark" ? "dark" : "light"}
+                    dataKey={dataKey}
+                    isHorizontal={isHorizontal}
+                    onBarClick={(data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                        if (data.examId) {
+                        routerPush(
+                            `/admin/monitoring/${data.examId}?batch=${encodeURIComponent(
+                            batchName
+                            )}`
+                        );
+                        }
+                    }}
+                />
+            )
         )}
       </Box>
     </Paper>
