@@ -227,7 +227,7 @@ export default function LiveExamPage() {
     // ------------------------------------------------------------------------
     
     socket.on("connect", () => {
-      console.log("Terhubung ke server WebSocket dengan ID:", socket.id);
+      // console.log("Terhubung ke server WebSocket dengan ID:", socket.id);
       setIsConnected(true); // Koneksi pulih, buka blokir layar
     });
 
@@ -242,7 +242,7 @@ export default function LiveExamPage() {
     });
 
     socket.on("answerReceived", (data) => {
-      console.log("Konfirmasi jawaban diterima dari server:", data);
+      // console.log("Konfirmasi jawaban diterima dari server:", data);
       // Di sini bisa ditambahkan logika untuk memberi tanda centang hijau "Tersimpan"
     });
 
@@ -647,7 +647,7 @@ export default function LiveExamPage() {
           <Text size="sm" c="dimmed" mb="lg">
             Klik nomor untuk melompat ke soal tersebut.
           </Text>
-          <SimpleGrid cols={5} spacing="sm">
+          <SimpleGrid cols={isMobile ? 4 : 5} spacing="sm">
             {examData.exam.exam_questions.map((q, index) => {
               const isCurrent = index === currentQuestionIndex;
               const isAnswered = !!answers[q.id];
@@ -663,6 +663,7 @@ export default function LiveExamPage() {
                   }}
                   h={50}
                   radius="md"
+                  px={isMobile ? 0 : "sm"} // <-- Reduced padding on mobile
                   c={
                     isCurrent
                       ? "white"

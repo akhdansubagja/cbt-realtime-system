@@ -103,6 +103,7 @@ DONE49. buat agar pada fitur untuk export ke excel yang ada di halaman detail ba
 
 DONE50. perbaiki kolom total yang ada pada tabel laporan peserta
 
+51.perbaiki vulnerable pada halaman untuk membuat user
 
 
 

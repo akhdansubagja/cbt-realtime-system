@@ -25,9 +25,9 @@ export class KafkaController {
   @EventPattern('answer-submissions')
   handleAnswerSubmission(@Payload() data: SubmitAnswerPayload) {
     // Tidak perlu parsing, NestJS sudah melakukannya untuk kita!
-    this.logger.log(
-      `Pesan diterima & diproses dari Kafka: ${JSON.stringify(data)}`,
-    );
+    // this.logger.log(
+    //   `Pesan diterima & diproses dari Kafka: ${JSON.stringify(data)}`,
+    // );
     this.participantsService.saveAnswer(data);
   }
 }

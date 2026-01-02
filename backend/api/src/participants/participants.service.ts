@@ -257,9 +257,9 @@ export class ParticipantsService {
       ['participant', 'participant_exam_question'],
     );
 
-    console.log(
-      `Jawaban untuk PEQ ID ${data.examQuestionId} disimpan. Status: ${isCorrect}`,
-    );
+    // console.log(
+    //   `Jawaban untuk PEQ ID ${data.examQuestionId} disimpan. Status: ${isCorrect}`,
+    // );
 
     await this.recalculateAndBroadcastScore(data.participantId);
   }
@@ -297,9 +297,9 @@ export class ParticipantsService {
     participant.finished_at = finishedAtDate || new Date(); // Set waktu selesai (bisa manual date)
     const savedParticipant = await this.participantRepository.save(participant); // Simpan perubahan
 
-    console.log(
-      `Ujian untuk peserta ID ${participantId} selesai. Skor akhir: ${totalScore}`,
-    );
+    // console.log(
+    //   `Ujian untuk peserta ID ${participantId} selesai. Skor akhir: ${totalScore}`,
+    // );
 
     // LOGIKA BARU UNTUK MENYIARKAN STATUS
     if (savedParticipant.exam) {

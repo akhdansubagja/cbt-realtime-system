@@ -35,7 +35,7 @@ export class LiveExamGateway implements OnModuleInit {
    * @param client Socket client.
    */
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    // console.log(`Client connected: ${client.id}`);
   }
 
   /**
@@ -43,7 +43,7 @@ export class LiveExamGateway implements OnModuleInit {
    * @param client Socket client.
    */
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    // console.log(`Client disconnected: ${client.id}`);
   }
 
   /**
@@ -60,10 +60,10 @@ export class LiveExamGateway implements OnModuleInit {
   ) {
     this.kafkaClient.emit('answer-submissions', data); // Kirim objeknya langsung
 
-    console.log(`Jawaban dari ${client.id} dikirim ke Kafka:`, data);
+    // console.log(`Jawaban dari ${client.id} dikirim ke Kafka:`, data);
 
     client.emit('answerReceived', {
-      message: 'Jawaban Anda telah kami terima dan sedang diproses.',
+      // message: 'Jawaban Anda telah kami terima dan sedang diproses.',
       data: data, // Kirim objeknya juga ke klien
     });
   }
@@ -88,9 +88,9 @@ export class LiveExamGateway implements OnModuleInit {
       newScore,
     });
 
-    console.log(
-      `Menyiarkan update skor ke ruangan ${roomName}: Peserta ${participantId} skor baru ${newScore}`,
-    );
+    // console.log(
+    //   `Menyiarkan update skor ke ruangan ${roomName}: Peserta ${participantId} skor baru ${newScore}`,
+    // );
   }
 
   /**
@@ -106,9 +106,9 @@ export class LiveExamGateway implements OnModuleInit {
   ) {
     const roomName = `exam-${data.examId}-monitoring`;
     client.join(roomName); // Masukkan koneksi klien ini ke dalam ruangan
-    console.log(
-      `Klien ${client.id} bergabung ke ruangan monitoring: ${roomName}`,
-    );
+    // console.log(
+    //   `Klien ${client.id} bergabung ke ruangan monitoring: ${roomName}`,
+    // );
   }
 
   /**
@@ -142,9 +142,9 @@ export class LiveExamGateway implements OnModuleInit {
       },
     });
 
-    console.log(
-      `Menyiarkan peserta baru ke ruangan ${roomName}: ${participantName} (Batch: ${batchName})`,
-    );
+    // console.log(
+    //   `Menyiarkan peserta baru ke ruangan ${roomName}: ${participantName} (Batch: ${batchName})`,
+    // );
   }
 
   /**
@@ -170,8 +170,8 @@ export class LiveExamGateway implements OnModuleInit {
       finished_at: finishedAt, // Kirim waktu selesai
     });
 
-    console.log(
-      `Menyiarkan update status ke ruangan ${roomName}: Peserta ${participantId} status baru ${newStatus}`,
-    );
+    // console.log(
+    //   `Menyiarkan update status ke ruangan ${roomName}: Peserta ${participantId} status baru ${newStatus}`,
+    // );
   }
 }
