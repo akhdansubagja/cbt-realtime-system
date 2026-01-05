@@ -55,9 +55,16 @@ function ResultContent() {
 
   const getFeedbackMessage = (s: number) => {
     if (s >= 90) return "Luar Biasa!";
-    if (s >= 75) return "Kerja Bagus!";
+    if (s >= 80) return "Kerja Bagus!"; // Adjusted threshold
     if (s >= 60) return "Cukup Baik!";
     return "Terus Belajar!";
+  };
+
+  const getMascotVariant = (s: number) => {
+    if (s >= 90) return "amazed";
+    if (s >= 80) return "success"; // Happy
+    if (s >= 60) return "idle"; // Neutral
+    return "sad";
   };
 
   useEffect(() => {
@@ -140,7 +147,7 @@ function ResultContent() {
 
                     {/* Mascot */}
                     <Box mt="md" mb="md">
-                      <InteractiveMascot variant="success" size={160} />
+                      <InteractiveMascot variant={getMascotVariant(finalScore)} size={160} />
                     </Box>
 
                     {/* <Text fw={500} size="lg" c="teal" mb="xs">
@@ -154,7 +161,7 @@ function ResultContent() {
                       style={{
                         padding: "20px 40px",
                         borderRadius: "20px",
-                        background: "var(--mantine-color-gray-1)",
+                        background: "var(--mantine-color-black-1)",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center"

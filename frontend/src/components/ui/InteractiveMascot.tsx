@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 
 interface InteractiveMascotProps {
-  variant?: "idle" | "typing" | "success" | "thinking";
+  variant?: "idle" | "typing" | "success" | "thinking" | "amazed" | "sad";
   size?: number;
 }
 
@@ -39,7 +39,7 @@ export const InteractiveMascot = ({
       }
     };
 
-    if (variant === "idle" || variant === "success") {
+    if (variant === "idle" || variant === "success" || variant === "amazed" || variant === "sad") {
         window.addEventListener("mousemove", handleMouseMove);
     }
     
@@ -152,6 +152,22 @@ export const InteractiveMascot = ({
                 strokeLinecap="round" 
                 fill="none"
                 initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+             />
+        ) : variant === 'amazed' ? (
+            <motion.circle 
+                cx="50" cy="75" r="6"
+                fill="white"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+            />
+        ) : variant === 'sad' ? (
+             <motion.path 
+                d="M40 75 Q50 65 60 75" 
+                stroke="white" 
+                strokeWidth="3" 
+                strokeLinecap="round" 
+                fill="none"
                 animate={{ pathLength: 1 }}
              />
         ) : (
