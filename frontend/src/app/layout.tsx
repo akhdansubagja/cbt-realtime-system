@@ -6,7 +6,7 @@ import { Providers } from './Providers';
 import "@mantine/dates/styles.css";
 
 export const metadata = {
-  title: 'CBT Realtime System',
+  title: 'VIOLET',
   description: 'Aplikasi Ujian Online Real-time',
 };
 

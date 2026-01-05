@@ -158,7 +158,7 @@ export default function DashboardPage() {
             Dashboard Overview
           </Title>
           <Text mt="xs" c="white" style={{ opacity: 0.9 }}>
-            Selamat datang di panel admin CBT Realtime System.
+            Selamat datang di panel admin VIOLET.
           </Text>
         </Paper>
       </motion.div>

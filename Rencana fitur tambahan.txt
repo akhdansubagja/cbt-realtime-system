@@ -105,6 +105,11 @@ DONE50. perbaiki kolom total yang ada pada tabel laporan peserta
 
 51.perbaiki vulnerable pada halaman untuk membuat user
 
+DONE52. buat agar pada bagian modal di halaman manajemen peserta yang memerlukan untuk memilih batch dapat dilakukan pengetikan.
+
+DONE53. buat agar pada bagian modal di halaman manajemen ujian, agar dapat dilakukan pengetikan pada saat ingin memilih bank soal.
+
+
 
 
 
@@ -121,12 +126,17 @@ DONE1. buat agar tampilannya menjadi lebih bagus dan tidak polosan.
 3. buat animasi pada halaman utama pada saat peserta ingin melaksanakan ujian, misalkan karakter laki laki atau perempuan,
 4. buat agar sistem bisa menambahkan soal essai.
 5. buat agar sistem dapat menampilkan review hasil ujian, yang mana berarti lengkap dengan sebuah jawabannya.
-6. pada saat ini sistem menggunakan cron job untuk mendeteksi peserta yang sedang melaksanakan ujian, untuk skalabilitas, hal ini perlu diperhatikan.
+
 
 
 
 SECURITY
 DONE1. di halaman live exam untuk saat ini bisa terbobol hanya dengan modal mengganti URL
+
+
+YANG PERLU DIKHAWATIRKAN
+1. pada saat ini sistem menggunakan cron job untuk mendeteksi peserta yang sedang melaksanakan ujian, untuk skalabilitas, hal ini perlu diperhatikan.
+2. kafka sebenarnya pada sistem saat ini terbilang overkill, akan tetapi untuk skalabilitas yang lebih tinggi, sistem ini menjadi sangat siap.
 
 
 

@@ -313,7 +313,7 @@ export class ReportsService {
 
     // 2. Buat Workbook
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Sistem CBT Realtime';
+    workbook.creator = 'Sistem VIOLET';
     workbook.created = new Date();
 
     // --- SHEET 1: Rangkuman Nilai Peserta (Tabel Lebar) ---

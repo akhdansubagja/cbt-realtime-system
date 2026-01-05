@@ -23,6 +23,7 @@ import {
 import axios from "axios";
 import { IconUser, IconKey } from "@tabler/icons-react";
 import { ThemeToggle } from "../components/layout/ThemeToggle";
+import { InteractiveMascot } from "@/components/ui/InteractiveMascot";
 // Definisikan tipe data untuk examinee
 interface Examinee {
   id: number;
@@ -45,6 +46,9 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isFetchingExaminees, setIsFetchingExaminees] = useState(true);
+
+  // State untuk interaksi maskot
+  const [mascotVariant, setMascotVariant] = useState<"idle" | "typing">("idle");
 
   // Efek ini akan berjalan saat komponen pertama kali dimuat
   useEffect(() => {
@@ -136,10 +140,21 @@ export default function HomePage() {
             minHeight: "100vh",
           }}
         >
-          <Stack w={420}>
-            <Title ta="center">Ujian Online</Title>
-            <Text c="dimmed" size="sm" ta="center" mb={20}>
-              Silakan pilih nama dan masukkan kode untuk memulai ujian.
+          <Stack w={420} align="center" gap={2}>
+            <Box mb={-20} style={{ zIndex: 1, position: "relative" }}>
+              <InteractiveMascot variant={mascotVariant} size={140} />
+            </Box>
+
+            <Title ta="center" lh={2}>
+              VIOLET
+            </Title>
+
+            <Text ta="center" size="sm" mb={20}>
+              (Virtual Integrated Online Evaluation Tool)
+            </Text>
+
+            <Text c="dimmed" size="sm" ta="center" mt={8} mb={10}>
+              Silakan masukkan nama dan kode untuk memulai ujian.
             </Text>
 
             <Paper withBorder shadow="md" p={30} radius="md">
@@ -163,6 +178,8 @@ export default function HomePage() {
                       data={examinees}
                       value={selectedExamineeId}
                       onChange={setSelectedExamineeId}
+                      onFocus={() => setMascotVariant("typing")}
+                      onBlur={() => setMascotVariant("idle")}
                       searchable
                       required
                     />
@@ -174,6 +191,8 @@ export default function HomePage() {
                       onChange={(event) =>
                         setExamCode(event.currentTarget.value)
                       }
+                      onFocus={() => setMascotVariant("typing")}
+                      onBlur={() => setMascotVariant("idle")}
                       required
                     />
 

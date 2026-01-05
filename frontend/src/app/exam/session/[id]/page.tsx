@@ -25,6 +25,7 @@ import api from "@/lib/axios";
 import { IconClock, IconListNumbers } from "@tabler/icons-react";
 import { ThemeToggle } from "../../../../components/layout/ThemeToggle";
 import { ParticipantLayout } from "@/components/layout/ParticipantLayout";
+import { motion } from "framer-motion";
 
 // --- PERBAIKAN TIPE DATA DI SINI ---
 /** Interface data ujian untuk halaman persiapan */
@@ -130,6 +131,11 @@ export default function ExamSessionPage() {
         >
           <Stack w={600}>
             {examData && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
               <Paper withBorder shadow="md" p={30} radius="md">
                 <Stack align="center">
                   <Text c="dimmed">Selamat datang,</Text>
@@ -179,11 +185,26 @@ export default function ExamSessionPage() {
                     </Grid.Col>
                   </Grid>
 
-                  <Button fullWidth mt="xl" size="lg" onClick={handleStartExam}>
-                    Saya Siap, Mulai Kerjakan
-                  </Button>
+                  <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      animate={{
+                          boxShadow: ["0 0 0 0 rgba(76, 110, 245, 0)", "0 0 0 10px rgba(76, 110, 245, 0)"]
+                      }}
+                      transition={{
+                        boxShadow: {
+                            duration: 1.5,
+                            repeat: Infinity
+                        }
+                      }}
+                  >
+                    <Button fullWidth mt="xl" size="lg" onClick={handleStartExam}>
+                        Saya Siap, Mulai Kerjakan
+                    </Button>
+                  </motion.div>
                 </Stack>
               </Paper>
+              </motion.div>
             )}
           </Stack>
         </Container>

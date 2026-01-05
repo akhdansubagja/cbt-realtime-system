@@ -151,7 +151,7 @@ export class ParticipantsService {
       console.log(`Peserta ${examinee.name} kembali ke lobi.`);
       participantForToken = existingParticipant; // Gunakan sesi yang ada, sudah lengkap dengan relasi
     } else {
-      console.log(`Membuat sesi lobi baru untuk ${examinee.name}.`);
+      // console.log(`Membuat sesi lobi baru untuk ${examinee.name}.`);
       const newParticipant = this.participantRepository.create({
         examinee: examinee,
         exam: exam,
@@ -204,9 +204,9 @@ export class ParticipantsService {
 
     // Jika belum dimulai, set start_time dan SIARKAN PESERTA BARU
     if (participant.start_time === null) {
-      console.log(
-        `Peserta ID ${participantId} (${participant.examinee.name}) memulai ujian. Timer dimulai.`,
-      );
+      // console.log(
+      //   `Peserta ID ${participantId} (${participant.examinee.name}) memulai ujian. Timer dimulai.`,
+      // );
       participant.start_time = new Date();
       const savedParticipant =
         await this.participantRepository.save(participant); // Simpan dulu
@@ -373,7 +373,7 @@ export class ParticipantsService {
       participant.generated_questions.length === 0
     ) {
       // 2.a. Jika belum ada snapshot, kita buat sekarang.
-      console.log(`Membuat set soal baru untuk peserta ID ${participantId}`);
+      // console.log(`Membuat set soal baru untuk peserta ID ${participantId}`);
 
       // Inisialisasi daftar soal final dan daftar ID soal yang sudah terpakai.
       const finalQuestionSet: { question: Question; point: number }[] = [];
@@ -476,9 +476,9 @@ export class ParticipantsService {
       participant = updatedParticipant;
     } else {
       // 2.b. Jika snapshot soal sudah ada, cukup tampilkan log.
-      console.log(
-        `Mengambil set soal yang sudah ada untuk peserta ID ${participantId}`,
-      );
+      // console.log(
+      //   `Mengambil set soal yang sudah ada untuk peserta ID ${participantId}`,
+      // );
     }
 
     // 3. Hitung sisa waktu pengerjaan.

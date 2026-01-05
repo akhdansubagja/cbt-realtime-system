@@ -164,7 +164,7 @@ export function AdminDashboardLayout({
                   letterSpacing: "-0.5px",
                   fontWeight: 800
                 }}>
-                  CBT Realtime
+                  VIOLET ( Virtual Integrated Online Evaluation Tool )
                 </Title>
               </Box>
             </Group>

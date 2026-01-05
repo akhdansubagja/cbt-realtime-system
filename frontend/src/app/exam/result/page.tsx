@@ -19,6 +19,8 @@ import { Stack, Box } from "@mantine/core";
 import api from "@/lib/axios";
 import { motion, useSpring, useTransform } from "framer-motion";
 import { ThemeToggle } from "../../../components/layout/ThemeToggle";
+import { InteractiveMascot } from "@/components/ui/InteractiveMascot";
+import confetti from "canvas-confetti";
 
 // Komponen ini akan menangani logika utama
 // Komponen ini akan menangani logika utama
@@ -57,6 +59,30 @@ function ResultContent() {
     if (s >= 60) return "Cukup Baik!";
     return "Terus Belajar!";
   };
+
+  useEffect(() => {
+    if (finalScore >= 60) {
+      const duration = 3000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval: NodeJS.Timeout = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+      }, 250);
+      
+      return () => clearInterval(interval);
+    }
+  }, [finalScore]);
 
   useEffect(() => {
     if (participantId) {
@@ -112,34 +138,41 @@ function ResultContent() {
                     Skor akhir Anda adalah:
                   </Text>
 
-                  <motion.div
-                    style={{
-                      width: 180,
-                      height: 180,
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background:
-                        "linear-gradient(135deg, var(--mantine-color-teal-5), var(--mantine-color-cyan-5))",
-                      color: "white",
-                      boxShadow:
-                        "0px 10px 30px -10px var(--mantine-color-teal-4)",
-                      marginTop: "var(--mantine-spacing-xl)",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <motion.h1
+                    {/* Mascot */}
+                    <Box mt="md" mb="md">
+                      <InteractiveMascot variant="success" size={160} />
+                    </Box>
+
+                    {/* <Text fw={500} size="lg" c="teal" mb="xs">
+                        {getFeedbackMessage(finalScore)}
+                    </Text> */}
+
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, type: "spring" }}
                       style={{
-                        fontSize: "4.5rem",
-                        fontWeight: 700,
-                        margin: 0,
-                        lineHeight: 1,
+                        padding: "20px 40px",
+                        borderRadius: "20px",
+                        background: "var(--mantine-color-gray-1)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center"
                       }}
                     >
-                      {roundedAnimatedScore}
-                    </motion.h1>
-                  </motion.div>
+                      <Text size="sm" c="dimmed" tt="uppercase" fw={700} style={{ letterSpacing: 1 }}>Skor Akhir</Text>
+                      <motion.h1
+                        style={{
+                          fontSize: "5rem",
+                          fontWeight: 800,
+                          margin: 0,
+                          lineHeight: 1,
+                          color: "var(--mantine-color-violet-6)"
+                        }}
+                      >
+                        {roundedAnimatedScore}
+                      </motion.h1>
+                    </motion.div>
                   {/* <Text fw={500} mt="md">
                     {getFeedbackMessage(finalScore)}
                   </Text> */}

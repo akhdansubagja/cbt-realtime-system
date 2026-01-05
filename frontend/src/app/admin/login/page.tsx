@@ -108,9 +108,9 @@ export default function AdminLoginPage() {
               <IconSchool size={32} stroke={1.5} color="white" />
             </ThemeIcon>
             <Title order={1} size={48} fw={900} style={{ lineHeight: 1.1 }}>
-              CBT Realtime
+              VIOLET
               <br />
-              System
+              (Virtual Integrated Online Evaluation Tool)
             </Title>
             <Text size="xl" mt="md" c="gray.3" maw={500}>
               Platform ujian online modern dengan pemantauan real-time dan
@@ -207,8 +207,7 @@ export default function AdminLoginPage() {
               </form>
 
               <Text c="dimmed" size="xs" ta="center">
-                &copy; {new Date().getFullYear()} CBT Realtime System. All
-                rights reserved.
+                &copy; {new Date().getFullYear()} VIOLET. All rights reserved.
               </Text>
             </Stack>
           </motion.div>
