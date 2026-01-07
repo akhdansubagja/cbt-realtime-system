@@ -95,6 +95,9 @@ export default function LiveExamPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({}); // { examQuestionId: 'A' }
   const [timeLeft, setTimeLeft] = useState(0);
+  
+  // State untuk menyimpan jawaban terakhir yang GAGAL terkirim (untuk retry)
+  const [lastFailedAnswer, setLastFailedAnswer] = useState<{id: number, answer: string} | null>(null);
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,7 +112,11 @@ export default function LiveExamPage() {
   // Menambahkan state untuk memantau apakah frontend terhubung ke backend.
   // Ini penting agar siswa tidak menjawab soal saat server mati (mencegah data hilang).
   // --------------------------------------------------------------------------
-  const [isConnected, setIsConnected] = useState(true); // Default dianggap nyala dulu sampai socket init
+  // --------------------------------------------------------------------------
+  // [KP-RESILIENCE] State Status Koneksi & Error Sistem
+  // --------------------------------------------------------------------------
+  const [isConnected, setIsConnected] = useState(true); 
+  const [isSystemError, setIsSystemError] = useState(false); // State baru untuk error kritikal (Kafka/DB)
 
   const handleFinishExam = async (force: boolean = false) => {
     // Jika tidak dipaksa (tombol manual ditekan), buka modal terlebih dahulu
@@ -206,10 +213,28 @@ export default function LiveExamPage() {
     fetchExamDataAndAnswers();
   }, [participantId]);
 
-  // Logika Timer Countdown (ini tidak perlu diubah)
+  // 1. Ambil data ujian saat halaman dimuat
   useEffect(() => {
-    // ... (kode timer setInterval Anda sudah benar dan tidak perlu diubah) ...
+    // ... code ...
   }, [timeLeft, examData]);
+
+  // [KP-RESILIENCE] Auto-Retry Logic saat System Error
+  // Jika terjadi error sistem (Kafka mati), frontend akan terus mencoba mengirim ulang
+  // jawaban terakhir setiap 3 detik. Jika berhasil, error hilang otomatis.
+  useEffect(() => {
+    if (!isSystemError || !lastFailedAnswer || !socketRef.current) return;
+
+    const retryInterval = setInterval(() => {
+      console.log("Mencoba mengirim ulang jawaban...");
+      socketRef.current?.emit("submitAnswer", {
+        participantId: participantId,
+        examQuestionId: lastFailedAnswer.id,
+        answer: lastFailedAnswer.answer,
+      });
+    }, 3000); // Retry tiap 3 detik
+
+    return () => clearInterval(retryInterval);
+  }, [isSystemError, lastFailedAnswer, participantId]);
 
   // 2. Inisialisasi koneksi WebSocket
   useEffect(() => {
@@ -241,9 +266,17 @@ export default function LiveExamPage() {
       setIsConnected(false); // Gagal konek, blokir layar!
     });
 
+    // [KP-RESILIENCE] Sinyal Sukses: Matikan Mode Error & Blokir
     socket.on("answerReceived", (data) => {
       // console.log("Konfirmasi jawaban diterima dari server:", data);
-      // Di sini bisa ditambahkan logika untuk memberi tanda centang hijau "Tersimpan"
+      setIsSystemError(false); // Kalau sukses, hilangkan blokir layar otomatis
+    });
+
+    // [KP-RESILIENCE] Menangani Gagal Simpan (Kafka Mati)
+    socket.on("answerFailed", (data) => {
+      console.error("GAGAL SIMPAN:", data);
+      setIsSystemError(true); // Aktifkan mode blokir layar
+      // (lastFailedAnswer sudah diset di handleAnswerChange)
     });
 
     // Cleanup: putuskan koneksi saat komponen di-unmount
@@ -291,6 +324,9 @@ export default function LiveExamPage() {
   const handleAnswerChange = (examQuestionId: number, answer: string) => {
     const newAnswers = { ...answers, [examQuestionId]: answer };
     setAnswers(newAnswers);
+    
+    // Simpan dulu sebagai "Last Attempt" untuk keperluan Retry
+    setLastFailedAnswer({ id: examQuestionId, answer: answer });
 
     // Kirim jawaban ke backend melalui WebSocket
     if (socketRef.current) {
@@ -341,19 +377,26 @@ export default function LiveExamPage() {
             Mencegah siswa input jawaban saat server mati.
            ------------------------------------------------------------------ */}
         <LoadingOverlay
-          visible={!isConnected}
+          visible={!isConnected || isSystemError} // Blokir jika disconnect ATAU error sistem
           zIndex={1000}
           overlayProps={{ radius: "sm", blur: 2 }}
           loaderProps={{ children: (
               <Stack align="center" gap="md">
                   <Loader color="red" type="bars" />
-                  <Alert variant="filled" color="red" title="Koneksi Terputus" icon={<IconWifiOff />}>
+                  <Alert variant="filled" color="red" title={isSystemError ? "Gangguan Server (Kritikal)" : "Koneksi Terputus"} icon={<IconWifiOff />}>
                       <Text size="sm">
-                          Kami kehilangan koneksi ke server. Mohon tunggu, sedang mencoba menyambung ulang...
+                          {isSystemError 
+                            ? "Sistem gagal menyimpan jawaban (Kafka/Database Down). Sedang mencoba lagi..."
+                            : "Kami kehilangan koneksi ke server. Mohon tunggu, sedang mencoba menyambung ulang..."
+                          }
                       </Text>
-                      <Text size="xs" mt="xs" fw={700}>
-                          JANGAN TUTUP HALAMAN INI. Sesi ujian akan otomatis berlanjut setelah tersambung.
-                      </Text>
+                      
+                      <Group mt="md" align="center">
+                         <Loader color="white" size="xs" />
+                         <Text size="xs" fw={700}>
+                            JANGAN TUTUP HALAMAN INI. Sesi akan lanjut otomatis.
+                        </Text>
+                      </Group>
                   </Alert>
               </Stack>
           )}}

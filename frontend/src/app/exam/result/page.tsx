@@ -145,10 +145,10 @@ function ResultContent() {
                     Skor akhir Anda adalah:
                   </Text>
 
-                    {/* Mascot */}
-                    <Box mt="md" mb="md">
+                    {/* Mascot violet, akan tetapi untuk sekarang dihilangkan terlebih dahulu */}
+                    {/* <Box mt="md" mb="md">
                       <InteractiveMascot variant={getMascotVariant(finalScore)} size={160} />
-                    </Box>
+                    </Box> */}
 
                     {/* <Text fw={500} size="lg" c="teal" mb="xs">
                         {getFeedbackMessage(finalScore)}
@@ -161,7 +161,7 @@ function ResultContent() {
                       style={{
                         padding: "20px 40px",
                         borderRadius: "20px",
-                        background: "var(--mantine-color-black-1)",
+                        background: "var(--mantine-color-green-1)",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center"

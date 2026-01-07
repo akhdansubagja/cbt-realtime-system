@@ -109,6 +109,8 @@ DONE52. buat agar pada bagian modal di halaman manajemen peserta yang memerlukan
 
 DONE53. buat agar pada bagian modal di halaman manajemen ujian, agar dapat dilakukan pengetikan pada saat ingin memilih bank soal.
 
+54. tambahkan animasi yang menarik pada violet, maksudnya jika pointer kita diputar putar secara cepat, maka yang terjadi adalah violet menjadi merasa pusing, nah lalu untuk pada halaman
+
 
 
 

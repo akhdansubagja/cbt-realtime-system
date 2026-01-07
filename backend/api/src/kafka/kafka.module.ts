@@ -24,6 +24,13 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
                   'localhost:29092',
                 ),
               ],
+              // [KP-RESILIENCE] Timeout agar cepat sadar kalau Kafka mati
+              connectionTimeout: 1000, // 1 detik (Lebih cepat sadar)
+              authenticationTimeout: 1000,
+              retry: {
+                initialRetryTime: 300,
+                retries: 1, // Fail fast! Biarkan Frontend yang melakukan loop retry.
+              },
             },
             consumer: {
               groupId: 'cbt-consumer',

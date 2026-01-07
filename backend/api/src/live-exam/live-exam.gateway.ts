@@ -58,13 +58,24 @@ export class LiveExamGateway implements OnModuleInit {
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ) {
-    this.kafkaClient.emit('answer-submissions', data); // Kirim objeknya langsung
-
-    // console.log(`Jawaban dari ${client.id} dikirim ke Kafka:`, data);
-
-    client.emit('answerReceived', {
-      // message: 'Jawaban Anda telah kami terima dan sedang diproses.',
-      data: data, // Kirim objeknya juga ke klien
+    // [KP-RESILIENCE] Menggunakan Pola Observable untuk mendeteksi Error Kafka
+    // Jika Kafka mati (Broker/Zookeeper down), error akan tertangkap di sini.
+    this.kafkaClient.emit('answer-submissions', data).subscribe({
+      next: () => {
+        // Berhasil masuk antrian Kafka
+        client.emit('answerReceived', {
+          status: 'ok',
+          data: data,
+        });
+      },
+      error: (err) => {
+        console.error('KAFKA ERROR: Gagal mengirim jawaban:', err);
+        // Beritahu frontend bahwa penyimpanan GAGAL
+        client.emit('answerFailed', {
+          message:
+            'Gagal menyimpan jawaban (Masalah Jaringan/Server). Coba lagi.',
+        });
+      },
     });
   }
 

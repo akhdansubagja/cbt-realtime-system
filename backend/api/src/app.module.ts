@@ -46,7 +46,10 @@ import { ReportsModule } from './reports/reports.module';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       autoLoadEntities: true,
-      // V V V BAGIAN YANG DIPERBAIKI V V V
+      // Konfigurasi Auto-Reconnect Database
+      // Jika Postgres mati/restart, backend akan mencoba konek ulang 10x
+      retryAttempts: 10,
+      retryDelay: 3000,
       entities: [
         User,
         QuestionBank,

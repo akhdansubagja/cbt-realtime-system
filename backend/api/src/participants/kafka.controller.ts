@@ -1,7 +1,7 @@
 // src/participants/kafka.controller.ts
 
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ParticipantsService } from './participants.service';
 
 interface SubmitAnswerPayload {
@@ -22,12 +22,13 @@ export class KafkaController {
    *
    * @param data Payload jawaban.
    */
-  @EventPattern('answer-submissions')
-  handleAnswerSubmission(@Payload() data: SubmitAnswerPayload) {
+  @MessagePattern('answer-submissions') // <-- Ubah ke MessagePattern agar bisa me-reply
+  async handleAnswerSubmission(@Payload() data: SubmitAnswerPayload) {
     // Tidak perlu parsing, NestJS sudah melakukannya untuk kita!
     // this.logger.log(
     //   `Pesan diterima & diproses dari Kafka: ${JSON.stringify(data)}`,
     // );
-    this.participantsService.saveAnswer(data);
+    await this.participantsService.saveAnswer(data);
+    return { success: true }; // <-- Return value untuk konfirmasi ke Producer
   }
 }
