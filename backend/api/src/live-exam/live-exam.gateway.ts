@@ -35,7 +35,13 @@ export class LiveExamGateway implements OnModuleInit {
    * @param client Socket client.
    */
   handleConnection(client: Socket) {
-    // console.log(`Client connected: ${client.id}`);
+    // [REFACK-001] Identifikasi user saat koneksi
+    const participantId = client.handshake.query.participantId;
+    if (participantId) {
+      const roomName = `participant-${participantId}`;
+      client.join(roomName);
+      // console.log(`Client ${client.id} joined room ${roomName}`);
+    }
   }
 
   /**
@@ -48,7 +54,7 @@ export class LiveExamGateway implements OnModuleInit {
 
   /**
    * Menerima submisi jawaban dari peserta ujian.
-   * Meneruskan data ke Kafka dan memberikan konfirmasi ke client.
+   * Meneruskan data ke Kafka. TIDAK LAGI MEMBERI ACK PALSU DI SINI.
    *
    * @param data Data jawaban yang dikirim peserta.
    * @param client Socket client.
@@ -62,18 +68,17 @@ export class LiveExamGateway implements OnModuleInit {
     // Jika Kafka mati (Broker/Zookeeper down), error akan tertangkap di sini.
     this.kafkaClient.emit('answer-submissions', data).subscribe({
       next: () => {
-        // Berhasil masuk antrian Kafka
-        client.emit('answerReceived', {
-          status: 'ok',
-          data: data,
-        });
+        // Berhasil masuk antrian Kafka.
+        // [REFACTOR-CONSISTENCY] JANGAN KIRIM ACK 'answerReceived' DI SINI.
+        // Kita tunggu sampai Consumer berhasil menyimpan ke DB barulah kirim 'answerCommitted'.
       },
       error: (err) => {
         console.error('KAFKA ERROR: Gagal mengirim jawaban:', err);
-        // Beritahu frontend bahwa penyimpanan GAGAL
+        // Beritahu frontend bahwa penyimpanan GAGAL (karena Kafka mati)
         client.emit('answerFailed', {
           message:
             'Gagal menyimpan jawaban (Masalah Jaringan/Server). Coba lagi.',
+          examQuestionId: data.examQuestionId, // Sertakan ID agar frontend tahu mana yang gagal
         });
       },
     });

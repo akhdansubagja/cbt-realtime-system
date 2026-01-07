@@ -22,11 +22,11 @@ import {
   Flex,
   Image,
   Badge,
+  Burger,
+  LoadingOverlay,
   ThemeIcon,
   RingProgress,
   ScrollArea,
-  Burger,
-  LoadingOverlay,
 } from "@mantine/core";
 import { io, Socket } from "socket.io-client";
 import api from "@/lib/axios";
@@ -94,6 +94,9 @@ export default function LiveExamPage() {
   // State untuk ujian
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({}); // { examQuestionId: 'A' }
+  const [answerStatuses, setAnswerStatuses] = useState<
+    Record<number, "saving" | "saved" | "error">
+  >({}); // [REFACTOR] State status per soal
   const [timeLeft, setTimeLeft] = useState(0);
   
   // State untuk menyimpan jawaban terakhir yang GAGAL terkirim (untuk retry)
@@ -242,7 +245,10 @@ export default function LiveExamPage() {
 
     // Buat koneksi ke server WebSocket
     const socket = io(
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+      {
+        query: { participantId: participantId.toString() }, // [REFACTOR] Kirim ID untuk Join Room
+      }
     );
     socketRef.current = socket;
 
@@ -267,16 +273,31 @@ export default function LiveExamPage() {
     });
 
     // [KP-RESILIENCE] Sinyal Sukses: Matikan Mode Error & Blokir
-    socket.on("answerReceived", (data) => {
-      // console.log("Konfirmasi jawaban diterima dari server:", data);
-      setIsSystemError(false); // Kalau sukses, hilangkan blokir layar otomatis
+    // [REFACTOR] Dengarkan 'answerCommitted' dari DB (Real Consistency)
+    socket.on("answerCommitted", (data: { examQuestionId: number }) => {
+      // console.log("DATA COMMITTED TO DB:", data);
+      setIsSystemError(false); 
+      setAnswerStatuses((prev) => ({
+        ...prev,
+        [data.examQuestionId]: "saved",
+      }));
     });
 
-    // [KP-RESILIENCE] Menangani Gagal Simpan (Kafka Mati)
-    socket.on("answerFailed", (data) => {
+    // Listener lama (answerReceived) dihapus atau diabaikan karena backend sudah tidak kirim ini lagi untuk konfirmasi final.
+    // Namun jika masih ada legacy code, biarkan kosong.
+    socket.on("answerReceived", () => {});
+
+    // [KP-RESILIENCE] Menangani Gagal Simpan (Kafka/DB Mati)
+    socket.on("answerFailed", (data: { examQuestionId?: number }) => {
       console.error("GAGAL SIMPAN:", data);
       setIsSystemError(true); // Aktifkan mode blokir layar
-      // (lastFailedAnswer sudah diset di handleAnswerChange)
+
+      if (data.examQuestionId) {
+        setAnswerStatuses((prev) => ({
+          ...prev,
+          [data.examQuestionId as number]: "error",
+        }));
+      }
     });
 
     // Cleanup: putuskan koneksi saat komponen di-unmount
@@ -324,6 +345,12 @@ export default function LiveExamPage() {
   const handleAnswerChange = (examQuestionId: number, answer: string) => {
     const newAnswers = { ...answers, [examQuestionId]: answer };
     setAnswers(newAnswers);
+    
+    // [REFACTOR] Set status ke 'saving'
+    setAnswerStatuses((prev) => ({
+      ...prev,
+      [examQuestionId]: "saving",
+    }));
     
     // Simpan dulu sebagai "Last Attempt" untuk keperluan Retry
     setLastFailedAnswer({ id: examQuestionId, answer: answer });
@@ -604,13 +631,25 @@ export default function LiveExamPage() {
                               {option.key}
                             </Text>
                           </ThemeIcon>
-                          <Text
-                            fw={isSelected ? 500 : 400}
-                            c={isSelected ? (colorScheme === 'dark' ? 'violet.2' : 'violet.9') : undefined}
-                            style={{ wordBreak: 'break-word' }}
-                          >
-                            {option.text}
-                          </Text>
+                          <Box style={{ flex: 1 }}>
+                            <Text
+                              fw={isSelected ? 500 : 400}
+                              c={isSelected ? (colorScheme === 'dark' ? 'violet.2' : 'violet.9') : undefined}
+                              style={{ wordBreak: 'break-word' }}
+                            >
+                              {option.text}
+                            </Text>
+                          </Box>
+                           {/* [REFACTOR] Indikator Status Per Opsi (Saving/Saved) */}
+                           {isSelected && answerStatuses[currentExamQuestion.id] === "saving" && (
+                              <Loader size="xs" color="violet" />
+                            )}
+                            {isSelected && answerStatuses[currentExamQuestion.id] === "saved" && (
+                              <IconCheck size={18} color="var(--mantine-color-violet-6)" />
+                            )}
+                            {isSelected && answerStatuses[currentExamQuestion.id] === "error" && (
+                              <IconAlertTriangle size={18} color="red" />
+                            )}
                         </Group>
                       </Paper>
                     );

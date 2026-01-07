@@ -239,29 +239,53 @@ export class ParticipantsService {
    * @param data Payload jawaban dari Kafka.
    */
   async saveAnswer(data: SubmitAnswerPayload) {
-    const participantExamQuestion = await this.peqRepository.findOneBy({
-      id: data.examQuestionId,
-    });
-    if (!participantExamQuestion) return;
+    const roomName = `participant-${data.participantId}`;
 
-    const isCorrect =
-      participantExamQuestion.question.correct_answer === data.answer;
+    try {
+      const participantExamQuestion = await this.peqRepository.findOneBy({
+        id: data.examQuestionId,
+      });
+      if (!participantExamQuestion) {
+        // Jika soal tidak ketemu, ini aneh. Tapi tetap kita anggap gagal.
+        this.liveExamGateway.server
+          .to(roomName)
+          .emit('answerFailed', { examQuestionId: data.examQuestionId });
+        return;
+      }
 
-    await this.answerRepository.upsert(
-      {
-        participant: { id: data.participantId },
-        participant_exam_question: { id: data.examQuestionId },
-        answer: data.answer,
-        is_correct: isCorrect,
-      },
-      ['participant', 'participant_exam_question'],
-    );
+      const isCorrect =
+        participantExamQuestion.question.correct_answer === data.answer;
 
-    // console.log(
-    //   `Jawaban untuk PEQ ID ${data.examQuestionId} disimpan. Status: ${isCorrect}`,
-    // );
+      await this.answerRepository.upsert(
+        {
+          participant: { id: data.participantId },
+          participant_exam_question: { id: data.examQuestionId },
+          answer: data.answer,
+          is_correct: isCorrect,
+        },
+        ['participant', 'participant_exam_question'],
+      );
 
-    await this.recalculateAndBroadcastScore(data.participantId);
+      // [REFACTOR-CONSISTENCY] Emit Success Event SETELAH DB Commit
+      this.liveExamGateway.server.to(roomName).emit('answerCommitted', {
+        examQuestionId: data.examQuestionId,
+      });
+
+      // Lanjut update skor real-time
+      await this.recalculateAndBroadcastScore(data.participantId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to save answer for participant ${data.participantId}: ${error.message}`,
+        error.stack,
+      );
+      // [REFACTOR-CONSISTENCY] Emit Failure Event jika DB gagal
+      this.liveExamGateway.server
+        .to(roomName)
+        .emit('answerFailed', { examQuestionId: data.examQuestionId });
+
+      // Throw agar Kafka bisa retry (tergantung config)
+      throw error;
+    }
   }
 
   /**
