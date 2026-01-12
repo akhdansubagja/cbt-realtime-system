@@ -1,12 +1,10 @@
-// src/live-exam/live-exam.module.ts
-
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { LiveExamGateway } from './live-exam.gateway';
-import { KafkaModule } from 'src/kafka/kafka.module'; 
+import { ParticipantsModule } from 'src/participants/participants.module';
 
 @Module({
-    imports: [KafkaModule], // Impor modul Kafka di sini
-    providers: [LiveExamGateway], // Daftarkan gateway di sini
-    exports: [LiveExamGateway],
+  imports: [forwardRef(() => ParticipantsModule)],
+  providers: [LiveExamGateway],
+  exports: [LiveExamGateway],
 })
 export class LiveExamModule {}

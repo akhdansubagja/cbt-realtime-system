@@ -26,7 +26,7 @@ import { ExamsModule } from './exams/exams.module';
 import { ExamineesModule } from './examinees/examinees.module';
 import { ParticipantsModule } from './participants/participants.module';
 import { LiveExamModule } from './live-exam/live-exam.module';
-import { KafkaModule } from './kafka/kafka.module';
+
 import { ParticipantExamQuestion } from './participants/entities/participant-exam-question.entity';
 import { AuthModule } from './auth/auth.module';
 import { BatchesModule } from './batches/batches.module';
@@ -68,7 +68,7 @@ import { ReportsModule } from './reports/reports.module';
     // Daftarkan modul yang menyediakan 'service' terlebih dahulu
     UsersModule,
     LiveExamModule,
-    KafkaModule,
+
     AuthModule,
     ScheduleModule.forRoot(),
 
