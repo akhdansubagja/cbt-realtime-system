@@ -1,71 +1,193 @@
 # VIOLET (Virtual Integrated Online Evaluation Tool)
 
-Sistem Ujian Berbasis Komputer (Computer-Based Test/CBT) realtime yang komprehensif, dirancang untuk pengelolaan dan pemantauan ujian yang mulus. Dibangun dengan teknologi modern untuk memastikan kinerja tinggi, skalabilitas, dan pengalaman pengguna yang premium.
+**Sistem Ujian Berbasis Komputer (CBT) Realtime Generasi Baru**
 
-## 🚀 Ringkasan
+VIOLET adalah platform CBT (Computer Based Test) yang dirancang untuk stabilitas tinggi, keamanan, dan pengalaman pengguna yang premium. Sistem ini memastikan ujian berjalan lancar bahkan dalam kondisi jaringan yang tidak stabil berkat fitur _Resilience_ dan sinkronisasi otomatis.
 
-**VIOLET** menyediakan solusi lengkap untuk menyelenggarakan ujian online. Sistem ini menjembatani administrator/instruktur dan siswa dengan sinkronisasi jawaban, status ujian, dan hasil secara realtime. Mendukung batch skala besar, bank soal yang kompleks, dan analitik terperinci.
+---
 
-## ✨ Fitur Utama
+## 🛠 Teknologi (Tech Stack)
 
-### 👥 Manajemen Pengguna & Peserta
+Dibangun dengan teknologi modern untuk performa maksimal:
 
-- **Manajemen Admin**: Autentikasi aman dan akses berbasis peran.
-- **Manajemen Peserta (Siswa)**:
-  - Impor peserta dengan cepat melalui Excel atau alat visual "Quick Import".
-  - Profil siswa terperinci dengan riwayat ujian dan pelacakan kinerja.
-  - **Manajemen Batch**: Mengatur siswa ke dalam kelas/batch untuk penugasan yang lebih mudah.
-  - **Analitik Terperinci**: Melihat grafik kinerja batch (skor rata-rata, tingkat kelulusan).
+### **Frontend**
 
-### 📝 Manajemen Ujian & Soal
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router) - Performa tinggi dan SEO friendly.
+- **UI Library**: [Mantine UI v7](https://mantine.dev/) - Komponen antarmuka yang estetis dan responsif.
+- **Styling**: TailwindCSS - Utilitas styling yang fleksibel.
+- **Realtime Client**: Socket.io-client - Komunikasi dua arah instan.
+- **Animasi**: Framer Motion - Transisi halaman dan elemen yang halus.
 
-- **Bank Soal**: Mengatur soal ke dalam bank yang dapat digunakan kembali.
-- **Dukungan Multimedia**: Soal dapat menyertakan gambar (dengan kompresi).
-- **Impor Manual & Massal**: Impor soal satu per satu atau sekaligus melalui format tertentu.
-- **Penjadwalan Ujian**: Jadwalkan ujian dengan waktu mulai/selesai dan durasi yang tepat.
-- **Aturan Ujian**: Konfigurasi pengacakan, kode akses, dan izin peninjauan kembali.
+### **Backend**
 
-### ⚡ Pemantauan & Pelaksanaan Realtime
+- **Framework**: [NestJS](https://nestjs.com/) - Arsitektur backend modular dan scalable.
+- **Database**: PostgreSQL 15 - Penyimpanan data relasional yang handal.
+- **ORM**: TypeORM - Manajemen database yang aman dan terstruktur.
+- **Realtime Gateway**: Socket.io - Menangani ribuan koneksi konkuren.
+- **Queue & Event**: (Implied/Planned) Kafka (sebagai opsi untuk skala besar).
 
-- **Dashboard Langsung**: Pantau semua peserta aktif secara realtime.
-- **Pelacakan Status**: Lihat siapa yang online, offline, atau telah mengumpulkan.
-- **Penilaian Realtime**: Metrik diperbarui saat siswa menjawab.
-- **Ketahanan (Resilience)**:
-  - Sinkronisasi data otomatis.
-  - "Blocking Overlay" untuk menjeda ujian jika koneksi terputus, dan melanjutkan otomatis saat pulih.
-- **Keamanan**:
-  - Perlindungan anti-copy/paste.
+### **Infrastruktur**
 
-### 📊 Pelaporan & Analitik
+- **Container**: Docker & Docker Compose - Penyebaran aplikasi yang konsisten.
 
-- **Laporan Komprehensif**: Hasilkan laporan detail untuk siswa dan batch.
-- **Opsi Ekspor**:
-  - **Excel**: Ekspor data mentah atau skor yang dinormalisasi.
-  - **PDF**: Buat slip hasil yang sesuai format.
-- **Visualisasi**: Grafik interaktif untuk distribusi skor dan progres.
+---
 
-## 🛠 Teknologi yang Digunakan (Tech Stack)
+## ✨ Fitur Unggulan
 
-### Backend
+### 1. Sistem Ujian Tahan Banting (Resilience System)
 
-- **Framework**: [NestJS](https://nestjs.com/) (Node.js)
-- **Database**: PostgreSQL 15
-- **ORM**: TypeORM
-- **Realtime**: Socket.io (WebSockets) untuk komunikasi dua arah.
-- **Autentikasi**: Passport.js (JWT Strategy)
-- **Penjadwalan Tugas**: @nestjs/schedule (Cron jobs)
+Fitur paling kritis dari VIOLET adalah kemampuannya menangani gangguan koneksi:
 
-### Frontend
+- **Blocking Overlay**: Jika koneksi internet siswa terputus atau server down, layar ujian akan otomatis terkunci dengan pesan "Koneksi Terputus". Ini mencegah siswa menjawab soal yang tidak akan tersimpan.
+- **Auto-Recovery**: Segera setelah koneksi pulih, sistem otomatis menyinkronkan ulang dan membuka kunci layar tanpa perlu refresh halaman manual.
+- **Data Consistency**: Status jawaban disinkronkan secara realtime dengan indikator visual (Saving, Saved, Error).
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
-- **UI Library**: [Mantine UI](https://mantine.dev/)
-- **Styling**: TailwindCSS
-- **State/Data Fetching**: Axios, SWR (implied), Socket.io-client.
-- **Charts**: Chart.js / Recharts.
+### 2. Antarmuka Ujian Siswa (Live Exam)
 
-### Infrastruktur
+Didesain untuk fokus dan kemudahan:
 
-- **Docker**: Layanan database dalam container.
+- **Navigasi Cepat**: "Drawer Navigasi" memungkinkan siswa melompat ke nomor soal mana pun.
+- **Indikator Status**: Penanda warna untuk soal yang:
+  - 🟣 **Aktif**: Sedang dikerjakan.
+  - 🟣 (Solid) **Dijawab**: Sudah dipilih jawabannya.
+  - ⚪ **Belum**: Belum dikerjakan.
+- **Timer Server-Side**: Waktu hitung mundur disinkronkan dengan server, mencegah manipulasi waktu di sisi klien.
+
+### 3. Dashboard Admin Komprehensif
+
+Pusat kendali untuk instruktur/admin dengan fitur manajemen lengkap dari bank soal hingga monitoring realtime.
+
+---
+
+## 📖 Panduan Pengguna
+
+### A. Untuk Admin (Guru/Pengawas)
+
+VIOLET memiliki panel admin yang kuat untuk mengelola seluruh siklus ujian.
+
+#### 1. Manajemen Batch (Kelas)
+
+Kelompokkan siswa ke dalam kelas/batch untuk kemudahan pengelolaan.
+
+- **Buat Batch**: Tambahkan nama batch (misal: "XII IPA 1", "Gelombang 1").
+- **Status Aktif/Nonaktif**: Anda dapat menonaktifkan satu batch sekaligus. Saat batch dinonaktifkan, seluruh siswa di dalamnya tidak akan bisa login. Ini berguna untuk memblokir akses setelah ujian selesai.
+
+##### Detail Analisis Batch
+
+Klik nama batch untuk masuk ke dashboard spesifik kelas tersebut.
+
+1. **Grafik Interaktif**:
+   - **Rata-rata per Ujian**: Melihat tren nilai ujian dari waktu ke waktu.
+   - **Papan Skor (Leaderboard)**: Ranking siswa berdasarkan akumulasi nilai.
+   - **Performa per Ujian**: Analisis distribusi nilai untuk satu ujian spesifik.
+2. **Laporan & Ekspor**:
+   - **Cetak PDF**: Unduh laporan rapor kelas siap cetak.
+   - **Export Excel**:
+     - **Lengkap**: Berisi nilai 0-100 (Normalisasi) dan skor asli (misal 53/60).
+     - **Hanya Normalisasi**: Nilai akhir skala 100.
+     - **Hanya Skor Asli**: Skor mentah.
+3. **Data Peserta**: Tabel lengkap dengan history ujian tiap siswa. Klik tombol "Lihat Riwayat" untuk drill-down ke profil siswa individu.
+
+#### 2. Manajemen Peserta
+
+- **Quick Import (Smart Paste)**:
+  - Copy-paste daftar nama dari Excel/Notepad (satu nama per baris).
+  - **Fitur Magic Image**: Drag & drop foto siswa ke panel. Sistem otomatis mencocokkan foto dengan nama siswa jika nama file sama (misal: `Budi.jpg` -> `Budi`).
+  - Penomoran otomatis dibersihkan (misal: `1. Budi` -> `Budi`).
+- **Avatar Kustom**: Upload manual satu per satu juga tersedia.
+- **Kartu Peserta**: (Segera Hadir) Cetak kartu peserta dengan QR Code untuk login cepat.
+
+#### 3. Bank Soal & Manajemen Soal
+
+Sebelum membuat ujian, Anda perlu membuat bank soal.
+
+- **Bank Soal**: Wadah untuk mengelompokkan soal (misal: "Matematika Dasar 2024").
+- **Jenis Soal**: Pilihan Ganda (Single Choice).
+- **Multimedia**: Mendukung gambar per soal (via Upload atau Quick Import).
+
+##### Fitur Quick Import (Smart Paste)
+
+Anda dapat menyalin soal dari dokumen Word/Text langsung ke aplikasi.
+**Format yang Didukung:**
+
+1. **Kunci Jawaban Inline (Disarankan)**:
+   Tambahkan tanda `;` atau `**` di akhir jawaban benar.
+   ```text
+   1. Ibukota Indonesia adalah...
+   A. Bandung
+   B. Jakarta;
+   ```
+2. **Kunci Jawaban Blok (Di Bawah)**:
+   ```text
+   ... (soal-soal) ...
+   Answer:
+   1. B
+   2. A
+   ```
+3. **Format Standar**:
+   ```text
+   1. Apa nama ibukota Jawa Barat?
+   a. Bandung
+   b. Semarang
+   ```
+   _(Sistem akan meminta kunci jawaban manual jika tidak terdeteksi)_
+
+##### Fitur Lainnya:
+
+- **Ekspor Dokumen**: Unduh bank soal ke format **.docx (Word)** atau **.pdf**.
+- **Aksi Massal**: Hapus banyak soal sekaligus dengan mencentang checkbox.
+
+#### 4. Manajemen Jadwal Ujian
+
+Saat membuat ujian baru, Anda memiliki fleksibilitas penuh:
+
+- **Judul & Kode**: Tentukan kode unik (misal: `MATH-FINAL`) yang akan digunakan siswa untuk login.
+- **Waktu**: Set waktu mulai dan selesai.
+  > **Tips**: Jika ingin ujian bisa diakses kapan saja (tanpa jadwal kaku), kosongkan waktu mulai/selesai. Ujian akan berstatus **"Selalu Aktif"**.
+- **Mode Soal**:
+  - **Manual**: Pilih soal speisifik satu per satu dari berbagai bank soal.
+  - **Acak (Random)**: Tentukan aturan (misal: "Ambil 10 soal dari Bank A, 5 soal dari Bank B"). Setiap siswa akan mendapat paket soal yang berbeda namun setara.
+
+#### 5. Monitoring & Live Proctoring
+
+Halaman ini adalah pusat komando saat ujian berlangsung:
+
+- **Live Leaderboard**: Skor peserta muncul secara realtime saat mereka menjawab (tanpa perlu refresh). Urutan otomatis berdasarkan skor tertinggi dan waktu tercepat.
+- **Status Pengerjaan**:
+  - 🟢 **Mengerjakan**: Siswa sedang online dan aktif.
+  - ⚫ **Selesai**: Siswa sudah submit atau waktu habis.
+- **Durasi Realtime**: Melihat berapa lama siswa mengerjakan soal.
+- **Aksi Kontrol**:
+  - **Retake (Ujian Ulang)**: Jika siswa mengalami kendala fatal, Anda bisa mereset sesi mereka. Data lama akan diarsipkan sebagai _Attempt #1_, dan mereka bisa mulai lagi.
+  - **Paksa Selesai**: Menghentikan ujian siswa secara paksa jika terjadi kecurangan.
+- **Ekspor Laporan**: Unduh hasil ujian ke dalam format **Excel (.xlsx)** lengkap dengan rincian waktu mulai, selesai, dan durasi. Bisa difilter berdasarkan Batch atau Tanggal.
+
+---
+
+### B. Untuk Peserta Ujian (Siswa)
+
+#### 1. Masuk ke Ujian (Login)
+
+1. Buka halaman utama aplikasi.
+2. Pada kolom **"Pilih Nama Anda"**, ketik atau pilih nama Anda dari daftar.
+3. Masukkan **Kode Ujian** yang diberikan oleh pengawas.
+4. Klik **"Gabung Ujian"**.
+
+#### 2. Mengerjakan Ujian
+
+- **Menjawab Soal**: Klik opsi A/B/C/D/E. Perhatikan indikator:
+  - 🔄 _Spinner_: Sedang dikirim.
+  - ✅ _Checklist_: **TERSERSIMPAN** di server.
+  - ⚠️ _Merah_: Gagal simpan (Cek koneksi!).
+- **Navigasi**: Gunakan tombol "Daftar Soal" untuk melihat sitemap soal.
+- **Selesai**: Klik tombol "Selesai" dan konfirmasi untuk mengakhiri ujian.
+
+#### 3. Indikator Sinyal (PENTING)
+
+- Jika layar terkunci merah bertuliskan **"Koneksi Terputus"**, **JANGAN Refresh/Tutup Browser**.
+- Tunggu hingga sinyal kembali, sistem akan otomatis melanjutkan sesi Anda tanpa data hilang.
+
+---
 
 ## ⚙️ Prasyarat
 
