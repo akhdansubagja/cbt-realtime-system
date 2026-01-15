@@ -273,3 +273,147 @@ violet/
 ├── docker-compose.yml # Infrastruktur Database
 └── Rencana fitur tambahan.txt # Peta Jalan/Rencana Fitur
 ```
+
+---
+
+## 🗄️ Skema Database
+
+![ERD Database](ERD-VIOLET.png)
+
+Berikut adalah dokumentasi detail mengenai entitas database (tabel) dalam sistem CBT Realtime.
+
+### 1. User Management
+
+#### `users` (User)
+
+Tabel ini digunakan untuk menyimpan data administrator atau pengawas ujian.
+
+- **File**: `src/users/entities/user.entity.ts`
+- **Key Fields**:
+  - `username`: String, unik.
+  - `password`: String (hashed).
+- **Fungsi**: Otentikasi untuk akses dashboard admin.
+
+#### `examinees` (Examinee)
+
+Tabel induk untuk data peserta ujian (siswa/kandidat).
+
+- **File**: `src/examinees/entities/examinee.entity.ts`
+- **Key Fields**:
+  - `name`: Nama lengkap.
+  - `uniqid`: String, unik (misal: NIS/NIM/No Peserta).
+  - `batch_id`: Foreign Key ke tabel `batches`.
+  - `is_active`: Boolean, status aktif peserta.
+- **Relasi**:
+  - `ManyToOne` ke `Batch`: Satu peserta masuk dalam satu batch.
+  - `OneToMany` ke `Participant`: Satu peserta bisa mengikuti banyak ujian.
+
+#### `batches` (Batch)
+
+Tabel pengelompokan peserta.
+
+- **File**: `src/batches/entities/batch.entity.ts`
+- **Key Fields**:
+  - `name`: Nama batch (misal: "Kelas XII IPA 1", "Gelombang 1").
+- **Relasi**:
+  - `OneToMany` ke `Examinee`.
+
+---
+
+### 2. Exam Master Data (Bank Soal & Ujian)
+
+#### `question_banks` (QuestionBank)
+
+Mengelompokkan soal ke dalam kategori atau topik.
+
+- **File**: `src/question-banks/entities/question-bank.entity.ts`
+- **Key Fields**:
+  - `name`: Nama bank soal.
+  - `description`: Deskripsi topik.
+- **Relasi**:
+  - `OneToMany` ke `Question`.
+
+#### `questions` (Question)
+
+Menyimpan butir soal individual.
+
+- **File**: `src/questions/entities/question.entity.ts`
+- **Key Fields**:
+  - `question_text`: Isi pertanyaan.
+  - `question_type`: Enum (saat ini `MULTIPLE_CHOICE`).
+  - `options`: JSONB. Menyimpan opsi jawaban (misal: `[{key: 'A', text: '...'}, ...]`).
+  - `correct_answer`: Kunci jawaban (misal: 'A').
+  - `bank_id`: Foreign Key ke `question_banks`.
+- **Catatan**: Kolom `options` menggunakan tipe data `jsonb` yang fleksibel untuk menyimpan struktur pilihan ganda.
+
+#### `exams` (Exam)
+
+Definisi konfigurasi ujian.
+
+- **File**: `src/exams/entities/exam.entity.ts`
+- **Key Fields**:
+  - `title`: Judul ujian.
+  - `code`: Kode unik ujian untuk akses.
+  - `duration_minutes`: Durasi pengerjaan.
+  - `start_time` & `end_time`: Jendela waktu ujian bisa diakses.
+- **Relasi**:
+  - `OneToMany` ke `ExamRule`: Aturan komposisi soal.
+  - `OneToMany` ke `ExamQuestion`: Soal-soal spesifik (fixed).
+
+#### `exam_rules` (ExamRule)
+
+Menentukan komposisi soal ujian secara dinamis (randomizer).
+
+- **File**: `src/exams/entities/exam-rule.entity.ts`
+- **Key Fields**:
+  - `exam_id`: Link ke ujian.
+  - `question_bank_id`: Link ke sumber bank soal.
+  - `number_of_questions`: Jumlah soal yang harus diambil dari bank ini.
+  - `point_per_question`: Bobot nilai per soal.
+- **Fungsi**: Memungkinkan skenario "Ambil 10 soal Matematika (poin 5) dan 10 soal Bahasa Inggris (poin 5)" dalam satu ujian.
+
+#### `exam_questions` (ExamQuestion)
+
+Menyematkan soal spesifik ke ujian (opsi manual/fixed).
+
+- **File**: `src/exams/entities/exam-question.entity.ts`
+- **Relasi**: Menghubungkan `Exam` dan `Question` secara langsung dengan poin tertentu.
+
+---
+
+### 3. Exam Execution (Transaksi Ujian)
+
+#### `participants` (Participant)
+
+Mencatat sesi ujian seorang peserta. Ini adalah tabel inti saat ujian berjalan.
+
+- **File**: `src/participants/entities/participant.entity.ts`
+- **Key Fields**:
+  - `examinee_id` & `exam_id`: Siapa yang ujian dan ujian apa.
+  - `status`: Enum (`started`, `finished`).
+  - `final_score`: Nilai akhir.
+  - `attempt_number`: Hitungan percobaan (untuk fitur remedial/retake).
+  - `is_retake`: Flag apakah ini ujian ulang.
+- **Constraint**: `Unique(['examinee', 'exam', 'attempt_number'])` memastikan peserta tidak bisa double entry untuk percobaan yang sama.
+
+#### `participant_exam_questions` (ParticipantExamQuestion)
+
+Snapshat daftar soal yang didapat peserta.
+
+- **File**: `src/participants/entities/participant-exam-question.entity.ts`
+- **Fungsi**:
+  - Ketika ujian dimulai, sistem meng-generate soal berdasarkan `ExamRule` atau `ExamQuestion`.
+  - Hasil generate disimpan di sini agar **konsisten**. Jika peserta refresh browser, soal yang didapat tetap sama, tidak teracak ulang.
+- **Relasi**: Link tabel `participants` dengan tabel master `questions`.
+
+#### `participant_answers` (ParticipantAnswer)
+
+Menyimpan jawaban peserta.
+
+- **File**: `src/participants/entities/participant-answer.entity.ts`
+- **Key Fields**:
+  - `participant_id`: Link ke sesi peserta.
+  - `participant_exam_question_id`: Link ke butir soal spesifik peserta.
+  - `answer`: Jawaban yang dipilih (misal: 'B').
+  - `is_correct`: Status kebenaran jawaban.
+- **Fungsi**: Mencatat progres pengerjaan real-time.
