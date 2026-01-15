@@ -277,10 +277,10 @@ violet/
 ---
 
 ## 🗄️ Skema Database
-
+ERD SISTEM VIOLET
 ![ERD Database](ERD-VIOLET.png)
 
-Berikut adalah dokumentasi detail mengenai entitas database (tabel) dalam sistem CBT Realtime.
+Berikut adalah dokumentasi detail mengenai entitas database (tabel) dalam sistem VIOLET.
 
 ### 1. User Management
 
